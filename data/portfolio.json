@@ -1,1 +1,30 @@
-
+[
+  {
+    "symbol": "VNM",
+    "note": "Mau: sua thanh ma dang nam giu",
+    "buy_more_score": 78,
+    "sell_score": 45,
+    "position": "watch"
+  },
+  {
+    "symbol": "FPT",
+    "note": "Mau: sua thanh ma dang nam giu",
+    "buy_more_score": 80,
+    "sell_score": 50,
+    "position": "watch"
+  },
+  {
+    "symbol": "HPG",
+    "note": "Mau: sua thanh ma dang nam giu",
+    "buy_more_score": 76,
+    "sell_score": 45,
+    "position": "watch"
+  },
+  {
+    "symbol": "TCB",
+    "note": "Mau: sua thanh ma dang nam giu",
+    "buy_more_score": 78,
+    "sell_score": 45,
+    "position": "watch"
+  }
+]
