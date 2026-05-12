@@ -232,7 +232,7 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-    sources = ["TCBS", "SSI"]
+    sources = ["VCI", "TCBS", "MSN"]
     random.shuffle(sources)
     for source in sources:
         try:
