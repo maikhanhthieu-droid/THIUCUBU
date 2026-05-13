@@ -226,7 +226,7 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
         except Exception:
             pass
 
-    from vnstock3 import Vnstock  # type: ignore
+    from vnstock import Vnstock  # type: ignore
 
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
