@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 import numpy as np
 import pandas as pd
-
+from vnstock.api.quote import Quote  # ← thêm dòng này
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,7 +73,7 @@ SECTORS: dict[str, list[str]] = {
 ECOSYSTEMS: dict[str, list[str]] = {
     "Vin": ["VIC", "VHM", "VRE"],
     "Gelex Tuan Muot": ["GEX", "VIX", "VGC", "GEE", "IDC", "EIB", "STG", "VLB", "MHC"],
-    "Masan Techcom": ["MSN", "MCH", "TCB"],
+    "Masan Techcom": [ "MCH", "TCB"],
     "TT Bau Hien": ["SHB", "SHS"],
     "PVN": ["PVD", "PVS", "GAS", "PVT", "BSR", "OIL", "PLX", "DPM", "DCM"],
     "BDS dau co": ["DIG", "CEO", "NVL", "PDR", "DXG", "HQC", "SCR", "IJC", "HUT"],
@@ -226,18 +226,17 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
         except Exception:
             pass
 
-    from vnstock import Vnstock  # type: ignore
-
+    # ← XÓA dòng from vnstock import Vnstock  # type: ignore
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-    sources = ["VCI", "TCBS", "MSN"]
+    sources = ["VCI", "TCBS",]  # giữ nguyên sources
     random.shuffle(sources)
     for source in sources:
         try:
-            stock = Vnstock().stock(symbol=symbol, source=source)
-            raw = stock.quote.history(start=start, end=end, interval="1D")
+            q = Quote(symbol=symbol, source=source)          # ← dòng mới
+            raw = q.history(start=start, end=end, interval="1D")  # ← dòng mới
             df = normalize_ohlcv(raw)
             if df is not None and len(df) >= 80:
                 df = df.tail(bars).reset_index(drop=True)
