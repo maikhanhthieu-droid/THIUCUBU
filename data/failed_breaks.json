@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "symbol": "PVS",
+    "date": "2026-05-13",
+    "score": 68,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "GVR",
+    "date": "2026-05-13",
+    "score": 28,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "DPR",
+    "date": "2026-05-13",
+    "score": 56,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "PHR",
+    "date": "2026-05-13",
+    "score": 22,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  }
+]
