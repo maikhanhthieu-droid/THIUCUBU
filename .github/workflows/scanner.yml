@@ -5,7 +5,7 @@ permissions:
 
 concurrency:
   group: thieucutoo-scanner-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 on:
   schedule:
@@ -16,14 +16,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "auto | morning | afternoon | eod | test"
+        description: "test | morning | afternoon | eod | auto"
         required: false
-        default: "auto"
+        default: "test"
 
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 180
 
     steps:
       - name: Checkout
@@ -55,6 +55,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
           SCAN_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
+          SCAN_EVENT_NAME: ${{ github.event_name }}
           SCAN_SCHEDULE: ${{ github.event.schedule }}
           SCAN_BATCH_SIZE: "8"
           SCAN_MAX_WORKERS: "2"
@@ -80,6 +81,9 @@ jobs:
               "31 6 * * 1-5") MODE="afternoon" ;;
               "0 8 * * 1-5") MODE="eod" ;;
             esac
+          fi
+          if [ "$MODE" = "auto" ] && [ "$SCAN_EVENT_NAME" = "workflow_dispatch" ]; then
+            MODE="test"
           fi
           if [ "$MODE" = "afternoon" ]; then
             export SESSION_FOCUS_LIMIT="20"
