@@ -10,6 +10,7 @@ concurrency:
 on:
   schedule:
     - cron: "30 1 * * 6"
+    - cron: "30 7 * * 6"
   workflow_dispatch:
     inputs:
       mode:
@@ -20,7 +21,7 @@ on:
 jobs:
   weekend-opportunities:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 360
 
     steps:
       - name: Checkout
@@ -54,21 +55,22 @@ jobs:
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
           WEEKEND_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'full' }}
           WEEKEND_TOP_N: "20"
-          WEEKEND_MIN_SCORE: "58"
-          WEEKEND_MIN_SECTOR_SCORE: "50"
-          WEEKEND_RANDOM_START_MAX_SEC: "600"
-          WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "0.7"
-          WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "2.2"
+          WEEKEND_MIN_SCORE: "60"
+          WEEKEND_MIN_SECTOR_SCORE: "52"
+          WEEKEND_HIGH_CONFIDENCE_SCORE: "80"
+          WEEKEND_RANDOM_START_MAX_SEC: "1800"
+          WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "1.0"
+          WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "3.5"
           SCAN_MAX_WORKERS: "2"
           SCAN_API_SOURCES: "VCI,TCBS"
-          SCAN_SOURCE_REQUESTS_PER_MINUTE: "8"
+          SCAN_SOURCE_REQUESTS_PER_MINUTE: "6"
           SCAN_SOURCE_USAGE_RATIO: "0.70"
-          SCAN_REQUEST_JITTER_MIN_SEC: "0.8"
-          SCAN_REQUEST_JITTER_MAX_SEC: "3.0"
-          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "60"
-          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "180"
+          SCAN_REQUEST_JITTER_MIN_SEC: "1.0"
+          SCAN_REQUEST_JITTER_MAX_SEC: "4.0"
+          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "90"
+          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "240"
           DRY_RUN: "0"
-        run: python weekend_opportunities.py --mode "$WEEKEND_MODE"
+        run: python weekend_plus.py --mode "$WEEKEND_MODE"
 
       - name: Upload weekend data artifact
         if: always()
