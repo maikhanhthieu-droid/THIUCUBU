@@ -1,0 +1,95 @@
+name: Thieucutoo Weekend Opportunities
+
+permissions:
+  contents: write
+
+concurrency:
+  group: thieucutoo-weekend-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  schedule:
+    - cron: "30 1 * * 6"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "full | test"
+        required: false
+        default: "full"
+
+jobs:
+  weekend-opportunities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip uninstall vnstock3 -y || true
+          python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: thieucutoo-weekend-cache-${{ github.run_id }}
+          restore-keys: |
+            thieucutoo-weekend-cache-
+            thieucutoo-cache-
+
+      - name: Run weekend opportunity scanner
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
+          WEEKEND_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'full' }}
+          WEEKEND_TOP_N: "20"
+          WEEKEND_MIN_SCORE: "58"
+          WEEKEND_MIN_SECTOR_SCORE: "50"
+          WEEKEND_RANDOM_START_MAX_SEC: "600"
+          WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "0.7"
+          WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "2.2"
+          SCAN_MAX_WORKERS: "2"
+          SCAN_API_SOURCES: "VCI,TCBS"
+          SCAN_SOURCE_REQUESTS_PER_MINUTE: "8"
+          SCAN_SOURCE_USAGE_RATIO: "0.70"
+          SCAN_REQUEST_JITTER_MIN_SEC: "0.8"
+          SCAN_REQUEST_JITTER_MAX_SEC: "3.0"
+          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "60"
+          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "180"
+          DRY_RUN: "0"
+        run: python weekend_opportunities.py --mode "$WEEKEND_MODE"
+
+      - name: Upload weekend data artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thieucutoo-weekend-${{ github.run_number }}
+          path: |
+            data/weekend_opportunities_latest.json
+            data/weekend_opportunities_history.json
+          retention-days: 60
+
+      - name: Commit weekend data
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "ThieucutooBot"
+          git config user.email "bot@thieucutoo.local"
+          git pull --rebase --autostash || true
+          git add data/weekend_opportunities_latest.json data/weekend_opportunities_history.json || true
+          if git diff --staged --quiet; then
+            echo "No weekend data changes."
+          else
+            git commit -m "chore: update weekend opportunities [skip ci]"
+            git push
+          fi
