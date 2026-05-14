@@ -40,6 +40,24 @@ Cac bien co the chinh trong workflow:
 - `SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC` / `SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC`: cooldown khi nguon loi.
 - `SCAN_MAX_WORKERS`: so luong worker song song, nen <= so nguon API.
 
+## Quet co hoi cuoi tuan
+
+Workflow `Thieucutoo Weekend Opportunities` chay luc 08:30 sang Thu bay gio Viet Nam
+va co the chay tay voi mode `test` hoac `full`.
+
+Script `weekend_opportunities.py` la ban TradingAgents-lite cho CK VN:
+
+- Valuation analyst: so PE/PB cua tung ma voi median nganh.
+- Fundamental analyst: check ROE/ROA, EPS, bien loi nhuan, no vay.
+- Technical analyst: dung lai diem scan, chiet khau gia, nen gia, near-break, failed-break.
+- Sector analyst: xep hang nganh dang co dong tien va nen gia tot.
+- Risk manager: tru diem khi PE/EPS am, failed-break, nganh yeu, chat luong thap.
+
+Ket qua duoc gui Telegram va luu vao:
+
+- `data/weekend_opportunities_latest.json`
+- `data/weekend_opportunities_history.json`
+
 ## File danh muc
 
 Sua `data/portfolio.json` de khai bao 4 ma dang nam giu:
