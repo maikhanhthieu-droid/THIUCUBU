@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 import weekend_opportunities as weekend
+import telegram_format as tf
 
 
 def env_int(name: str, default: int, min_value: int = 0) -> int:
@@ -28,20 +29,11 @@ def make_action(score: int, risk: int, valuation: int, sector_score: int) -> str
 
 
 def display_action(action: str) -> str:
-    return action.replace("_", " ")
+    return tf.clean_text(action).upper()
 
 
 def opportunity_line(item: weekend.Opportunity) -> str:
-    return (
-        f"`{item.symbol}` {item.opportunity_score}/100 {display_action(item.action)} | {item.sector} | "
-        f"PE {weekend.fmt_num(item.pe)} vs {weekend.fmt_num(item.sector_pe)} "
-        f"({weekend.fmt_pct(item.pe_discount_pct, signed=True)}) | "
-        f"PB {weekend.fmt_num(item.pb, 2)} vs {weekend.fmt_num(item.sector_pb, 2)} "
-        f"({weekend.fmt_pct(item.pb_discount_pct, signed=True)}) | "
-        f"DD {item.discount_pct:.0f}/{item.target_discount_pct:.0f}% | "
-        f"V/Q/T/S {item.valuation_score}/{item.quality_score}/{item.technical_score}/{item.sector_score} | "
-        f"{item.bull_case} | risk: {item.bear_case}"
-    )
+    return tf.format_opportunity_card(item)
 
 
 def build_report(opportunities: list[weekend.Opportunity], sectors: dict[str, weekend.SectorSnapshot], mode: str) -> str:
@@ -66,7 +58,7 @@ def build_report(opportunities: list[weekend.Opportunity], sectors: dict[str, we
     lines += ["", "*TOP WATCHLIST DINH GIA TOT*"]
     lines += [opportunity_line(item) for item in top] or ["Chua co ma dat nguong loc."]
     lines += ["", "*NGANH DANG NGON*"]
-    lines += [weekend.sector_line(item) for item in sector_rows] or ["Chua du du lieu nganh."]
+    lines += [tf.format_sector_line(weekend.sector_line(item)) for item in sector_rows] or ["Chua du du lieu nganh."]
     if mode == "test":
         lines += ["", "`TEST MODE`: chi quet mot tap ma mau."]
     return "\n".join(lines)
