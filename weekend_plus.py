@@ -3,8 +3,13 @@ import asyncio
 import os
 from datetime import datetime
 
+import market_intel as intel
+import scan_safe
 import weekend_opportunities as weekend
 import telegram_format as tf
+
+scan_safe.fetch_ohlcv_safe = intel.fetch_ohlcv_safe
+weekend.scan_safe.fetch_ohlcv_safe = intel.fetch_ohlcv_safe
 
 
 def env_int(name: str, default: int, min_value: int = 0) -> int:
@@ -59,6 +64,7 @@ def build_report(opportunities: list[weekend.Opportunity], sectors: dict[str, we
     lines += [opportunity_line(item) for item in top] or ["Chua co ma dat nguong loc."]
     lines += ["", "*NGANH DANG NGON*"]
     lines += [tf.format_sector_line(weekend.sector_line(item)) for item in sector_rows] or ["Chua du du lieu nganh."]
+    lines += ["", intel.build_performance_report()]
     if mode == "test":
         lines += ["", "`TEST MODE`: chi quet mot tap ma mau."]
     return "\n".join(lines)
