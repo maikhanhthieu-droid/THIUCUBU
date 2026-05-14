@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+import asyncio
+import logging
+import os
+import random
+import threading
+import time
+from datetime import datetime, timedelta
+
+import pandas as pd
+
+import scan
+
+logger = logging.getLogger("thieucutoo.safe")
+
+
+def env_int(name: str, default: int, min_value: int = 0) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r, using %s", name, raw, default)
+        return default
+    return max(min_value, value)
+
+
+def env_float(name: str, default: float, min_value: float = 0.0, max_value: float | None = None) -> float:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r, using %s", name, raw, default)
+        return default
+    value = max(min_value, value)
+    if max_value is not None:
+        value = min(max_value, value)
+    return value
+
+
+def env_csv(name: str, default: str) -> list[str]:
+    values = [item.strip().upper() for item in os.getenv(name, default).split(",")]
+    return [item for item in values if item]
+
+
+def parse_source_limits(raw: str, sources: list[str], default: int) -> dict[str, int]:
+    limits = {source: default for source in sources}
+    if not raw.strip():
+        return limits
+    for part in raw.split(","):
+        if not part.strip():
+            continue
+        if "=" not in part:
+            try:
+                parsed = max(1, int(part.strip()))
+            except ValueError:
+                logger.warning("Invalid source limit %r, keeping default", part)
+                return limits
+            return {source: parsed for source in sources}
+        source, value = part.split("=", 1)
+        source = source.strip().upper()
+        if source in limits:
+            try:
+                limits[source] = max(1, int(value.strip()))
+            except ValueError:
+                logger.warning("Invalid source limit %r, keeping default", part)
+    return limits
+
+
+API_SOURCES = env_csv("SCAN_API_SOURCES", "VCI,TCBS") or ["VCI", "TCBS"]
+SOURCE_USAGE_RATIO = env_float("SCAN_SOURCE_USAGE_RATIO", 0.70, min_value=0.05, max_value=1.0)
+SOURCE_RPM_LIMITS = parse_source_limits(
+    os.getenv("SCAN_SOURCE_LIMITS", ""),
+    API_SOURCES,
+    env_int("SCAN_SOURCE_REQUESTS_PER_MINUTE", scan.REQUESTS_PER_MINUTE, min_value=1),
+)
+REQUEST_JITTER_MIN = env_float("SCAN_REQUEST_JITTER_MIN_SEC", 0.5, min_value=0.0)
+REQUEST_JITTER_MAX = max(REQUEST_JITTER_MIN, env_float("SCAN_REQUEST_JITTER_MAX_SEC", 2.5, min_value=0.0))
+SOURCE_COOLDOWN_MIN = env_float("SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC", 45.0, min_value=0.0)
+SOURCE_COOLDOWN_MAX = max(SOURCE_COOLDOWN_MIN, env_float("SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC", 150.0, min_value=0.0))
+
+
+class ApiSourceLimiter:
+    def __init__(self, source: str, rpm_limit: int, usage_ratio: float) -> None:
+        self.source = source
+        self.rpm_limit = rpm_limit
+        self.usage_ratio = usage_ratio
+        self.effective_rpm = max(0.1, rpm_limit * usage_ratio)
+        self.min_interval = 60.0 / self.effective_rpm
+        self.next_at = time.monotonic() + random.uniform(0, self.min_interval)
+        self.cooldown_until = 0.0
+        self.failures = 0
+        self.attempts = 0
+        self.successes = 0
+        self.lock = threading.Lock()
+
+    def wait_turn(self, symbol: str) -> None:
+        with self.lock:
+            now = time.monotonic()
+            earliest = max(now, self.next_at, self.cooldown_until)
+            jitter = random.uniform(REQUEST_JITTER_MIN, REQUEST_JITTER_MAX)
+            sleep_for = max(0.0, earliest - now) + jitter
+            self.next_at = earliest + self.min_interval + jitter
+            self.attempts += 1
+        if sleep_for >= 1.0:
+            logger.info("[%s] %s throttle sleep %.1fs", self.source, symbol, sleep_for)
+        if sleep_for > 0:
+            time.sleep(sleep_for)
+
+    def record_success(self) -> None:
+        with self.lock:
+            self.successes += 1
+            self.failures = 0
+
+    def record_failure(self) -> None:
+        with self.lock:
+            self.failures += 1
+            multiplier = min(self.failures, 4)
+            cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
+            self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
+            logger.warning(
+                "[%s] cooling down %.1fs after %s consecutive failure(s)",
+                self.source,
+                cooldown,
+                self.failures,
+            )
+
+    def snapshot(self) -> str:
+        with self.lock:
+            return (
+                f"{self.source}: limit {self.rpm_limit}/min, use {self.effective_rpm:.1f}/min "
+                f"({self.usage_ratio:.0%}), ok {self.successes}/{self.attempts}, fail {self.failures}"
+            )
+
+
+API_LIMITERS = {
+    source: ApiSourceLimiter(source, SOURCE_RPM_LIMITS.get(source, scan.REQUESTS_PER_MINUTE), SOURCE_USAGE_RATIO)
+    for source in API_SOURCES
+}
+
+
+def source_order_for_symbol(symbol: str) -> list[str]:
+    start = sum(ord(char) for char in symbol.upper()) % len(API_SOURCES)
+    return API_SOURCES[start:] + API_SOURCES[:start]
+
+
+def effective_total_api_rpm() -> float:
+    return sum(limiter.effective_rpm for limiter in API_LIMITERS.values())
+
+
+def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:
+    ttl = 480 if not force_refresh else 0
+    path = scan.cache_path(symbol, bars)
+    if not force_refresh and scan.is_cache_fresh(path, ttl):
+        try:
+            return pd.read_parquet(path)
+        except Exception:
+            pass
+
+    days_back = max(300, int(bars * 1.7))
+    end = datetime.now().strftime("%Y-%m-%d")
+    start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+
+    for source in source_order_for_symbol(symbol):
+        limiter = API_LIMITERS[source]
+        limiter.wait_turn(symbol)
+        try:
+            q = scan.Quote(symbol=symbol, source=source)
+            raw = q.history(start=start, end=end, interval="1D")
+            df = scan.normalize_ohlcv(raw)
+            if df is not None and len(df) >= 80:
+                limiter.record_success()
+                df = df.tail(bars).reset_index(drop=True)
+                try:
+                    df.to_parquet(path, index=False)
+                except Exception:
+                    pass
+                return df
+            logger.warning("[%s] %s returned insufficient data", source, symbol)
+        except Exception as exc:
+            logger.warning("[%s] %s failed: %s", source, symbol, exc)
+            limiter.record_failure()
+    return None
+
+
+async def main() -> None:
+    scan.fetch_ohlcv = fetch_ohlcv_safe
+    scan.MAX_WORKERS = min(env_int("SCAN_MAX_WORKERS", len(API_SOURCES), min_value=1), max(1, len(API_SOURCES)))
+    scan.REQUESTS_PER_MINUTE = max(1, int(effective_total_api_rpm()))
+    logger.info(
+        "Safe API mode: sources=%s effective_rpm=%.1f workers=%s",
+        ",".join(API_SOURCES),
+        effective_total_api_rpm(),
+        scan.MAX_WORKERS,
+    )
+    await scan.main()
+    logger.info("API source stats: %s", " | ".join(limiter.snapshot() for limiter in API_LIMITERS.values()))
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
