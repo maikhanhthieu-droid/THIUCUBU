@@ -13,6 +13,7 @@ from typing import Any
 
 import scan
 import scan_safe
+import telegram_format as tf
 
 logging.basicConfig(
     level=logging.INFO,
@@ -267,7 +268,7 @@ def strong_candidates(results: dict[str, scan.ScanResult], watch_symbols: set[st
 
 def market_status(market: scan.ScanResult | None) -> str:
     if market is None:
-        return "VNI: chua co du lieu."
+        return tf.format_market_card(None, "")
     if market.failed_break or market.win_score < 45:
         state = "RISK OFF"
     elif market.win_score >= 68 and market.obv_up and market.mfi >= 50:
@@ -276,10 +277,7 @@ def market_status(market: scan.ScanResult | None) -> str:
         state = "NEUTRAL / CHO XAC NHAN"
     else:
         state = "YEU / THAN TRONG"
-    return (
-        f"VNI `{market.win_score}/100` {state} | RSI {market.rsi:.0f} MFI {market.mfi:.0f} "
-        f"| Volx{market.vol_ratio:.1f} | {market.reason}"
-    )
+    return tf.format_market_card(market, state)
 
 
 def portfolio_alert_lines(results: dict[str, scan.ScanResult], watch_items: dict[str, dict[str, Any]]) -> list[str]:
@@ -304,11 +302,7 @@ def portfolio_alert_lines(results: dict[str, scan.ScanResult], watch_items: dict
             action = "GIU / THEO DOI TICH CUC"
         else:
             action = "GIU / THEO DOI"
-        lines.append(
-            f"`{symbol}` {r.win_score}/100 *{action}* | {r.setup} | "
-            f"DD {r.discount_pct:.0f}/{r.target_discount_pct:.0f}% | "
-            f"RSI {r.rsi:.0f} MFI {r.mfi:.0f} Volx{r.vol_ratio:.1f} | {r.reason} | {note}"
-        )
+        lines.append(tf.format_stock_card(r, action=action, note=note))
     return lines
 
 
@@ -324,11 +318,7 @@ def projection_line(r: scan.ScanResult, mode: str) -> str:
     else:
         action = "WATCH"
     timing = "sau 14h uu tien du lieu moi" if mode == "afternoon" else "cho xac nhan sau moc phien"
-    return (
-        f"`{r.symbol}` {r.win_score}/100 *{action}* | {r.sector} | {r.setup} | "
-        f"DD {r.discount_pct:.0f}/{r.target_discount_pct:.0f}% | "
-        f"RSI {r.rsi:.0f} MFI {r.mfi:.0f} Volx{r.vol_ratio:.1f} | {timing} | {r.reason}"
-    )
+    return tf.format_stock_card(r, action=action, timing=timing)
 
 
 def build_session_report(
@@ -360,14 +350,14 @@ def build_session_report(
     lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
     lines += [projection_line(r, mode) for r in (focus_results or strong)[:12]] or ["Chua co co manh du nguong."]
     lines += ["", "*CO MANH THI TRUONG*"]
-    lines += [scan.result_line(r) for r in strong] or ["Khong co ma dat nguong."]
+    lines += [tf.format_stock_card(r) for r in strong] or ["Khong co ma dat nguong."]
     lines += ["", "*GAN BREAK / CO THE MUA TUNG PHAN*"]
-    lines += [scan.result_line(r) for r in break_watch] or ["Khong co ma dat nguong."]
+    lines += [tf.format_stock_card(r, action="CANH BREAK / MUA TUNG PHAN") for r in break_watch] or ["Khong co ma dat nguong."]
     lines += ["", "*NGANH LEAD / RISK*"]
-    lines += sectors or ["Chua du du lieu nganh."]
+    lines += [tf.format_sector_line(line) for line in sectors] or ["Chua du du lieu nganh."]
     if mode in {"eod", "afternoon"}:
         lines += ["", "*FAILED BREAK / CAN NE*"]
-        lines += [scan.result_line(r) for r in failed] or ["Khong co failed-break dang chu y."]
+        lines += [tf.format_stock_card(r, action="CAN NE / GIAM RUI RO") for r in failed] or ["Khong co failed-break dang chu y."]
     return "\n".join(lines)
 
 
