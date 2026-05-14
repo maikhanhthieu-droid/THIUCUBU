@@ -55,6 +55,12 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
         lines.append(f"Ly do: {reason}")
     if note:
         lines.append(f"Note: {note}")
+    sl = getattr(r, "stop_loss", None) or getattr(r, "sl", None)
+    tp = getattr(r, "take_profit", None) or getattr(r, "tp", None)
+    rr = getattr(r, "risk_reward", None) or getattr(r, "rr", None)
+    if sl and tp:
+        rr_text = f" | R/R {float(rr):.1f}x" if rr is not None else ""
+        lines.append(f"SL {float(sl):.2f} | TP {float(tp):.2f}{rr_text}")
     return "\n".join(lines) + "\n"
 
 
@@ -62,10 +68,17 @@ def format_market_card(market: Any, state: str) -> str:
     if market is None:
         return "*VNINDEX*\nChua co du lieu."
     reason = clean_text(getattr(market, "reason", ""))
+    close = getattr(market, "close", None)
+    close_text = f"VNI {float(close):.0f}pt" if close else "VNI n/a"
+    above_ema34 = getattr(market, "above_ema34", None)
+    ema34_text = ""
+    if above_ema34 is not None:
+        ema34_text = f" | EMA34 {'tren' if above_ema34 else 'duoi'}"
     return "\n".join(
         [
             f"*VNINDEX*  `{int(getattr(market, 'win_score', 0))}/100`  {clean_text(state)}",
             (
+                f"{close_text}{ema34_text} | "
                 f"RSI {float(getattr(market, 'rsi', 0.0)):.0f} | "
                 f"MFI {float(getattr(market, 'mfi', 0.0)):.0f} | "
                 f"Volx{float(getattr(market, 'vol_ratio', 0.0)):.1f}"

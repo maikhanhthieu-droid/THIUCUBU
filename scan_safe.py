@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
+import market_intel as intel
 import scan
 
 logger = logging.getLogger("thieucutoo.safe")
@@ -81,6 +82,8 @@ REQUEST_JITTER_MIN = env_float("SCAN_REQUEST_JITTER_MIN_SEC", 0.5, min_value=0.0
 REQUEST_JITTER_MAX = max(REQUEST_JITTER_MIN, env_float("SCAN_REQUEST_JITTER_MAX_SEC", 2.5, min_value=0.0))
 SOURCE_COOLDOWN_MIN = env_float("SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC", 45.0, min_value=0.0)
 SOURCE_COOLDOWN_MAX = max(SOURCE_COOLDOWN_MIN, env_float("SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC", 150.0, min_value=0.0))
+FETCH_MAX_ATTEMPTS = env_int("SCAN_FETCH_MAX_ATTEMPTS", 3, min_value=1)
+INDEX_ALIASES = {"VNINDEX": ["VNINDEX", "^VNINDEX", "VN-INDEX"]}
 
 
 class ApiSourceLimiter:
@@ -147,6 +150,10 @@ def source_order_for_symbol(symbol: str) -> list[str]:
     return API_SOURCES[start:] + API_SOURCES[:start]
 
 
+def symbol_aliases(symbol: str) -> list[str]:
+    return INDEX_ALIASES.get(symbol.upper(), [symbol])
+
+
 def effective_total_api_rpm() -> float:
     return sum(limiter.effective_rpm for limiter in API_LIMITERS.values())
 
@@ -154,35 +161,43 @@ def effective_total_api_rpm() -> float:
 def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:
     ttl = 480 if not force_refresh else 0
     path = scan.cache_path(symbol, bars)
-    if not force_refresh and scan.is_cache_fresh(path, ttl):
+    if not force_refresh and intel.is_cache_fresh_today(path, ttl):
         try:
-            return pd.read_parquet(path)
-        except Exception:
-            pass
+            cached = intel.validate_ohlcv(pd.read_parquet(path))
+            if cached is not None and len(cached) >= 80:
+                return cached.tail(bars).reset_index(drop=True)
+        except Exception as exc:
+            logger.debug("Cannot read cache %s: %s", path, exc)
 
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-    for source in source_order_for_symbol(symbol):
-        limiter = API_LIMITERS[source]
-        limiter.wait_turn(symbol)
-        try:
-            q = scan.Quote(symbol=symbol, source=source)
-            raw = q.history(start=start, end=end, interval="1D")
-            df = scan.normalize_ohlcv(raw)
-            if df is not None and len(df) >= 80:
-                limiter.record_success()
-                df = df.tail(bars).reset_index(drop=True)
+    for attempt in range(FETCH_MAX_ATTEMPTS):
+        for alias in symbol_aliases(symbol):
+            for source in source_order_for_symbol(alias):
+                limiter = API_LIMITERS[source]
+                limiter.wait_turn(alias)
                 try:
-                    df.to_parquet(path, index=False)
-                except Exception:
-                    pass
-                return df
-            logger.warning("[%s] %s returned insufficient data", source, symbol)
-        except Exception as exc:
-            logger.warning("[%s] %s failed: %s", source, symbol, exc)
-            limiter.record_failure()
+                    q = scan.Quote(symbol=alias, source=source)
+                    raw = q.history(start=start, end=end, interval="1D")
+                    df = intel.validate_ohlcv(scan.normalize_ohlcv(raw))
+                    if df is not None and len(df) >= 80:
+                        limiter.record_success()
+                        df = df.tail(bars).reset_index(drop=True)
+                        try:
+                            df.to_parquet(path, index=False)
+                        except Exception:
+                            pass
+                        return df
+                    logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
+                except Exception as exc:
+                    logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
+                    limiter.record_failure()
+        if attempt + 1 < FETCH_MAX_ATTEMPTS:
+            wait = (2 ** attempt) + random.uniform(0, 1)
+            logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, FETCH_MAX_ATTEMPTS, wait)
+            time.sleep(wait)
     return None
 
 
