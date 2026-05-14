@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, time as dt_time
 from typing import Any
 
 import market_intel as intel
@@ -13,6 +13,34 @@ import session_plus as plus
 import telegram_format as tf
 
 _old_update_signal_tracker = intel.update_signal_tracker
+
+plus.sess.SESSION_WINDOWS["morning"].update(
+    {
+        "title": "MORNING 12H30",
+        "broad_after": dt_time(10, 30),
+        "focus_after": dt_time(12, 15),
+        "report_after": dt_time(12, 30),
+        "description": "Lay data sau 10h30, quet lai note/co manh tu 12h15 de tra report 12h30.",
+    }
+)
+plus.sess.SESSION_WINDOWS["afternoon"].update(
+    {
+        "title": "AFTERNOON 14H15",
+        "broad_after": dt_time(13, 45),
+        "focus_after": dt_time(14, 0),
+        "report_after": dt_time(14, 15),
+        "description": "Lay data sau 13h45, uu tien note/co manh sau 14h, tra report 14h15.",
+    }
+)
+plus.sess.SESSION_WINDOWS["eod"].update(
+    {
+        "title": "EOD 15H+",
+        "broad_after": dt_time(15, 5),
+        "focus_after": None,
+        "report_after": dt_time(15, 5),
+        "description": "Tong ket sau 15h, co trang thai VNINDEX.",
+    }
+)
 
 
 def update_signal_tracker_gated(
