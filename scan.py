@@ -16,7 +16,7 @@ from typing import Any
 import httpx
 import numpy as np
 import pandas as pd
-from vnstock.api.quote import Quote  # ← thêm dòng này
+from vnstock.api.quote import Quote
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,11 +40,25 @@ if VNSTOCK_API_KEY:
     os.environ.setdefault("VNSTOCK_API_KEY", VNSTOCK_API_KEY)
     os.environ.setdefault("VNDATA_API_KEY", VNSTOCK_API_KEY)
 
-BATCH_SIZE = int(os.getenv("SCAN_BATCH_SIZE", "10"))
-DELAY_MIN = int(os.getenv("SCAN_DELAY_MIN_SEC", "3"))
-DELAY_MAX = int(os.getenv("SCAN_DELAY_MAX_SEC", "25"))
-RANDOM_START_MAX = int(os.getenv("SCAN_RANDOM_START_MAX_SEC", "300"))
-REQUESTS_PER_MINUTE = int(os.getenv("SCAN_REQUESTS_PER_MINUTE", "10"))
+
+def env_int(name: str, default: int, min_value: int = 0) -> int:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        logger.warning("Invalid %s=%r, using %s", name, raw, default)
+        return default
+    return max(min_value, value)
+
+
+BATCH_SIZE = env_int("SCAN_BATCH_SIZE", 10, min_value=1)
+DELAY_MIN = env_int("SCAN_DELAY_MIN_SEC", 3, min_value=0)
+DELAY_MAX = max(DELAY_MIN, env_int("SCAN_DELAY_MAX_SEC", 25, min_value=0))
+RANDOM_START_MAX = env_int("SCAN_RANDOM_START_MAX_SEC", 300, min_value=0)
+REQUESTS_PER_MINUTE = env_int("SCAN_REQUESTS_PER_MINUTE", 10, min_value=1)
+MAX_WORKERS = env_int("SCAN_MAX_WORKERS", 3, min_value=1)
 
 
 SECTORS: dict[str, list[str]] = {
@@ -160,9 +174,13 @@ def json_load(path: Path, default: Any) -> Any:
         return default
 
 
-def json_save(path: Path, data: Any) -> None:
+def json_save(path: Path, data: Any, pretty: bool = True) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    if pretty:
+        text = json.dumps(data, ensure_ascii=False, indent=2)
+    else:
+        text = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    path.write_text(text, encoding="utf-8")
 
 
 def parse_mode() -> str:
@@ -170,6 +188,9 @@ def parse_mode() -> str:
     parser.add_argument("--mode", default=os.getenv("SCAN_MODE", "auto"))
     args = parser.parse_args()
     mode = str(args.mode).strip().lower()
+    if mode not in {"auto", "morning", "afternoon", "eod", "test"}:
+        logger.warning("Unknown mode=%r, falling back to auto", mode)
+        mode = "auto"
     if mode != "auto":
         return mode
 
@@ -226,17 +247,16 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
         except Exception:
             pass
 
-    # ← XÓA dòng from vnstock import Vnstock  # type: ignore
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-    sources = ["VCI", "TCBS",]  # giữ nguyên sources
+    sources = ["VCI", "TCBS"]
     random.shuffle(sources)
     for source in sources:
         try:
-            q = Quote(symbol=symbol, source=source)          # ← dòng mới
-            raw = q.history(start=start, end=end, interval="1D")  # ← dòng mới
+            q = Quote(symbol=symbol, source=source)
+            raw = q.history(start=start, end=end, interval="1D")
             df = normalize_ohlcv(raw)
             if df is not None and len(df) >= 80:
                 df = df.tail(bars).reset_index(drop=True)
@@ -563,6 +583,9 @@ def update_failed_breaks(results: list[ScanResult]) -> list[dict[str, Any]]:
 def save_history(symbol: str, df: pd.DataFrame, history_store: dict[str, Any], peak_store: dict[str, Any]) -> None:
     tail = df.tail(240).copy()
     tail["time"] = tail["time"].dt.strftime("%Y-%m-%d")
+    for col in ["open", "high", "low", "close"]:
+        tail[col] = tail[col].round(2)
+    tail["volume"] = tail["volume"].round(0).astype("int64")
     history_store[symbol] = tail.to_dict(orient="records")
     group = TICKER_GROUP.get(symbol, "G4")
     lookback = int(DISCOUNT_RULES[group]["lookback"])
@@ -571,6 +594,17 @@ def save_history(symbol: str, df: pd.DataFrame, history_store: dict[str, Any], p
         "lookback": lookback,
         "updated_at": datetime.now(VN_TZ).isoformat(timespec="seconds"),
     }
+
+
+def process_symbol(symbol: str, force_refresh: bool) -> tuple[str, pd.DataFrame | None, ScanResult | None]:
+    try:
+        df = fetch_ohlcv(symbol, bars=260, force_refresh=force_refresh)
+        if df is None:
+            return symbol, None, None
+        return symbol, df, analyze_symbol(symbol, df)
+    except Exception as exc:
+        logger.exception("[%s] scan failed: %s", symbol, exc)
+        return symbol, None, None
 
 
 async def scan_universe(mode: str) -> tuple[list[ScanResult], dict[str, Any], dict[str, Any]]:
@@ -587,32 +621,39 @@ async def scan_universe(mode: str) -> tuple[list[ScanResult], dict[str, Any], di
         random.shuffle(tickers)
 
     force_refresh = mode in {"eod", "test"}
-    logger.info("Mode=%s tickers=%s batch=%s rpm=%s", mode, len(tickers), BATCH_SIZE, REQUESTS_PER_MINUTE)
+    logger.info(
+        "Mode=%s tickers=%s batch=%s rpm=%s workers=%s",
+        mode,
+        len(tickers),
+        BATCH_SIZE,
+        REQUESTS_PER_MINUTE,
+        MAX_WORKERS,
+    )
 
     results: list[ScanResult] = []
     history_store: dict[str, Any] = {}
     peak_store: dict[str, Any] = json_load(DATA_DIR / "historical_peaks.json", {})
 
-    idx_df = fetch_ohlcv("VNINDEX", bars=260, force_refresh=force_refresh)
-    if idx_df is not None:
-        idx_result = analyze_symbol("VNINDEX", idx_df)
-        if idx_result:
-            results.append(idx_result)
-            save_history("VNINDEX", idx_df, history_store, peak_store)
+    _, idx_df, idx_result = await asyncio.to_thread(process_symbol, "VNINDEX", force_refresh)
+    if idx_df is not None and idx_result:
+        results.append(idx_result)
+        save_history("VNINDEX", idx_df, history_store, peak_store)
 
     min_batch_seconds = max(1, int((BATCH_SIZE / max(REQUESTS_PER_MINUTE, 1)) * 60))
     for start in range(0, len(tickers), BATCH_SIZE):
         batch_started = time.time()
         batch = tickers[start:start + BATCH_SIZE]
         logger.info("Batch %s-%s/%s: %s", start + 1, start + len(batch), len(tickers), ",".join(batch))
-        for symbol in batch:
-            df = fetch_ohlcv(symbol, bars=260, force_refresh=force_refresh)
-            if df is not None:
-                result = analyze_symbol(symbol, df)
-                if result:
-                    results.append(result)
-                    save_history(symbol, df, history_store, peak_store)
-            await asyncio.sleep(random.uniform(0.5, 2.0))
+        semaphore = asyncio.Semaphore(min(MAX_WORKERS, len(batch)))
+
+        async def run_symbol(symbol: str) -> tuple[str, pd.DataFrame | None, ScanResult | None]:
+            async with semaphore:
+                return await asyncio.to_thread(process_symbol, symbol, force_refresh)
+
+        for symbol, df, result in await asyncio.gather(*(run_symbol(symbol) for symbol in batch)):
+            if df is not None and result:
+                results.append(result)
+                save_history(symbol, df, history_store, peak_store)
 
         elapsed = time.time() - batch_started
         if start + BATCH_SIZE < len(tickers):
@@ -657,10 +698,6 @@ def build_report(mode: str, results: list[ScanResult]) -> str:
 
 async def main() -> None:
     mode = parse_mode()
-    if mode not in {"auto", "morning", "afternoon", "eod", "test"}:
-        mode = "auto"
-    if mode == "auto":
-        mode = parse_mode()
 
     if os.getenv("GITHUB_ACTIONS") and mode != "test":
         delay = random.randint(0, max(RANDOM_START_MAX, 0))
@@ -670,9 +707,9 @@ async def main() -> None:
     results, history_store, peak_store = await scan_universe(mode)
     failed_breaks = update_failed_breaks(results)
 
-    json_save(DATA_DIR / "results_latest.json", [asdict(r) for r in sorted(results, key=lambda x: x.win_score, reverse=True)])
-    json_save(DATA_DIR / "history_data.json", history_store)
-    json_save(DATA_DIR / "historical_peaks.json", peak_store)
+    json_save(DATA_DIR / "results_latest.json", [asdict(r) for r in sorted(results, key=lambda x: x.win_score, reverse=True)], pretty=False)
+    json_save(DATA_DIR / "history_data.json", history_store, pretty=False)
+    json_save(DATA_DIR / "historical_peaks.json", peak_store, pretty=False)
 
     report = build_report(mode, results)
     await send_chunks("*THIEUCUTOO REPORT*", report)
