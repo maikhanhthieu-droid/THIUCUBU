@@ -70,7 +70,7 @@ jobs:
           SESSION_RANDOM_START_MAX_SEC: "45"
           SESSION_FOCUS_LIMIT: "28"
           DRY_RUN: "0"
-        run: python session_plus.py --mode "$SCAN_MODE"
+        run: python session_gate.py --mode "$SCAN_MODE"
 
       - name: Upload data artifact
         if: always()
