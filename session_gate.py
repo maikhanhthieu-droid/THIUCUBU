@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import asdict
-from datetime import datetime, time as dt_time
+from datetime import datetime, time as dt_time, timedelta
+import os
+import random
 from typing import Any
 
 import market_intel as intel
@@ -16,20 +18,20 @@ _old_update_signal_tracker = intel.update_signal_tracker
 
 plus.sess.SESSION_WINDOWS["morning"].update(
     {
-        "title": "MORNING 12H30",
-        "broad_after": dt_time(10, 30),
-        "focus_after": dt_time(12, 15),
-        "report_after": dt_time(12, 30),
-        "description": "Lay data sau 10h30, quet lai note/co manh tu 12h15 de tra report 12h30.",
+        "title": "MORNING TRUOC 12H30",
+        "broad_after": dt_time(10, 35),
+        "focus_after": dt_time(11, 31),
+        "report_after": dt_time(12, 25),
+        "description": "Lay data sau 10h35 co jitter 0-4p, quet lai note/co manh tu 11h31, tra report truoc 12h30.",
     }
 )
 plus.sess.SESSION_WINDOWS["afternoon"].update(
     {
-        "title": "AFTERNOON 14H15",
-        "broad_after": dt_time(13, 45),
+        "title": "AFTERNOON TRUOC 14H17",
+        "broad_after": dt_time(13, 35),
         "focus_after": dt_time(14, 0),
-        "report_after": dt_time(14, 15),
-        "description": "Lay data sau 13h45, uu tien note/co manh sau 14h, tra report 14h15.",
+        "report_after": dt_time(14, 10),
+        "description": "Lay data sau 13h35 co jitter 0-4p, uu tien note/co manh sau 14h, tra report truoc 14h17.",
     }
 )
 plus.sess.SESSION_WINDOWS["eod"].update(
@@ -41,6 +43,25 @@ plus.sess.SESSION_WINDOWS["eod"].update(
         "description": "Tong ket sau 15h, co trang thai VNINDEX.",
     }
 )
+
+_old_wait_until = plus.sess.wait_until
+_JITTER_TARGETS = {dt_time(10, 35), dt_time(13, 35)}
+
+
+async def wait_until_with_data_jitter(target: dt_time | None, label: str) -> None:
+    target_dt = plus.sess.session_target_datetime(target)
+    await _old_wait_until(target, label)
+    if label != "session broad scan" or target not in _JITTER_TARGETS or target_dt is None:
+        return
+    max_jitter = max(0, int(os.getenv("SESSION_DATA_JITTER_MAX_SEC", "240")))
+    late_sec = max(0.0, (datetime.now(plus.sess.VN_TZ) - target_dt).total_seconds())
+    remaining_jitter = max(0, max_jitter - int(late_sec))
+    if remaining_jitter <= 0:
+        return
+    delay = random.randint(0, remaining_jitter)
+    if delay > 0:
+        plus.sess.logger.info("Data window jitter %ss after %s", delay, target_dt.strftime("%H:%M"))
+        await asyncio.sleep(delay)
 
 
 def update_signal_tracker_gated(
@@ -135,6 +156,7 @@ def save_session_outputs(
 
 
 intel.update_signal_tracker = update_signal_tracker_gated
+plus.sess.wait_until = wait_until_with_data_jitter
 plus.sess.build_session_report = build_session_report
 plus.sess.save_session_outputs = save_session_outputs
 plus.build_session_report = build_session_report
