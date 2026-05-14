@@ -10,8 +10,8 @@ concurrency:
 on:
   schedule:
     # Start a little early; the runner waits inside session_gate.py for the exact Vietnam-time data windows.
-    - cron: "25 3 * * 1-5" # morning: wait for 10:30 VN data, report 12:30 VN
-    - cron: "40 6 * * 1-5" # afternoon: wait for 13:45 VN data, report 14:15 VN
+    - cron: "28 3 * * 1-5" # morning: wait for 10:35 VN data + 0-4m jitter, report before 12:30 VN
+    - cron: "31 6 * * 1-5" # afternoon: wait for 13:35 VN data + 0-4m jitter, report before 14:17 VN
     - cron: "0 8 * * 1-5"  # eod: wait for 15:05 VN data
   workflow_dispatch:
     inputs:
@@ -68,17 +68,21 @@ jobs:
           SCAN_FETCH_MAX_ATTEMPTS: "3"
           SCAN_DELAY_MIN_SEC: "3"
           SCAN_DELAY_MAX_SEC: "10"
-          SESSION_RANDOM_START_MAX_SEC: "0"
+          SESSION_RANDOM_START_MAX_SEC: "45"
+          SESSION_DATA_JITTER_MAX_SEC: "240"
           SESSION_FOCUS_LIMIT: "28"
           DRY_RUN: "0"
         run: |
           MODE="$SCAN_MODE"
           if [ "$MODE" = "auto" ]; then
             case "$SCAN_SCHEDULE" in
-              "25 3 * * 1-5") MODE="morning" ;;
-              "40 6 * * 1-5") MODE="afternoon" ;;
+              "28 3 * * 1-5") MODE="morning" ;;
+              "31 6 * * 1-5") MODE="afternoon" ;;
               "0 8 * * 1-5") MODE="eod" ;;
             esac
+          fi
+          if [ "$MODE" = "afternoon" ]; then
+            export SESSION_FOCUS_LIMIT="20"
           fi
           echo "Running scanner mode=$MODE schedule=$SCAN_SCHEDULE"
           python session_gate.py --mode "$MODE"
