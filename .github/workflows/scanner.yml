@@ -45,9 +45,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: data/cache
-          key: thieucutoo-cache-${{ github.run_id }}
+          key: scan-cache-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
-            thieucutoo-cache-
+            scan-cache-${{ runner.os }}-
 
       - name: Run scanner
         env:
@@ -64,12 +64,13 @@ jobs:
           SCAN_REQUEST_JITTER_MAX_SEC: "3.0"
           SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "60"
           SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "180"
+          SCAN_FETCH_MAX_ATTEMPTS: "3"
           SCAN_DELAY_MIN_SEC: "3"
           SCAN_DELAY_MAX_SEC: "10"
           SESSION_RANDOM_START_MAX_SEC: "45"
           SESSION_FOCUS_LIMIT: "28"
           DRY_RUN: "0"
-        run: python session_scan.py --mode "$SCAN_MODE"
+        run: python session_plus.py --mode "$SCAN_MODE"
 
       - name: Upload data artifact
         if: always()
@@ -82,6 +83,9 @@ jobs:
             data/historical_peaks.json
             data/failed_breaks.json
             data/session_alerts_latest.json
+            data/signal_tracker.json
+            data/sector_rotation_history.json
+            data/portfolio_threshold_state.json
           retention-days: 30
 
       - name: Commit scanner data
@@ -90,7 +94,7 @@ jobs:
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"
           git pull --rebase --autostash || true
-          git add data/results_latest.json data/history_data.json data/historical_peaks.json data/failed_breaks.json data/session_alerts_latest.json data/notes.json data/portfolio.json || true
+          git add data/results_latest.json data/history_data.json data/historical_peaks.json data/failed_breaks.json data/session_alerts_latest.json data/signal_tracker.json data/sector_rotation_history.json data/portfolio_threshold_state.json data/notes.json data/portfolio.json || true
           if git diff --staged --quiet; then
             echo "No scanner data changes."
           else
