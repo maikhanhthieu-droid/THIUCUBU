@@ -3,9 +3,12 @@ name: Thieucutoo Weekend Opportunities
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: thieucutoo-weekend-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 on:
   schedule:
@@ -58,20 +61,27 @@ jobs:
           WEEKEND_MIN_SCORE: "60"
           WEEKEND_MIN_SECTOR_SCORE: "52"
           WEEKEND_HIGH_CONFIDENCE_SCORE: "80"
-          WEEKEND_RANDOM_START_MAX_SEC: "1800"
-          WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "1.0"
-          WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "3.5"
+          WEEKEND_RANDOM_START_MAX_SEC: "600"
+          WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "0.4"
+          WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "1.4"
           SCAN_MAX_WORKERS: "2"
-          SCAN_API_SOURCES: "VCI,TCBS"
-          SCAN_SOURCE_REQUESTS_PER_MINUTE: "6"
-          SCAN_SOURCE_USAGE_RATIO: "0.70"
-          SCAN_REQUEST_JITTER_MIN_SEC: "1.0"
-          SCAN_REQUEST_JITTER_MAX_SEC: "4.0"
-          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "90"
-          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "240"
+          SCAN_API_SOURCES: "VCI,KBS"
+          SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
+          SCAN_SOURCE_LIMITS: "VCI=15,KBS=20"
+          SCAN_SOURCE_USAGE_RATIO: "0.80"
+          SCAN_REQUEST_JITTER_MIN_SEC: "0.4"
+          SCAN_REQUEST_JITTER_MAX_SEC: "1.8"
+          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "30"
+          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "90"
           SCAN_FETCH_MAX_ATTEMPTS: "3"
+          NEAR_HIGH_LOOKBACK_BARS: "1560"
+          NEAR_HIGH_THRESHOLD_PCT: "7"
           DRY_RUN: "0"
-        run: python weekend_plus.py --mode "$WEEKEND_MODE"
+        run: |
+          python weekend_plus.py --mode "$WEEKEND_MODE"
+          if [ "$WEEKEND_MODE" != "test" ]; then
+            python near_high_filter.py --mode full
+          fi
 
       - name: Upload weekend data artifact
         if: always()
@@ -82,6 +92,7 @@ jobs:
             data/weekend_opportunities_latest.json
             data/weekend_opportunities_history.json
             data/signal_tracker.json
+            data/near_high_skiplist.json
           retention-days: 60
 
       - name: Commit weekend data
@@ -90,7 +101,7 @@ jobs:
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"
           git pull --rebase --autostash || true
-          git add data/weekend_opportunities_latest.json data/weekend_opportunities_history.json data/signal_tracker.json || true
+          git add data/weekend_opportunities_latest.json data/weekend_opportunities_history.json data/signal_tracker.json data/near_high_skiplist.json || true
           if git diff --staged --quiet; then
             echo "No weekend data changes."
           else
