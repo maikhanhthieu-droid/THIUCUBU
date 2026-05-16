@@ -5,7 +5,17 @@ import asyncio
 from typing import Any
 
 import near_high_filter
+import scan
+import scan_safe
+
+_SAFE_FETCH = scan_safe.fetch_ohlcv_safe
+
 import session_gate as gate
+
+scan_safe.fetch_ohlcv_safe = _SAFE_FETCH
+scan.fetch_ohlcv = _SAFE_FETCH
+gate.plus.scan_safe.fetch_ohlcv_safe = _SAFE_FETCH
+gate.plus.scan.fetch_ohlcv = _SAFE_FETCH
 
 _old_all_universe_symbols = gate.plus.sess.all_universe_symbols
 
