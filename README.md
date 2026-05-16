@@ -72,15 +72,28 @@ Ket qua duoc gui Telegram va luu vao:
 
 ## File danh muc
 
-Sua `data/portfolio.json` de khai bao 4 ma dang nam giu:
+Sua `data/portfolio.json` de khai bao cac ma dang nam giu:
+
+```json
+[
+  {
+    "symbol": "VNM",
+    "note": "ghi chu rieng",
+    "buy_more_score": 78,
+    "sell_score": 45,
+    "position": "holding"
+  }
+]
+```
+
+Sua `data/notes.json` de them ma can theo doi sat ngoai danh muc:
 
 ```json
 {
-  "symbol": "VNM",
-  "note": "ghi chu rieng",
-  "buy_more_score": 78,
-  "sell_score": 45,
-  "position": "holding"
+  "VCB": "ghi chu rieng",
+  "FPT": {
+    "note": "uu tien bao khi tin hieu xau/tot"
+  }
 }
 ```
 
