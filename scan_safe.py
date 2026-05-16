@@ -114,6 +114,7 @@ REQUEST_JITTER_MIN = env_float("SCAN_REQUEST_JITTER_MIN_SEC", 0.5, min_value=0.0
 REQUEST_JITTER_MAX = max(REQUEST_JITTER_MIN, env_float("SCAN_REQUEST_JITTER_MAX_SEC", 2.5, min_value=0.0))
 SOURCE_COOLDOWN_MIN = env_float("SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC", 45.0, min_value=0.0)
 SOURCE_COOLDOWN_MAX = max(SOURCE_COOLDOWN_MIN, env_float("SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC", 150.0, min_value=0.0))
+SOURCE_DISABLE_AFTER_FAILURES = env_int("SCAN_SOURCE_DISABLE_AFTER_FAILURES", 3, min_value=0)
 FETCH_MAX_ATTEMPTS = env_int("SCAN_FETCH_MAX_ATTEMPTS", 3, min_value=1)
 INDEX_ALIASES = {"VNINDEX": ["VNINDEX", "^VNINDEX", "VN-INDEX"]}
 
@@ -154,6 +155,11 @@ class ApiSourceLimiter:
     def record_failure(self) -> None:
         with self.lock:
             self.failures += 1
+            if SOURCE_DISABLE_AFTER_FAILURES and self.failures >= SOURCE_DISABLE_AFTER_FAILURES:
+                self.disabled = True
+                self.cooldown_until = 0.0
+                logger.warning("[%s] disabled after %s consecutive failure(s)", self.source, self.failures)
+                return
             multiplier = min(self.failures, 4)
             cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
             self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
