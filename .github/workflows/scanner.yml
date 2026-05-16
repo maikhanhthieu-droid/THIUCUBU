@@ -120,7 +120,7 @@ jobs:
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"
           git pull --rebase --autostash || true
-          git add data/results_latest.json data/history_data.json data/historical_peaks.json data/failed_breaks.json data/session_alerts_latest.json data/signal_tracker.json data/sector_rotation_history.json data/portfolio_threshold_state.json data/near_high_skiplist.json data/notes.json data/portfolio.json || true
+          git add data/historical_peaks.json data/failed_breaks.json data/signal_tracker.json data/sector_rotation_history.json data/portfolio_threshold_state.json data/near_high_skiplist.json data/notes.json data/portfolio.json || true
           if git diff --staged --quiet; then
             echo "No scanner data changes."
           else
