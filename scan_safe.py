@@ -47,6 +47,38 @@ def env_csv(name: str, default: str) -> list[str]:
     return [item for item in values if item]
 
 
+SUPPORTED_QUOTE_SOURCES = {"VCI", "KBS", "MSN", "FMP", "FMARKET"}
+DEFAULT_API_SOURCES = ["VCI", "KBS"]
+
+
+def filter_api_sources(sources: list[str]) -> list[str]:
+    valid: list[str] = []
+    ignored: list[str] = []
+    for source in sources:
+        if source in SUPPORTED_QUOTE_SOURCES:
+            if source not in valid:
+                valid.append(source)
+        else:
+            ignored.append(source)
+    if ignored:
+        logger.warning("Ignoring unsupported vnstock Quote source(s): %s", ",".join(ignored))
+    return valid or DEFAULT_API_SOURCES.copy()
+
+
+def quote_source_name(source: str) -> str:
+    return source.lower()
+
+
+def is_unsupported_source_error(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return (
+        "provider 'quote/" in text
+        or ("available:" in text and "quote" in text)
+        or ("chi nhan" in text and "source" in text)
+        or ("tham" in text and "source" in text)
+    )
+
+
 def parse_source_limits(raw: str, sources: list[str], default: int) -> dict[str, int]:
     limits = {source: default for source in sources}
     if not raw.strip():
@@ -71,7 +103,7 @@ def parse_source_limits(raw: str, sources: list[str], default: int) -> dict[str,
     return limits
 
 
-API_SOURCES = env_csv("SCAN_API_SOURCES", "VCI,TCBS") or ["VCI", "TCBS"]
+API_SOURCES = filter_api_sources(env_csv("SCAN_API_SOURCES", ",".join(DEFAULT_API_SOURCES)))
 SOURCE_USAGE_RATIO = env_float("SCAN_SOURCE_USAGE_RATIO", 0.70, min_value=0.05, max_value=1.0)
 SOURCE_RPM_LIMITS = parse_source_limits(
     os.getenv("SCAN_SOURCE_LIMITS", ""),
@@ -98,6 +130,7 @@ class ApiSourceLimiter:
         self.failures = 0
         self.attempts = 0
         self.successes = 0
+        self.disabled = False
         self.lock = threading.Lock()
 
     def wait_turn(self, symbol: str) -> None:
@@ -131,11 +164,18 @@ class ApiSourceLimiter:
                 self.failures,
             )
 
+    def disable(self, reason: str) -> None:
+        with self.lock:
+            self.disabled = True
+            self.cooldown_until = 0.0
+            logger.warning("[%s] disabled source: %s", self.source, reason)
+
     def snapshot(self) -> str:
         with self.lock:
+            status = "disabled" if self.disabled else "active"
             return (
                 f"{self.source}: limit {self.rpm_limit}/min, use {self.effective_rpm:.1f}/min "
-                f"({self.usage_ratio:.0%}), ok {self.successes}/{self.attempts}, fail {self.failures}"
+                f"({self.usage_ratio:.0%}), ok {self.successes}/{self.attempts}, fail {self.failures}, {status}"
             )
 
 
@@ -165,7 +205,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
         try:
             cached = intel.validate_ohlcv(pd.read_parquet(path))
             if cached is not None and len(cached) >= 80:
-                return cached.tail(bars).reset_index(drop=True)
+                return cached
         except Exception as exc:
             logger.debug("Cannot read cache %s: %s", path, exc)
 
@@ -177,9 +217,11 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
         for alias in symbol_aliases(symbol):
             for source in source_order_for_symbol(alias):
                 limiter = API_LIMITERS[source]
+                if limiter.disabled:
+                    continue
                 limiter.wait_turn(alias)
                 try:
-                    q = scan.Quote(symbol=alias, source=source)
+                    q = scan.Quote(symbol=alias, source=quote_source_name(source))
                     raw = q.history(start=start, end=end, interval="1D")
                     df = intel.validate_ohlcv(scan.normalize_ohlcv(raw))
                     if df is not None and len(df) >= 80:
@@ -193,7 +235,10 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
                 except Exception as exc:
                     logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
-                    limiter.record_failure()
+                    if is_unsupported_source_error(exc):
+                        limiter.disable(str(exc)[:180])
+                    else:
+                        limiter.record_failure()
         if attempt + 1 < FETCH_MAX_ATTEMPTS:
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, FETCH_MAX_ATTEMPTS, wait)
