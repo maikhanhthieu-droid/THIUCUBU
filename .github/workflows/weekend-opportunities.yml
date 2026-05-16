@@ -64,21 +64,22 @@ jobs:
           WEEKEND_RANDOM_START_MAX_SEC: "600"
           WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "0.4"
           WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "1.4"
-          SCAN_MAX_WORKERS: "2"
-          SCAN_API_SOURCES: "VCI,KBS"
+          SCAN_MAX_WORKERS: "3"
+          SCAN_API_SOURCES: "VCI,KBS,MSN"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
-          SCAN_SOURCE_LIMITS: "VCI=15,KBS=20"
+          SCAN_SOURCE_LIMITS: "VCI=15,KBS=20,MSN=10"
           SCAN_SOURCE_USAGE_RATIO: "0.80"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.4"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.8"
           SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "30"
           SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "90"
+          SCAN_SOURCE_DISABLE_AFTER_FAILURES: "3"
           SCAN_FETCH_MAX_ATTEMPTS: "3"
           NEAR_HIGH_LOOKBACK_BARS: "1560"
           NEAR_HIGH_THRESHOLD_PCT: "7"
           DRY_RUN: "0"
         run: |
-          python weekend_plus.py --mode "$WEEKEND_MODE"
+          python weekend_plus_safe.py --mode "$WEEKEND_MODE"
           if [ "$WEEKEND_MODE" != "test" ]; then
             python near_high_filter.py --mode full
           fi
