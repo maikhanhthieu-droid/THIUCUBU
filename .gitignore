@@ -5,3 +5,14 @@ __pycache__/
 *.pyc
 data/cache/
 *.parquet
+data/failed_breaks.json
+data/historical_peaks.json
+data/history_data.json
+data/near_high_skiplist.json
+data/portfolio_threshold_state.json
+data/results_latest.json
+data/sector_rotation_history.json
+data/session_alerts_latest.json
+data/signal_tracker.json
+data/weekend_opportunities_history.json
+data/weekend_opportunities_latest.json
