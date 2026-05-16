@@ -3,6 +3,9 @@ name: Thieucutoo Scanner
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: thieucutoo-scanner-${{ github.ref }}
   cancel-in-progress: true
@@ -57,21 +60,23 @@ jobs:
           SCAN_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
           SCAN_EVENT_NAME: ${{ github.event_name }}
           SCAN_SCHEDULE: ${{ github.event.schedule }}
-          SCAN_BATCH_SIZE: "8"
+          SCAN_BATCH_SIZE: "12"
           SCAN_MAX_WORKERS: "2"
-          SCAN_API_SOURCES: "VCI,TCBS"
-          SCAN_SOURCE_REQUESTS_PER_MINUTE: "8"
-          SCAN_SOURCE_USAGE_RATIO: "0.70"
-          SCAN_REQUEST_JITTER_MIN_SEC: "0.8"
-          SCAN_REQUEST_JITTER_MAX_SEC: "3.0"
-          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "60"
-          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "180"
+          SCAN_API_SOURCES: "VCI,KBS"
+          SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
+          SCAN_SOURCE_LIMITS: "VCI=15,KBS=20"
+          SCAN_SOURCE_USAGE_RATIO: "0.80"
+          SCAN_REQUEST_JITTER_MIN_SEC: "0.3"
+          SCAN_REQUEST_JITTER_MAX_SEC: "1.5"
+          SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "30"
+          SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC: "90"
           SCAN_FETCH_MAX_ATTEMPTS: "3"
-          SCAN_DELAY_MIN_SEC: "3"
-          SCAN_DELAY_MAX_SEC: "10"
+          SCAN_DELAY_MIN_SEC: "1"
+          SCAN_DELAY_MAX_SEC: "4"
           SESSION_RANDOM_START_MAX_SEC: "45"
-          SESSION_DATA_JITTER_MAX_SEC: "240"
+          SESSION_DATA_JITTER_MAX_SEC: "60"
           SESSION_FOCUS_LIMIT: "28"
+          SCAN_SKIP_NEAR_HIGH_WEEKDAY: "1"
           DRY_RUN: "0"
         run: |
           MODE="$SCAN_MODE"
@@ -89,7 +94,7 @@ jobs:
             export SESSION_FOCUS_LIMIT="20"
           fi
           echo "Running scanner mode=$MODE schedule=$SCAN_SCHEDULE"
-          python session_gate.py --mode "$MODE"
+          python session_gate_near_high.py --mode "$MODE"
 
       - name: Upload data artifact
         if: always()
@@ -105,6 +110,7 @@ jobs:
             data/signal_tracker.json
             data/sector_rotation_history.json
             data/portfolio_threshold_state.json
+            data/near_high_skiplist.json
           retention-days: 30
 
       - name: Commit scanner data
@@ -113,7 +119,7 @@ jobs:
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"
           git pull --rebase --autostash || true
-          git add data/results_latest.json data/history_data.json data/historical_peaks.json data/failed_breaks.json data/session_alerts_latest.json data/signal_tracker.json data/sector_rotation_history.json data/portfolio_threshold_state.json data/notes.json data/portfolio.json || true
+          git add data/results_latest.json data/history_data.json data/historical_peaks.json data/failed_breaks.json data/session_alerts_latest.json data/signal_tracker.json data/sector_rotation_history.json data/portfolio_threshold_state.json data/near_high_skiplist.json data/notes.json data/portfolio.json || true
           if git diff --staged --quiet; then
             echo "No scanner data changes."
           else
