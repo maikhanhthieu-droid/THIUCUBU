@@ -89,6 +89,7 @@ def format_market_card(market: Any, state: str) -> str:
 
 
 def format_sector_line(line: str) -> str:
+    # Sector summaries already include Telegram Markdown, so keep them untouched.
     return line
 
 
