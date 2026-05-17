@@ -370,7 +370,7 @@ def save_session_outputs(
     watch_items: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
     ordered = sorted(results.values(), key=lambda item: item.win_score, reverse=True)
-    failed_breaks = scan.update_failed_breaks(ordered)
+    failed_breaks = scan.update_failed_breaks([r for r in ordered if r.symbol != "VNINDEX"])
     scan.json_save(DATA_DIR / "results_latest.json", [asdict(r) for r in ordered], pretty=False)
     scan.json_save(DATA_DIR / "history_data.json", history_store, pretty=False)
     scan.json_save(DATA_DIR / "historical_peaks.json", peak_store, pretty=False)
