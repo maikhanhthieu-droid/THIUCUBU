@@ -107,6 +107,11 @@ def patch_scan_metadata() -> None:
 
 def all_universe_symbols_with_near_high_filter(mode: str, watch_items: dict[str, dict[str, Any]]) -> list[str]:
     symbols = _old_all_universe_symbols(mode, watch_items)
+    valid_symbols = [s for s in symbols if 3 <= len(str(s).strip()) <= 12]
+    dropped = sorted(set(symbols) - set(valid_symbols))
+    if dropped:
+        gate.plus.sess.logger.warning("Dropping invalid ticker(s): %s", ",".join(dropped))
+    symbols = valid_symbols
     if mode in {"test", "eod"}:
         return symbols
     filtered, skipped = near_high_filter.filter_symbols(symbols, protected=set(watch_items))
