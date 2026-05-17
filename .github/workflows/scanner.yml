@@ -61,11 +61,11 @@ jobs:
           SCAN_EVENT_NAME: ${{ github.event_name }}
           SCAN_SCHEDULE: ${{ github.event.schedule }}
           SCAN_BATCH_SIZE: "12"
-          SCAN_MAX_WORKERS: "2"
-          SCAN_API_SOURCES: "VCI,KBS"
+          SCAN_MAX_WORKERS: "3"
+          SCAN_API_SOURCES: "VCI,KBS,DNSE"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
-          SCAN_SOURCE_LIMITS: "VCI=10,KBS=10"
-          SCAN_SOURCE_USAGE_RATIO: "0.80"
+          SCAN_SOURCE_LIMITS: "VCI=20,KBS=20,DNSE=15"
+          SCAN_SOURCE_USAGE_RATIO: "0.78"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.3"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.5"
           SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "30"
