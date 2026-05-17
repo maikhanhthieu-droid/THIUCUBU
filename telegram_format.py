@@ -89,7 +89,7 @@ def format_market_card(market: Any, state: str) -> str:
 
 
 def format_sector_line(line: str) -> str:
-    return str(line or "").strip()
+    return line
 
 
 def format_opportunity_card(item: Any) -> str:
