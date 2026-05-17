@@ -21,6 +21,15 @@ def fetch_ohlcv_no_exit(*args: Any, **kwargs: Any):
 
 _SAFE_FETCH = fetch_ohlcv_no_exit
 
+_ORIGINAL_UPDATE_FAILED_BREAKS = scan.update_failed_breaks
+
+
+def update_failed_breaks_no_index(results: list[scan.ScanResult]) -> list[dict[str, Any]]:
+    return _ORIGINAL_UPDATE_FAILED_BREAKS([r for r in results if getattr(r, "symbol", "") != "VNINDEX"])
+
+
+scan.update_failed_breaks = update_failed_breaks_no_index
+
 import session_gate as gate
 
 scan_safe.fetch_ohlcv_safe = _SAFE_FETCH
