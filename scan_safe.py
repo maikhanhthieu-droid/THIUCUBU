@@ -171,7 +171,11 @@ class ApiSourceLimiter:
     def record_failure(self, is_rate_limit: bool = False) -> None:
         with self.lock:
             self.failures += 1
-            if SOURCE_DISABLE_AFTER_FAILURES and self.failures >= SOURCE_DISABLE_AFTER_FAILURES:
+            if (
+                not is_rate_limit
+                and SOURCE_DISABLE_AFTER_FAILURES
+                and self.failures >= SOURCE_DISABLE_AFTER_FAILURES
+            ):
                 self.disabled = True
                 self.cooldown_until = 0.0
                 logger.warning("[%s] disabled after %s consecutive failure(s)", self.source, self.failures)
@@ -263,7 +267,10 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
                 except SystemExit as exc:
                     logger.warning("[%s] %s/%s stopped by vnstock quota: %s", source, symbol, alias, str(exc).splitlines()[0])
-                    limiter.disable(str(exc)[:180])
+                    if is_rate_limit_error(exc):
+                        limiter.record_failure(is_rate_limit=True)
+                    else:
+                        limiter.disable(str(exc)[:180])
                 except Exception as exc:
                     logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
                     if is_unsupported_source_error(exc):
