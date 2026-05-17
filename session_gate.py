@@ -25,6 +25,24 @@ plus.sess.SESSION_WINDOWS["morning"].update(
         "description": "Lay data sau 10h35 co jitter 0-4p, quet lai note/co manh tu 11h31, tra report truoc 12h30.",
     }
 )
+plus.sess.SESSION_WINDOWS["morning_focus"].update(
+    {
+        "title": "MORNING QUICK 10H31",
+        "broad_after": dt_time(10, 31),
+        "focus_after": None,
+        "report_after": None,
+        "description": "Quet nhanh note/co manh/gan break tu lan truoc, toi da 40 ma; qua 20p thi huy job.",
+    }
+)
+plus.sess.SESSION_WINDOWS["morning_broad"].update(
+    {
+        "title": "MORNING BROAD 11H16",
+        "broad_after": dt_time(11, 16),
+        "focus_after": None,
+        "report_after": None,
+        "description": "Quet rong buoi sang sau 11h16, cap nhat co manh va gan break.",
+    }
+)
 plus.sess.SESSION_WINDOWS["afternoon"].update(
     {
         "title": "AFTERNOON TRUOC 14H17",
@@ -32,6 +50,24 @@ plus.sess.SESSION_WINDOWS["afternoon"].update(
         "focus_after": dt_time(14, 0),
         "report_after": dt_time(14, 10),
         "description": "Lay data sau 13h35 co jitter 0-4p, uu tien note/co manh sau 14h, tra report truoc 14h17.",
+    }
+)
+plus.sess.SESSION_WINDOWS["afternoon_focus"].update(
+    {
+        "title": "AFTERNOON QUICK 13H31",
+        "broad_after": dt_time(13, 31),
+        "focus_after": None,
+        "report_after": None,
+        "description": "Quet nhanh note/co manh/gan break dau phien chieu, toi da 40 ma; qua 20p thi huy job.",
+    }
+)
+plus.sess.SESSION_WINDOWS["afternoon_broad"].update(
+    {
+        "title": "AFTERNOON BROAD 14H01",
+        "broad_after": dt_time(14, 1),
+        "focus_after": None,
+        "report_after": None,
+        "description": "Quet rong phien chieu sau 14h01, uu tien co co the mua ban kip.",
     }
 )
 plus.sess.SESSION_WINDOWS["eod"].update(
@@ -124,7 +160,7 @@ def build_session_report(
     if rotation_alerts:
         lines += ["", "*SECTOR ROTATION*"]
         lines += rotation_alerts[:8]
-    if mode in {"eod", "afternoon"}:
+    if mode == "eod" or plus.sess.base_mode(mode) == "afternoon":
         lines += ["", "*FAILED BREAK / CAN NE*"]
         lines += [plus.with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
     if mode == "eod":
