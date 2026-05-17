@@ -13,6 +13,11 @@ from vnstock.api.quote import Quote
 import market_intel as intel
 import scan
 
+try:
+    from vietfin import vf
+except Exception:  # pragma: no cover - optional source adapter
+    vf = None
+
 logger = logging.getLogger("thieucutoo.safe")
 
 
@@ -48,8 +53,9 @@ def env_csv(name: str, default: str) -> list[str]:
     return [item for item in values if item]
 
 
-SUPPORTED_QUOTE_SOURCES = {"VCI", "KBS", "MSN", "FMP", "FMARKET"}
-DEFAULT_API_SOURCES = ["VCI", "KBS"]
+SUPPORTED_QUOTE_SOURCES = {"VCI", "KBS", "DNSE"}
+DEFAULT_API_SOURCES = ["VCI", "KBS", "DNSE"]
+INDEX_CAPABLE_SOURCES = {"VCI", "KBS"}
 
 
 def filter_api_sources(sources: list[str]) -> list[str]:
@@ -68,6 +74,25 @@ def filter_api_sources(sources: list[str]) -> list[str]:
 
 def quote_source_name(source: str) -> str:
     return source.lower()
+
+
+def fetch_source_history(source: str, symbol: str, start: str, end: str) -> pd.DataFrame:
+    if source == "DNSE":
+        if vf is None:
+            raise RuntimeError("vietfin is not installed, cannot use DNSE source")
+        packet = vf.equity.price.historical(
+            symbol=symbol.lower(),
+            provider="dnse",
+            start_date=start,
+            end_date=end,
+            interval="1d",
+        )
+        df = packet.to_df()
+        if df is not None and "time" not in df.columns and "date" not in df.columns:
+            df = df.reset_index()
+        return df
+    q = Quote(symbol=symbol, source=quote_source_name(source))
+    return q.history(start=start, end=end, interval="1D")
 
 
 def is_unsupported_source_error(exc: Exception) -> bool:
@@ -228,8 +253,12 @@ API_LIMITERS = {
 
 
 def source_order_for_symbol(symbol: str) -> list[str]:
-    start = sum(ord(char) for char in symbol.upper()) % len(API_SOURCES)
-    return API_SOURCES[start:] + API_SOURCES[:start]
+    sources = API_SOURCES
+    if symbol.upper() in INDEX_ALIASES or symbol.upper().startswith("^"):
+        sources = [source for source in API_SOURCES if source in INDEX_CAPABLE_SOURCES]
+    sources = sources or API_SOURCES
+    start = sum(ord(char) for char in symbol.upper()) % len(sources)
+    return sources[start:] + sources[:start]
 
 
 def symbol_aliases(symbol: str) -> list[str]:
@@ -263,8 +292,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     continue
                 limiter.wait_turn(alias)
                 try:
-                    q = Quote(symbol=alias, source=quote_source_name(source))
-                    raw = q.history(start=start, end=end, interval="1D")
+                    raw = fetch_source_history(source, alias, start, end)
                     df = intel.validate_ohlcv(scan.normalize_ohlcv(raw))
                     if df is not None and len(df) >= 80:
                         limiter.record_success()
