@@ -7,19 +7,21 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
-  group: thieucutoo-scanner-${{ github.ref }}
+  group: thieucutoo-scanner-${{ github.ref }}-${{ github.event.schedule || github.event.inputs.mode || 'manual' }}
   cancel-in-progress: true
 
 on:
   schedule:
     # Start a little early; the runner waits inside session_gate.py for the exact Vietnam-time data windows.
-    - cron: "28 3 * * 1-5" # morning: wait for 10:35 VN data + 0-4m jitter, report before 12:30 VN
-    - cron: "31 6 * * 1-5" # afternoon: wait for 13:35 VN data + 0-4m jitter, report before 14:17 VN
+    - cron: "31 3 * * 1-5" # morning focus: <=40 note/strong/near-break symbols, cancel after 20m
+    - cron: "16 4 * * 1-5" # morning broad: full scan from 11:16 VN
+    - cron: "31 6 * * 1-5" # afternoon focus: <=40 note/strong/near-break symbols, cancel after 20m
+    - cron: "1 7 * * 1-5"  # afternoon broad: full scan from 14:01 VN
     - cron: "0 8 * * 1-5"  # eod: wait for 15:05 VN data
   workflow_dispatch:
     inputs:
       mode:
-        description: "test | morning | afternoon | eod | auto"
+        description: "test | morning_focus | morning_broad | afternoon_focus | afternoon_broad | eod | auto"
         required: false
         default: "test"
 
@@ -77,24 +79,48 @@ jobs:
           SESSION_RANDOM_START_MAX_SEC: "45"
           SESSION_DATA_JITTER_MAX_SEC: "60"
           SESSION_FOCUS_LIMIT: "28"
+          SESSION_QUICK_LIMIT: "40"
           SCAN_SKIP_NEAR_HIGH_WEEKDAY: "1"
           DRY_RUN: "0"
         run: |
           MODE="$SCAN_MODE"
           if [ "$MODE" = "auto" ]; then
             case "$SCAN_SCHEDULE" in
-              "28 3 * * 1-5") MODE="morning" ;;
-              "31 6 * * 1-5") MODE="afternoon" ;;
+              "31 3 * * 1-5") MODE="morning_focus" ;;
+              "16 4 * * 1-5") MODE="morning_broad" ;;
+              "31 6 * * 1-5") MODE="afternoon_focus" ;;
+              "1 7 * * 1-5") MODE="afternoon_broad" ;;
               "0 8 * * 1-5") MODE="eod" ;;
             esac
           fi
           if [ "$MODE" = "auto" ] && [ "$SCAN_EVENT_NAME" = "workflow_dispatch" ]; then
             MODE="test"
           fi
-          if [ "$MODE" = "afternoon" ]; then
+          if [ "$MODE" = "afternoon_broad" ]; then
             export SESSION_FOCUS_LIMIT="20"
           fi
           echo "Running scanner mode=$MODE schedule=$SCAN_SCHEDULE"
+          if [ "$MODE" = "morning_focus" ] || [ "$MODE" = "afternoon_focus" ]; then
+            NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
+            NOW_VN_NUM=$((10#$NOW_VN))
+            if [ "$MODE" = "morning_focus" ] && [ "$NOW_VN_NUM" -gt 1051 ]; then
+              echo "Skip stale morning_focus at VN time $NOW_VN; main broad job is protected."
+              exit 0
+            fi
+            if [ "$MODE" = "afternoon_focus" ] && [ "$NOW_VN_NUM" -gt 1351 ]; then
+              echo "Skip stale afternoon_focus at VN time $NOW_VN; main broad job is protected."
+              exit 0
+            fi
+            set +e
+            timeout 20m python session_gate_near_high.py --mode "$MODE"
+            CODE=$?
+            set -e
+            if [ "$CODE" -eq 124 ]; then
+              echo "$MODE timed out after 20 minutes; cancelled to protect broad/EOD jobs."
+              exit 0
+            fi
+            exit "$CODE"
+          fi
           python session_gate_near_high.py --mode "$MODE"
 
       - name: Upload data artifact
