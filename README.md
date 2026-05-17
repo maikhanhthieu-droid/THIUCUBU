@@ -76,6 +76,9 @@ Ket qua duoc gui Telegram va luu vao:
 
 Sua `data/portfolio.json` de khai bao cac ma dang nam giu:
 
+Luu y: file nay bat buoc la JSON array/list `[...]`, khong phai single object `{...}`;
+neu khai bao sai dang thi danh muc se khong duoc dua vao focus scan.
+
 ```json
 [
   {
