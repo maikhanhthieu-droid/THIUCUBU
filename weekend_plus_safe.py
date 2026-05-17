@@ -108,6 +108,11 @@ async def main() -> None:
         await asyncio.sleep(delay)
 
     tickers = plus.weekend.build_universe(mode)
+    valid_tickers = [s for s in tickers if 3 <= len(str(s).strip()) <= 12]
+    dropped = sorted(set(tickers) - set(valid_tickers))
+    if dropped:
+        plus.weekend.logger.warning("Dropping invalid ticker(s): %s", ",".join(dropped))
+    tickers = valid_tickers
     random.shuffle(tickers)
     workers = int(os.getenv("WEEKEND_MAX_WORKERS", "3"))
     workers = max(1, min(workers, len(tickers) or 1))
