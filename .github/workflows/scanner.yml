@@ -80,6 +80,8 @@ jobs:
           SESSION_DATA_JITTER_MAX_SEC: "60"
           SESSION_FOCUS_LIMIT: "28"
           SESSION_QUICK_LIMIT: "40"
+          SESSION_QUICK_SIGNAL_LIMIT: "30"
+          SESSION_QUICK_NOTE_LIMIT: "10"
           SCAN_SKIP_NEAR_HIGH_WEEKDAY: "1"
           DRY_RUN: "0"
         run: |
