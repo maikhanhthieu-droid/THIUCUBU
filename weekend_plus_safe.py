@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import argparse
+import os
+import random
 from typing import Any
 
 import scan
@@ -90,5 +93,68 @@ plus.weekend.fetch_fundamental = fetch_fundamental_safe
 plus.weekend.build_report = build_report_compat
 
 
+async def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", default=os.getenv("WEEKEND_MODE", "full"))
+    args = parser.parse_args()
+    mode = str(args.mode).strip().lower()
+    if mode not in {"full", "test"}:
+        plus.weekend.logger.warning("Unknown mode=%r, using full", mode)
+        mode = "full"
+
+    if os.getenv("GITHUB_ACTIONS") and mode != "test":
+        delay = random.randint(0, max(plus.weekend.RANDOM_START_MAX, 0))
+        plus.weekend.logger.info("Weekend random start delay %ss", delay)
+        await asyncio.sleep(delay)
+
+    tickers = plus.weekend.build_universe(mode)
+    random.shuffle(tickers)
+    workers = int(os.getenv("WEEKEND_MAX_WORKERS", "3"))
+    workers = max(1, min(workers, len(tickers) or 1))
+    plus.weekend.logger.info("Weekend opportunity scan mode=%s tickers=%s workers=%s", mode, len(tickers), workers)
+
+    force_refresh = mode == "test"
+    semaphore = asyncio.Semaphore(workers)
+
+    async def analyze_one(index: int, symbol: str):
+        async with semaphore:
+            plus.weekend.logger.info("[%s/%s] Analyze %s", index, len(tickers), symbol)
+            try:
+                return await asyncio.to_thread(plus.weekend.fetch_symbol_packet, symbol, force_refresh)
+            except SystemExit as exc:
+                plus.weekend.logger.warning("[%s] stopped by quota: %s", symbol, str(exc).splitlines()[0])
+                return None
+            except Exception as exc:
+                plus.weekend.logger.exception("[%s] weekend scan failed: %s", symbol, exc)
+                return None
+
+    packets = [
+        packet
+        for packet in await asyncio.gather(*(analyze_one(index, symbol) for index, symbol in enumerate(tickers, start=1)))
+        if packet is not None
+    ]
+    missing_fundamental = [str(packet["symbol"]) for packet in packets if packet.get("fundamental") is None]
+    if missing_fundamental:
+        plus.weekend.logger.warning(
+            "Weekend fundamental missing for %s/%s symbols: %s",
+            len(missing_fundamental),
+            len(packets),
+            ",".join(missing_fundamental[:30]),
+        )
+
+    sectors = plus.weekend.build_sector_snapshots(packets)
+    opportunities = plus.weekend.build_opportunities(packets, sectors)
+    near_high = (
+        plus.weekend.build_near_high_snapshots(packets)
+        if plus.weekend.UPDATE_NEAR_HIGH and mode != "test"
+        else []
+    )
+    plus.weekend.save_outputs(opportunities, sectors, near_high)
+
+    report = plus.weekend.build_report(opportunities, sectors, mode, near_high, missing_fundamental)
+    await scan.send_chunks("*THIEUCUTOO WEEKEND*", report)
+    plus.weekend.logger.info("Weekend opportunities found: %s near_high_skip=%s", len(opportunities), len(near_high))
+
+
 if __name__ == "__main__":
-    asyncio.run(plus.weekend.main())
+    asyncio.run(main())
