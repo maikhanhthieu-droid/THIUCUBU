@@ -95,6 +95,16 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return any(needle in text for needle in needles)
 
 
+def is_invalid_symbol_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return (
+        "invalid symbol" in text
+        or "symbol format" in text
+        or "symbol must be between" in text
+        or "symbol is not recognized" in text
+    )
+
+
 def parse_source_limits(raw: str, sources: list[str], default: int) -> dict[str, int]:
     limits = {source: default for source in sources}
     if not raw.strip():
@@ -275,6 +285,8 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
                     if is_unsupported_source_error(exc):
                         limiter.disable(str(exc)[:180])
+                    elif is_invalid_symbol_error(exc):
+                        logger.warning("[%s] %s/%s invalid symbol, skipping source penalty", source, symbol, alias)
                     else:
                         limiter.record_failure(is_rate_limit=is_rate_limit_error(exc))
         if attempt + 1 < FETCH_MAX_ATTEMPTS:
