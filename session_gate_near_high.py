@@ -21,6 +21,18 @@ def fetch_ohlcv_no_exit(*args: Any, **kwargs: Any):
 
 _SAFE_FETCH = fetch_ohlcv_no_exit
 
+_ORIGINAL_DISABLE_SOURCE = scan_safe.ApiSourceLimiter.disable
+
+
+def disable_source_with_rate_cooldown(self: scan_safe.ApiSourceLimiter, reason: str) -> None:
+    if scan_safe.is_rate_limit_error(Exception(reason)):
+        self.record_failure(is_rate_limit=True)
+        return
+    _ORIGINAL_DISABLE_SOURCE(self, reason)
+
+
+scan_safe.ApiSourceLimiter.disable = disable_source_with_rate_cooldown
+
 _ORIGINAL_UPDATE_FAILED_BREAKS = scan.update_failed_breaks
 
 
