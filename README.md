@@ -56,7 +56,9 @@ Ket qua focus gan nhat duoc luu vao `data/session_alerts_latest.json`.
 Workflow `Thieucutoo Weekend Opportunities` chay luc 08:30 va 14:30 Thu bay gio Viet Nam
 de co them mot vong loc sau, va co the chay tay voi mode `test` hoac `full`.
 
-Script `weekend_opportunities.py` la ban TradingAgents-lite cho CK VN:
+Workflow goi `weekend_plus_safe.py`, file nay boc `weekend_plus.py` va `weekend_opportunities.py`
+de chong quota kill, them format Telegram dep hon va chay weekend scan song song co gioi han.
+Script `weekend_opportunities.py` la loi TradingAgents-lite cho CK VN:
 
 - Valuation analyst: so PE/PB cua tung ma voi median nganh.
 - Fundamental analyst: check ROE/ROA, EPS, bien loi nhuan, no vay.
