@@ -42,6 +42,8 @@ def env_int(name: str, default: int, min_value: int = 0) -> int:
 SESSION_RANDOM_START_MAX = env_int("SESSION_RANDOM_START_MAX_SEC", 45, min_value=0)
 SESSION_FOCUS_LIMIT = env_int("SESSION_FOCUS_LIMIT", 28, min_value=5)
 SESSION_QUICK_LIMIT = env_int("SESSION_QUICK_LIMIT", 40, min_value=10)
+SESSION_QUICK_SIGNAL_LIMIT = env_int("SESSION_QUICK_SIGNAL_LIMIT", 30, min_value=5)
+SESSION_QUICK_NOTE_LIMIT = env_int("SESSION_QUICK_NOTE_LIMIT", 10, min_value=0)
 
 
 SESSION_WINDOWS = {
@@ -260,18 +262,23 @@ def add_symbol_once(target: list[str], seen: set[str], symbol: Any) -> None:
 
 def previous_focus_symbols(watch_items: dict[str, dict[str, Any]], limit: int | None = None) -> list[str]:
     limit = limit or SESSION_QUICK_LIMIT
-    symbols: list[str] = []
+    note_limit = min(SESSION_QUICK_NOTE_LIMIT, limit)
+    signal_limit = min(SESSION_QUICK_SIGNAL_LIMIT, max(limit - note_limit, 0))
+    signal_symbols: list[str] = []
+    note_symbols: list[str] = []
     seen: set[str] = set()
-    for symbol in watch_items:
-        add_symbol_once(symbols, seen, symbol)
 
     latest = scan.json_load(DATA_DIR / "session_alerts_latest.json", {})
     if isinstance(latest, dict):
         for symbol in latest.get("focus_symbols", []):
-            add_symbol_once(symbols, seen, symbol)
+            add_symbol_once(signal_symbols, seen, symbol)
+            if len(signal_symbols) >= signal_limit:
+                break
         for item in latest.get("top", []):
             if isinstance(item, dict):
-                add_symbol_once(symbols, seen, item.get("symbol"))
+                add_symbol_once(signal_symbols, seen, item.get("symbol"))
+            if len(signal_symbols) >= signal_limit:
+                break
 
     results_latest = scan.json_load(DATA_DIR / "results_latest.json", [])
     if isinstance(results_latest, list):
@@ -281,11 +288,16 @@ def previous_focus_symbols(watch_items: dict[str, dict[str, Any]], limit: int | 
             score = int(item.get("win_score") or 0)
             near_break = bool(item.get("near_break"))
             if score >= 72 or (score >= 62 and near_break):
-                add_symbol_once(symbols, seen, item.get("symbol"))
-            if len(symbols) >= limit:
+                add_symbol_once(signal_symbols, seen, item.get("symbol"))
+            if len(signal_symbols) >= signal_limit:
                 break
 
-    return symbols[:limit]
+    for symbol in watch_items:
+        add_symbol_once(note_symbols, seen, symbol)
+        if len(note_symbols) >= note_limit:
+            break
+
+    return (signal_symbols + note_symbols)[:limit]
 
 
 def configure_safe_api() -> None:
@@ -496,7 +508,14 @@ async def main() -> None:
 
     if is_quick_mode(mode):
         focus_symbols = previous_focus_symbols(watch_items, SESSION_QUICK_LIMIT)
-        logger.info("%s quick symbols=%s: %s", mode, len(focus_symbols), ",".join(focus_symbols))
+        logger.info(
+            "%s quick symbols=%s signal_cap=%s note_cap=%s: %s",
+            mode,
+            len(focus_symbols),
+            SESSION_QUICK_SIGNAL_LIMIT,
+            SESSION_QUICK_NOTE_LIMIT,
+            ",".join(focus_symbols),
+        )
         quick_results = await scan_symbols(focus_symbols, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-quick")
         results.update(quick_results)
     elif mode == "eod" or is_broad_mode(mode):
