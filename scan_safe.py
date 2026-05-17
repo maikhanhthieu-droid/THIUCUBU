@@ -80,6 +80,21 @@ def is_unsupported_source_error(exc: Exception) -> bool:
     )
 
 
+def is_rate_limit_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    needles = (
+        "429",
+        "too many request",
+        "too many requests",
+        "rate limit",
+        "ratelimit",
+        "quota",
+        "exceeded",
+        "temporarily blocked",
+    )
+    return any(needle in text for needle in needles)
+
+
 def parse_source_limits(raw: str, sources: list[str], default: int) -> dict[str, int]:
     limits = {source: default for source in sources}
     if not raw.strip():
@@ -153,7 +168,7 @@ class ApiSourceLimiter:
             self.successes += 1
             self.failures = 0
 
-    def record_failure(self) -> None:
+    def record_failure(self, is_rate_limit: bool = False) -> None:
         with self.lock:
             self.failures += 1
             if SOURCE_DISABLE_AFTER_FAILURES and self.failures >= SOURCE_DISABLE_AFTER_FAILURES:
@@ -161,14 +176,20 @@ class ApiSourceLimiter:
                 self.cooldown_until = 0.0
                 logger.warning("[%s] disabled after %s consecutive failure(s)", self.source, self.failures)
                 return
-            multiplier = min(self.failures, 4)
+            if is_rate_limit:
+                multiplier = min(self.failures, 4)
+                reason = "rate-limit"
+            else:
+                multiplier = min(max(self.failures * 0.3, 0.5), 2.0)
+                reason = "transient"
             cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
             self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
             logger.warning(
-                "[%s] cooling down %.1fs after %s consecutive failure(s)",
+                "[%s] cooling down %.1fs after %s %s failure(s)",
                 self.source,
                 cooldown,
                 self.failures,
+                reason,
             )
 
     def disable(self, reason: str) -> None:
@@ -248,7 +269,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     if is_unsupported_source_error(exc):
                         limiter.disable(str(exc)[:180])
                     else:
-                        limiter.record_failure()
+                        limiter.record_failure(is_rate_limit=is_rate_limit_error(exc))
         if attempt + 1 < FETCH_MAX_ATTEMPTS:
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, FETCH_MAX_ATTEMPTS, wait)
