@@ -91,7 +91,7 @@ def projection_line(result: scan.ScanResult, mode: str, metrics: dict[str, dict[
         action = "CANH BREAK"
     else:
         action = "WATCH"
-    timing = "sau 14h uu tien du lieu moi" if mode == "afternoon" else "cho xac nhan sau moc phien"
+    timing = "sau 14h uu tien du lieu moi" if sess.base_mode(mode) == "afternoon" else "cho xac nhan sau moc phien"
     return with_intel(tf.format_stock_card(result, action=action, timing=timing), metrics.get(result.symbol))
 
 
@@ -131,7 +131,7 @@ def build_session_report(mode: str, results: dict[str, scan.ScanResult], focus_s
     if rotation_alerts:
         lines += ["", "*SECTOR ROTATION*"]
         lines += rotation_alerts[:8]
-    if mode in {"eod", "afternoon"}:
+    if mode == "eod" or sess.base_mode(mode) == "afternoon":
         lines += ["", "*FAILED BREAK / CAN NE*"]
         lines += [with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
     if mode == "eod":
