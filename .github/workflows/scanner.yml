@@ -103,20 +103,35 @@ jobs:
           if [ "$MODE" = "morning_focus" ] || [ "$MODE" = "afternoon_focus" ]; then
             NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
             NOW_VN_NUM=$((10#$NOW_VN))
-            if [ "$MODE" = "morning_focus" ] && [ "$NOW_VN_NUM" -gt 1051 ]; then
-              echo "Skip stale morning_focus at VN time $NOW_VN; main broad job is protected."
+            QUICK_DEADLINE="1051"
+            NEXT_MAIN="11:16"
+            if [ "$MODE" = "afternoon_focus" ]; then
+              QUICK_DEADLINE="1351"
+              NEXT_MAIN="14:01"
+            fi
+            if [ "$NOW_VN_NUM" -gt "$QUICK_DEADLINE" ]; then
+              echo "Skip stale $MODE at VN time $NOW_VN; next main job $NEXT_MAIN is protected."
               exit 0
             fi
-            if [ "$MODE" = "afternoon_focus" ] && [ "$NOW_VN_NUM" -gt 1351 ]; then
-              echo "Skip stale afternoon_focus at VN time $NOW_VN; main broad job is protected."
+            TODAY_VN="$(TZ=Asia/Ho_Chi_Minh date +%Y-%m-%d)"
+            DEADLINE_TEXT="${QUICK_DEADLINE:0:2}:${QUICK_DEADLINE:2:2}:00"
+            DEADLINE_EPOCH="$(TZ=Asia/Ho_Chi_Minh date -d "$TODAY_VN $DEADLINE_TEXT" +%s)"
+            NOW_EPOCH="$(TZ=Asia/Ho_Chi_Minh date +%s)"
+            QUICK_TIMEOUT_SEC=$((DEADLINE_EPOCH - NOW_EPOCH))
+            if [ "$QUICK_TIMEOUT_SEC" -le 0 ]; then
+              echo "Skip $MODE because quick deadline $DEADLINE_TEXT VN already passed."
               exit 0
             fi
+            if [ "$QUICK_TIMEOUT_SEC" -gt 1200 ]; then
+              QUICK_TIMEOUT_SEC=1200
+            fi
+            echo "$MODE quick timeout=${QUICK_TIMEOUT_SEC}s deadline=$DEADLINE_TEXT VN next_main=$NEXT_MAIN"
             set +e
-            timeout 20m python session_gate_near_high.py --mode "$MODE"
+            timeout "${QUICK_TIMEOUT_SEC}s" python session_gate_near_high.py --mode "$MODE"
             CODE=$?
             set -e
             if [ "$CODE" -eq 124 ]; then
-              echo "$MODE timed out after 20 minutes; cancelled to protect broad/EOD jobs."
+              echo "$MODE timed out before quick deadline $DEADLINE_TEXT VN; cancelled to protect broad/EOD jobs."
               exit 0
             fi
             exit "$CODE"
