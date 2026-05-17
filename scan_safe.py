@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta
 
 import pandas as pd
+from vnstock.api.quote import Quote
 
 import market_intel as intel
 import scan
@@ -227,7 +228,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     continue
                 limiter.wait_turn(alias)
                 try:
-                    q = scan.Quote(symbol=alias, source=quote_source_name(source))
+                    q = Quote(symbol=alias, source=quote_source_name(source))
                     raw = q.history(start=start, end=end, interval="1D")
                     df = intel.validate_ohlcv(scan.normalize_ohlcv(raw))
                     if df is not None and len(df) >= 80:
@@ -239,6 +240,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             pass
                         return df
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
+                except SystemExit as exc:
+                    logger.warning("[%s] %s/%s stopped by vnstock quota: %s", source, symbol, alias, str(exc).splitlines()[0])
+                    limiter.disable(str(exc)[:180])
                 except Exception as exc:
                     logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
                     if is_unsupported_source_error(exc):
