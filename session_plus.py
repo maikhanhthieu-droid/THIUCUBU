@@ -65,7 +65,7 @@ def portfolio_lines(results: dict[str, scan.ScanResult], watch_items: dict[str, 
         buy_more = int(item.get("buy_more_score", 78))
         sell = int(item.get("sell_score", 45))
         score = adv_score(result, metrics)
-        if result.failed_break or result.win_score <= sell:
+        if result.failed_break or result.win_score < sell:
             action = "BAT LOI / GIAM RUI RO"
         elif score >= buy_more and result.near_break and not result.failed_break:
             action = "TIN HIEU DEP / CANH MUA THEM"
