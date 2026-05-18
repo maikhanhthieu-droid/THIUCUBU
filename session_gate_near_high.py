@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+import sys
 from typing import Any
 
 import near_high_filter
@@ -36,13 +38,45 @@ scan_safe.ApiSourceLimiter.disable = disable_source_with_rate_cooldown
 _ORIGINAL_UPDATE_FAILED_BREAKS = scan.update_failed_breaks
 
 
+def is_test_mode() -> bool:
+    args = " ".join(sys.argv).lower()
+    return os.getenv("SCAN_MODE", "").strip().lower() == "test" or "--mode test" in args or "--mode=test" in args
+
+
 def update_failed_breaks_no_index(results: list[scan.ScanResult]) -> list[dict[str, Any]]:
+    if is_test_mode():
+        return []
     return _ORIGINAL_UPDATE_FAILED_BREAKS([r for r in results if getattr(r, "symbol", "") != "VNINDEX"])
 
 
 scan.update_failed_breaks = update_failed_breaks_no_index
 
 import session_gate as gate
+
+_ORIGINAL_FORMAT_ADVANCED_LINES = gate.intel.format_advanced_lines
+
+
+def format_advanced_lines_with_gate(metrics: dict[str, Any] | None) -> list[str]:
+    lines = _ORIGINAL_FORMAT_ADVANCED_LINES(metrics)
+    if not metrics:
+        return lines
+    gate_info = metrics.get("gate") or {}
+    if not gate_info or gate_info.get("allowed", True):
+        return lines
+    reason = str(gate_info.get("reason") or "loc tin hieu")
+    for idx, line in enumerate(lines):
+        if not line.startswith("HT ") or " | Size:" not in line:
+            continue
+        prefix, rest = line.split(" | Size:", 1)
+        flags = ""
+        if " | " in rest:
+            flags = rest[rest.find(" | "):]
+        lines[idx] = f"{prefix} | Size: CHUA MUA / THEO DOI ({reason}){flags}"
+        break
+    return lines
+
+
+gate.intel.format_advanced_lines = format_advanced_lines_with_gate
 
 scan_safe.fetch_ohlcv_safe = _SAFE_FETCH
 scan.fetch_ohlcv = _SAFE_FETCH
