@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import os
 import sys
+from datetime import datetime
 from typing import Any
 
 import near_high_filter
@@ -43,15 +44,62 @@ def is_test_mode() -> bool:
     return os.getenv("SCAN_MODE", "").strip().lower() == "test" or "--mode test" in args or "--mode=test" in args
 
 
+def normalize_failed_break_symbol(value: Any) -> str:
+    return str(value or "").replace("`", "").upper().strip()
+
+
+def normalize_failed_breaks(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    cleaned: list[dict[str, Any]] = []
+    for item in records:
+        if not isinstance(item, dict):
+            continue
+        symbol = normalize_failed_break_symbol(item.get("symbol"))
+        if not symbol:
+            continue
+        normalized = dict(item)
+        normalized["symbol"] = symbol
+        cleaned.append(normalized)
+    return cleaned
+
+
+def latest_failed_breaks(records: list[dict[str, Any]], only_date: str | None = None, limit: int = 10) -> list[dict[str, Any]]:
+    seen: dict[str, dict[str, Any]] = {}
+    for item in normalize_failed_breaks(records):
+        if only_date and item.get("date") != only_date:
+            continue
+        seen[str(item["symbol"])] = item
+    return sorted(seen.values(), key=lambda item: str(item.get("date", "")), reverse=True)[:limit]
+
+
 def update_failed_breaks_no_index(results: list[scan.ScanResult]) -> list[dict[str, Any]]:
     if is_test_mode():
         return []
-    return _ORIGINAL_UPDATE_FAILED_BREAKS([r for r in results if getattr(r, "symbol", "") != "VNINDEX"])
+    records = _ORIGINAL_UPDATE_FAILED_BREAKS([r for r in results if getattr(r, "symbol", "") != "VNINDEX"])
+    cleaned = normalize_failed_breaks(records)
+    scan.json_save(scan.DATA_DIR / "failed_breaks.json", cleaned)
+    return cleaned
 
 
 scan.update_failed_breaks = update_failed_breaks_no_index
 
 import session_gate as gate
+
+
+def fmt_price_vn(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    try:
+        price = float(value)
+    except (TypeError, ValueError):
+        return "n/a"
+    if price == 0:
+        return "n/a"
+    if abs(price) >= 1000:
+        return f"{price:,.0f}"
+    return f"{price:.2f}"
+
+
+gate.intel.fmt_price = fmt_price_vn
 
 _ORIGINAL_FORMAT_ADVANCED_LINES = gate.intel.format_advanced_lines
 
@@ -190,7 +238,7 @@ def save_session_outputs_compat(
     regime: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     try:
-        return _old_save_session_outputs(
+        failed_breaks = _old_save_session_outputs(
             mode,
             results,
             history_store,
@@ -201,7 +249,11 @@ def save_session_outputs_compat(
             regime,
         )
     except TypeError:
-        return _old_save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)
+        failed_breaks = _old_save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)
+    if mode in {"eod", "test"}:
+        return []
+    today = datetime.now(scan.VN_TZ).date().isoformat()
+    return latest_failed_breaks(failed_breaks, only_date=today)
 
 
 patch_scan_metadata()
