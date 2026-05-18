@@ -22,20 +22,21 @@ Moi lan chay co random start ngan, chia nguon API, dung khoang 70% quota moi ngu
 
 ## Co che chong limit API
 
-Scanner chia luong request qua `SCAN_API_SOURCES`, mac dinh `VCI,TCBS`.
+Scanner chia luong request qua `SCAN_API_SOURCES`, mac dinh `VCI,KBS,DNSE`.
 Moi ma co mot nguon uu tien rieng va nguon con lai lam fallback. Truoc moi request co
 sleep + jitter ngau nhien, neu mot nguon loi se cooldown ngau nhien truoc khi dung tiep.
 Workflow phien chay qua `session_scan.py`, ben trong van dung `scan_safe.py` de boc lop bao ve API quanh scanner goc.
 
-Mac dinh moi nguon duoc khai bao `SCAN_SOURCE_REQUESTS_PER_MINUTE=10` va chi dung
-`SCAN_SOURCE_USAGE_RATIO=0.70`, tuc khoang 7 request/phut/nguon.
+Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
+`SCAN_SOURCE_USAGE_RATIO=0.78`, tuc chi dung khoang 75-80% quota khai bao moi nguon.
+`TCBS` khong duoc dung mac dinh vi source nay co the khong duoc `vnstock` 4.x ho tro on dinh.
 
 Cac bien co the chinh trong workflow:
 
-- `SCAN_API_SOURCES`: danh sach nguon, vi du `VCI,TCBS`.
+- `SCAN_API_SOURCES`: danh sach nguon, vi du `VCI,KBS,DNSE`.
 - `SCAN_SOURCE_REQUESTS_PER_MINUTE`: tran request/phut cua moi nguon.
-- `SCAN_SOURCE_LIMITS`: tran rieng tung nguon, vi du `VCI=10,TCBS=8`.
-- `SCAN_SOURCE_USAGE_RATIO`: ty le dung quota, mac dinh `0.70`.
+- `SCAN_SOURCE_LIMITS`: tran rieng tung nguon, vi du `VCI=20,KBS=20,DNSE=15`.
+- `SCAN_SOURCE_USAGE_RATIO`: ty le dung quota, mac dinh workflow `0.78`.
 - `SCAN_REQUEST_JITTER_MIN_SEC` / `SCAN_REQUEST_JITTER_MAX_SEC`: jitter truoc moi request.
 - `SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC` / `SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC`: cooldown khi nguon loi.
 - `SCAN_MAX_WORKERS`: so luong worker song song, nen <= so nguon API.
