@@ -22,6 +22,20 @@ def score_label(score: int) -> str:
     return "YEU"
 
 
+def format_price(value: Any) -> str:
+    if value is None:
+        return "n/a"
+    try:
+        price = float(value)
+    except (TypeError, ValueError):
+        return "n/a"
+    if price == 0:
+        return "n/a"
+    if abs(price) >= 1000:
+        return f"{price:,.0f}"
+    return f"{price:.2f}"
+
+
 def format_stock_card(r: Any, action: str | None = None, note: str = "", timing: str = "") -> str:
     setup = setup_label(getattr(r, "setup", ""))
     status = clean_text(action or score_label(int(getattr(r, "win_score", 0)))).upper()
@@ -29,7 +43,7 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
     note = clean_text(note)
     timing = clean_text(timing)
     close = getattr(r, "close", 0.0)
-    close_text = f"{float(close):.2f}" if close else "n/a"
+    close_text = format_price(close)
     obv = "OBV up" if getattr(r, "obv_up", False) else "OBV flat"
     flags = []
     if getattr(r, "near_break", False):
@@ -60,7 +74,7 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
     rr = getattr(r, "risk_reward", None) or getattr(r, "rr", None)
     if sl and tp:
         rr_text = f" | R/R {float(rr):.1f}x" if rr is not None else ""
-        lines.append(f"SL {float(sl):.2f} | TP {float(tp):.2f}{rr_text}")
+        lines.append(f"SL {format_price(sl)} | TP {format_price(tp)}{rr_text}")
     return "\n".join(lines) + "\n"
 
 
@@ -69,7 +83,7 @@ def format_market_card(market: Any, state: str) -> str:
         return "*VNINDEX*\nChua co du lieu."
     reason = clean_text(getattr(market, "reason", ""))
     close = getattr(market, "close", None)
-    close_text = f"VNI {float(close):.0f}pt" if close else "VNI n/a"
+    close_text = f"VNI {float(close):,.0f}pt" if close else "VNI n/a"
     above_ema34 = getattr(market, "above_ema34", None)
     ema34_text = ""
     if above_ema34 is not None:
