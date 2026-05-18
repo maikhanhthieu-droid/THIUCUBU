@@ -107,6 +107,29 @@ jobs:
             export SESSION_FOCUS_LIMIT="20"
           fi
           echo "Running scanner mode=$MODE schedule=$SCAN_SCHEDULE"
+          if [ "$SCAN_EVENT_NAME" = "schedule" ]; then
+            NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
+            NOW_VN_NUM=$((10#$NOW_VN))
+            skip_outside_window() {
+              label="$1"
+              start="$2"
+              end="$3"
+              note="$4"
+              start_num=$((10#$start))
+              end_num=$((10#$end))
+              if [ "$NOW_VN_NUM" -lt "$start_num" ] || [ "$NOW_VN_NUM" -gt "$end_num" ]; then
+                echo "Skip stale $label at VN time $NOW_VN; allowed ${start:0:2}:${start:2:2}-${end:0:2}:${end:2:2} VN ($note)."
+                exit 0
+              fi
+            }
+            case "$MODE" in
+              morning_focus) skip_outside_window "$MODE" "1020" "1051" "protect 11:16 broad scan" ;;
+              morning_broad) skip_outside_window "$MODE" "1110" "1215" "must return before 12:30" ;;
+              afternoon_focus) skip_outside_window "$MODE" "1320" "1351" "protect 14:01 broad scan" ;;
+              afternoon_broad) skip_outside_window "$MODE" "1355" "1412" "must return near 14:17" ;;
+              eod) skip_outside_window "$MODE" "1500" "2100" "EOD window" ;;
+            esac
+          fi
           if [ "$MODE" = "morning_focus" ] || [ "$MODE" = "afternoon_focus" ]; then
             NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
             NOW_VN_NUM=$((10#$NOW_VN))
@@ -181,7 +204,11 @@ jobs:
             data/portfolio.json
           do
             if [ -e "$path" ]; then
-              git add "$path"
+              if git check-ignore -q "$path"; then
+                git add -f "$path"
+              else
+                git add "$path"
+              fi
             fi
           done
           if git diff --staged --quiet; then
