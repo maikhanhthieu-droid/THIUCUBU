@@ -11,6 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/scanner.yml"
   schedule:
     # Start a little early; the runner waits inside session_gate.py for the exact Vietnam-time data windows.
     - cron: "31 3 * * 1-5" # morning focus: <=40 note/strong/near-break symbols, cancel after 20m
