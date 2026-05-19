@@ -21,13 +21,12 @@ on:
     # Keep this workflow file touched without skip-ci when schedules need to be re-registered by GitHub.
     - cron: "31 3 * * 1-5" # morning focus: <=40 note/strong/near-break symbols, cancel after 20m
     - cron: "16 4 * * 1-5" # morning broad: full scan from 11:16 VN
-    - cron: "31 6 * * 1-5" # afternoon focus: <=40 note/strong/near-break symbols, cancel after 20m
-    - cron: "1 7 * * 1-5"  # afternoon broad: full scan from 14:01 VN
+    - cron: "1 7 * * 1-5"  # afternoon: one full scan from 14:01 VN
     - cron: "0 8 * * 1-5"  # eod: wait for 15:05 VN data
   workflow_dispatch:
     inputs:
       mode:
-        description: "test | morning_focus | morning_broad | afternoon_focus | afternoon_broad | eod | auto"
+        description: "test | morning_focus | morning_broad | afternoon_broad | eod | auto"
         required: false
         default: "test"
 
@@ -96,7 +95,6 @@ jobs:
             case "$SCAN_SCHEDULE" in
               "31 3 * * 1-5") MODE="morning_focus" ;;
               "16 4 * * 1-5") MODE="morning_broad" ;;
-              "31 6 * * 1-5") MODE="afternoon_focus" ;;
               "1 7 * * 1-5") MODE="afternoon_broad" ;;
               "0 8 * * 1-5") MODE="eod" ;;
             esac
@@ -126,20 +124,15 @@ jobs:
             case "$MODE" in
               morning_focus) skip_outside_window "$MODE" "1020" "1051" "protect 11:16 broad scan" ;;
               morning_broad) skip_outside_window "$MODE" "1110" "1215" "must return before 12:30" ;;
-              afternoon_focus) skip_outside_window "$MODE" "1320" "1351" "protect 14:01 broad scan" ;;
               afternoon_broad) skip_outside_window "$MODE" "1355" "1412" "must return near 14:17" ;;
               eod) skip_outside_window "$MODE" "1500" "2100" "EOD window" ;;
             esac
           fi
-          if [ "$MODE" = "morning_focus" ] || [ "$MODE" = "afternoon_focus" ]; then
+          if [ "$MODE" = "morning_focus" ]; then
             NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
             NOW_VN_NUM=$((10#$NOW_VN))
             QUICK_DEADLINE="1051"
             NEXT_MAIN="11:16"
-            if [ "$MODE" = "afternoon_focus" ]; then
-              QUICK_DEADLINE="1351"
-              NEXT_MAIN="14:01"
-            fi
             if [ "$NOW_VN_NUM" -gt "$QUICK_DEADLINE" ]; then
               echo "Skip stale $MODE at VN time $NOW_VN; next main job $NEXT_MAIN is protected."
               exit 0
