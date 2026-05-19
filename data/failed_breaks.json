@@ -82,5 +82,11 @@
     "date": "2026-05-19",
     "score": 21,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI"
+  },
+  {
+    "symbol": "VND",
+    "date": "2026-05-19",
+    "score": 44,
+    "reason": "discount 38.0% >= target 35%; nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
