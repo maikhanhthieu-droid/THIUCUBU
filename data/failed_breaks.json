@@ -58,5 +58,29 @@
     "date": "2026-05-14",
     "score": 44,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "BID",
+    "date": "2026-05-19",
+    "score": 47,
+    "reason": "discount 22.2% >= target 15%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "HNG",
+    "date": "2026-05-19",
+    "score": 26,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "FOX",
+    "date": "2026-05-19",
+    "score": 22,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "VEA",
+    "date": "2026-05-19",
+    "score": 21,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI"
   }
 ]
