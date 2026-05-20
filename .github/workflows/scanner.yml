@@ -7,7 +7,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
-  group: thieucutoo-scanner-${{ github.ref }}-${{ github.event.schedule || github.event.inputs.mode || 'manual' }}
+  group: thieucutoo-scanner-${{ github.ref }}
   cancel-in-progress: true
 
 on:
@@ -19,14 +19,13 @@ on:
   schedule:
     # Start a little early; the runner waits inside session_gate.py for the exact Vietnam-time data windows.
     # Keep this workflow file touched without skip-ci when schedules need to be re-registered by GitHub.
-    - cron: "31 3 * * 1-5" # morning focus: <=40 note/strong/near-break symbols, cancel after 20m
-    - cron: "16 4 * * 1-5" # morning broad: full scan from 11:16 VN
-    - cron: "1 7 * * 1-5"  # afternoon: one full scan from 14:01 VN
+    - cron: "31 3 * * 1-5" # morning broad: full scan from 10:31 VN, target before 11:15
+    - cron: "40 6 * * 1-5" # afternoon split: 13:46 broad-nonfocus, 14:03 focus, target before 14:15
     - cron: "0 8 * * 1-5"  # eod: wait for 15:05 VN data
   workflow_dispatch:
     inputs:
       mode:
-        description: "test | morning_focus | morning_broad | afternoon_broad | eod | auto"
+        description: "test | morning_broad | afternoon_split | eod | auto"
         required: false
         default: "test"
 
@@ -93,72 +92,37 @@ jobs:
           MODE="$SCAN_MODE"
           if [ "$MODE" = "auto" ]; then
             case "$SCAN_SCHEDULE" in
-              "31 3 * * 1-5") MODE="morning_focus" ;;
-              "16 4 * * 1-5") MODE="morning_broad" ;;
-              "1 7 * * 1-5") MODE="afternoon_broad" ;;
+              "31 3 * * 1-5") MODE="morning_broad" ;;
+              "40 6 * * 1-5") MODE="afternoon_split" ;;
               "0 8 * * 1-5") MODE="eod" ;;
             esac
           fi
           if [ "$MODE" = "auto" ] && [ "$SCAN_EVENT_NAME" = "workflow_dispatch" ]; then
             MODE="test"
           fi
-          if [ "$MODE" = "afternoon_broad" ]; then
-            export SESSION_FOCUS_LIMIT="20"
+          if [ "$MODE" = "afternoon_split" ]; then
+            export SESSION_FOCUS_LIMIT="24"
           fi
           echo "Running scanner mode=$MODE schedule=$SCAN_SCHEDULE"
           if [ "$SCAN_EVENT_NAME" = "schedule" ]; then
             NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
             NOW_VN_NUM=$((10#$NOW_VN))
-            skip_outside_window() {
-              label="$1"
-              start="$2"
-              end="$3"
-              note="$4"
-              start_num=$((10#$start))
-              end_num=$((10#$end))
-              if [ "$NOW_VN_NUM" -lt "$start_num" ] || [ "$NOW_VN_NUM" -gt "$end_num" ]; then
-                echo "Skip stale $label at VN time $NOW_VN; allowed ${start:0:2}:${start:2:2}-${end:0:2}:${end:2:2} VN ($note)."
-                exit 0
-              fi
-            }
-            case "$MODE" in
-              morning_focus) skip_outside_window "$MODE" "1020" "1051" "protect 11:16 broad scan" ;;
-              morning_broad) skip_outside_window "$MODE" "1110" "1215" "must return before 12:30" ;;
-              afternoon_broad) skip_outside_window "$MODE" "1355" "1412" "must return near 14:17" ;;
-              eod) skip_outside_window "$MODE" "1500" "2100" "EOD window" ;;
-            esac
-          fi
-          if [ "$MODE" = "morning_focus" ]; then
-            NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
-            NOW_VN_NUM=$((10#$NOW_VN))
-            QUICK_DEADLINE="1051"
-            NEXT_MAIN="11:16"
-            if [ "$NOW_VN_NUM" -gt "$QUICK_DEADLINE" ]; then
-              echo "Skip stale $MODE at VN time $NOW_VN; next main job $NEXT_MAIN is protected."
+            LIVE_MODE=""
+            if [ "$NOW_VN_NUM" -ge 930 ] && [ "$NOW_VN_NUM" -le 1230 ]; then
+              LIVE_MODE="morning_broad"
+            elif [ "$NOW_VN_NUM" -ge 1330 ] && [ "$NOW_VN_NUM" -lt 1500 ]; then
+              LIVE_MODE="afternoon_split"
+            elif [ "$NOW_VN_NUM" -ge 1500 ] && [ "$NOW_VN_NUM" -le 2100 ]; then
+              LIVE_MODE="eod"
+            fi
+            if [ -z "$LIVE_MODE" ]; then
+              echo "Skip schedule at VN time $NOW_VN because market/report window is closed."
               exit 0
             fi
-            TODAY_VN="$(TZ=Asia/Ho_Chi_Minh date +%Y-%m-%d)"
-            DEADLINE_TEXT="${QUICK_DEADLINE:0:2}:${QUICK_DEADLINE:2:2}:00"
-            DEADLINE_EPOCH="$(TZ=Asia/Ho_Chi_Minh date -d "$TODAY_VN $DEADLINE_TEXT" +%s)"
-            NOW_EPOCH="$(TZ=Asia/Ho_Chi_Minh date +%s)"
-            QUICK_TIMEOUT_SEC=$((DEADLINE_EPOCH - NOW_EPOCH))
-            if [ "$QUICK_TIMEOUT_SEC" -le 0 ]; then
-              echo "Skip $MODE because quick deadline $DEADLINE_TEXT VN already passed."
-              exit 0
+            if [ "$MODE" != "$LIVE_MODE" ]; then
+              echo "Remap stale schedule mode=$MODE to live mode=$LIVE_MODE at VN time $NOW_VN."
+              MODE="$LIVE_MODE"
             fi
-            if [ "$QUICK_TIMEOUT_SEC" -gt 1200 ]; then
-              QUICK_TIMEOUT_SEC=1200
-            fi
-            echo "$MODE quick timeout=${QUICK_TIMEOUT_SEC}s deadline=$DEADLINE_TEXT VN next_main=$NEXT_MAIN"
-            set +e
-            timeout "${QUICK_TIMEOUT_SEC}s" python session_gate_near_high.py --mode "$MODE"
-            CODE=$?
-            set -e
-            if [ "$CODE" -eq 124 ]; then
-              echo "$MODE timed out before quick deadline $DEADLINE_TEXT VN; cancelled to protect broad/EOD jobs."
-              exit 0
-            fi
-            exit "$CODE"
           fi
           python session_gate_near_high.py --mode "$MODE"
 

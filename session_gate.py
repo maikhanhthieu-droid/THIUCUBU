@@ -36,11 +36,11 @@ plus.sess.SESSION_WINDOWS["morning_focus"].update(
 )
 plus.sess.SESSION_WINDOWS["morning_broad"].update(
     {
-        "title": "MORNING BROAD 11H16",
-        "broad_after": dt_time(11, 16),
+        "title": "MORNING BROAD 10H31",
+        "broad_after": dt_time(10, 31),
         "focus_after": None,
         "report_after": None,
-        "description": "Quet rong buoi sang sau 11h16, cap nhat co manh va gan break.",
+        "description": "Quet rong buoi sang sau 10h31, muc tieu tra report truoc 11h15.",
     }
 )
 plus.sess.SESSION_WINDOWS["afternoon"].update(
@@ -70,6 +70,13 @@ plus.sess.SESSION_WINDOWS["afternoon_broad"].update(
         "description": "Quet rong phien chieu sau 14h01, uu tien co co the mua ban kip.",
     }
 )
+plus.sess.SESSION_WINDOWS["afternoon_split"] = {
+    "title": "AFTERNOON SPLIT 13H46/14H03",
+    "broad_after": dt_time(13, 46),
+    "focus_after": dt_time(14, 3),
+    "report_after": None,
+    "description": "13h46 quet cac ma chua uu tien, 14h03 quet lai co sang/note/co manh, muc tieu tra truoc 14h15.",
+}
 plus.sess.SESSION_WINDOWS["eod"].update(
     {
         "title": "EOD 15H+",
@@ -81,7 +88,7 @@ plus.sess.SESSION_WINDOWS["eod"].update(
 )
 
 _old_wait_until = plus.sess.wait_until
-_JITTER_TARGETS = {dt_time(10, 35), dt_time(13, 35)}
+_JITTER_TARGETS = {dt_time(10, 31), dt_time(10, 35), dt_time(13, 35), dt_time(13, 46)}
 
 
 async def wait_until_with_data_jitter(target: dt_time | None, label: str) -> None:

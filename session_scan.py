@@ -62,11 +62,11 @@ SESSION_WINDOWS = {
         "description": "Quet nhanh note/co manh/gan break tu lan quet truoc, toi da 40 ma.",
     },
     "morning_broad": {
-        "title": "MORNING BROAD 11H16",
-        "broad_after": dt_time(11, 16),
+        "title": "MORNING BROAD 10H31",
+        "broad_after": dt_time(10, 31),
         "focus_after": None,
         "report_after": None,
-        "description": "Quet rong buoi sang sau 11h16, cap nhat co manh va gan break.",
+        "description": "Quet rong buoi sang sau 10h31, muc tieu tra report truoc 11h15.",
     },
     "afternoon": {
         "title": "AFTERNOON 14H15",
@@ -88,6 +88,13 @@ SESSION_WINDOWS = {
         "focus_after": None,
         "report_after": None,
         "description": "Quet rong phien chieu sau 14h01, uu tien co co the mua ban kip.",
+    },
+    "afternoon_split": {
+        "title": "AFTERNOON SPLIT 13H46/14H03",
+        "broad_after": dt_time(13, 46),
+        "focus_after": dt_time(14, 3),
+        "report_after": None,
+        "description": "13h46 quet cac ma chua uu tien, 14h03 quet lai co sang/note/co manh, muc tieu tra truoc 14h15.",
     },
     "eod": {
         "title": "EOD 15H+",
@@ -318,13 +325,18 @@ async def scan_symbols(
     history_store: dict[str, Any],
     peak_store: dict[str, Any],
     label: str,
+    stop_at: dt_time | None = None,
 ) -> dict[str, scan.ScanResult]:
     results: dict[str, scan.ScanResult] = {}
     if not symbols:
         return results
 
+    stop_at_dt = session_target_datetime(stop_at)
     min_batch_seconds = max(1, int((scan.BATCH_SIZE / max(scan.REQUESTS_PER_MINUTE, 1)) * 60))
     for start in range(0, len(symbols), scan.BATCH_SIZE):
+        if stop_at_dt is not None and datetime.now(VN_TZ) >= stop_at_dt:
+            logger.warning("%s reached stop time %s, keeping partial broad results", label, stop_at_dt.strftime("%H:%M"))
+            break
         batch_started = time.time()
         batch = symbols[start:start + scan.BATCH_SIZE]
         logger.info("%s batch %s-%s/%s: %s", label, start + 1, start + len(batch), len(symbols), ",".join(batch))
@@ -342,6 +354,12 @@ async def scan_symbols(
         elapsed = time.time() - batch_started
         if start + scan.BATCH_SIZE < len(symbols):
             delay = max(0, min_batch_seconds - elapsed) + random.uniform(scan.DELAY_MIN, scan.DELAY_MAX)
+            if stop_at_dt is not None:
+                remaining = (stop_at_dt - datetime.now(VN_TZ)).total_seconds()
+                if remaining <= 0:
+                    logger.warning("%s stop time hit after batch, skipping remaining symbols", label)
+                    break
+                delay = min(delay, max(0.0, remaining))
             logger.info("%s sleep %.1fs before next batch", label, delay)
             await asyncio.sleep(delay)
 
@@ -389,7 +407,7 @@ def portfolio_alert_lines(results: dict[str, scan.ScanResult], watch_items: dict
         if r is None:
             lines.append(f"`{symbol}` NO_DATA | {note}")
             continue
-        if r.failed_break or r.win_score <= sell:
+        if r.failed_break or r.win_score < sell:
             action = "BAT LOI / GIAM RUI RO"
         elif r.win_score >= buy_more and r.near_break and not r.failed_break:
             action = "TIN HIEU DEP / CANH MUA THEM"
@@ -523,6 +541,35 @@ async def main() -> None:
         broad_results = await scan_symbols(scan_list, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-broad")
         results.update(broad_results)
         focus_symbols = sorted(set(watch_symbols) | set(strong_candidates(results, watch_symbols)))
+    elif mode == "afternoon_split":
+        focus_symbols = previous_focus_symbols(watch_items, SESSION_QUICK_LIMIT)
+        focus_set = set(focus_symbols)
+        scan_list = [symbol for symbol in universe if symbol not in focus_set]
+        logger.info(
+            "%s broad_nonfocus=%s focus_1403=%s: %s",
+            mode,
+            len(scan_list),
+            len(focus_symbols),
+            ",".join(focus_symbols),
+        )
+        broad_results = await scan_symbols(
+            scan_list,
+            force_refresh=True,
+            history_store=history_store,
+            peak_store=peak_store,
+            label=f"{mode}-broad-nonfocus",
+            stop_at=window["focus_after"],
+        )
+        results.update(broad_results)
+        await wait_until(window["focus_after"], "afternoon 14:03 priority scan")
+        focus_results = await scan_symbols(
+            focus_symbols,
+            force_refresh=True,
+            history_store=history_store,
+            peak_store=peak_store,
+            label=f"{mode}-focus-1403",
+        )
+        results.update(focus_results)
     else:
         scan_list = [symbol for symbol in universe if symbol not in watch_symbols]
         broad_results = await scan_symbols(scan_list, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-broad")
@@ -537,8 +584,9 @@ async def main() -> None:
     report = build_session_report(mode, results, focus_symbols, watch_items)
     await scan.send_chunks("*THIEUCUTOO SESSION*", report)
 
-    if failed_breaks and mode != "eod":
-        recent = failed_breaks[-10:]
+    today = datetime.now(VN_TZ).date().isoformat()
+    recent = scan.latest_failed_breaks(failed_breaks, limit=10, only_date=today)
+    if recent and mode not in {"eod", "test"}:
         text = "*FAILED BREAK WATCH 25D*\n" + "\n".join(
             f"`{x['symbol']}` {x['date']} score {x.get('score')}: {x.get('reason','')}" for x in recent
         )
