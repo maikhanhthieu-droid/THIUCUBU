@@ -81,9 +81,9 @@ def update_failed_breaks_no_index(results: list[scan.ScanResult]) -> list[dict[s
 
 
 scan.update_failed_breaks = update_failed_breaks_no_index
+scan.latest_failed_breaks = latest_failed_breaks
 
 import session_gate as gate
-
 
 def fmt_price_vn(value: Any) -> str:
     if value is None:
