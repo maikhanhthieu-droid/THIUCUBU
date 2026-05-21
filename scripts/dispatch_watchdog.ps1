@@ -7,6 +7,7 @@ param(
     [string]$Workflow = "scanner.yml",
     [string]$Branch = "main",
     [int]$LookbackMinutes = 20,
+    [int]$MaxActiveMinutes = 35,
     [int]$MaxDispatchesInWindow = 2
 )
 
@@ -71,8 +72,13 @@ $dispatchCount = @($recent | Where-Object { $_.event -eq "workflow_dispatch" }).
 
 if ($active.Count -gt 0) {
     $run = $active[0]
-    Write-Host "OK: scanner already active for $Mode. run=$($run.databaseId) status=$($run.status) url=$($run.url)"
-    exit 0
+    $runStarted = [DateTimeOffset]::Parse($run.createdAt).LocalDateTime
+    $activeMinutes = ($now - $runStarted).TotalMinutes
+    if ($activeMinutes -lt $MaxActiveMinutes) {
+        Write-Host "OK: scanner already active for $Mode. run=$($run.databaseId) status=$($run.status) age=$([Math]::Round($activeMinutes, 1))m url=$($run.url)"
+        exit 0
+    }
+    Write-Host "WATCHDOG: active scanner run=$($run.databaseId) for $Mode is stale age=$([Math]::Round($activeMinutes, 1))m >= ${MaxActiveMinutes}m. Dispatching replacement..."
 }
 
 if ($success.Count -gt 0) {
