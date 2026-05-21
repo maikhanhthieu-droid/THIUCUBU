@@ -45,6 +45,10 @@ SESSION_QUICK_LIMIT = env_int("SESSION_QUICK_LIMIT", 40, min_value=10)
 SESSION_QUICK_SIGNAL_LIMIT = env_int("SESSION_QUICK_SIGNAL_LIMIT", 30, min_value=5)
 SESSION_QUICK_NOTE_LIMIT = env_int("SESSION_QUICK_NOTE_LIMIT", 10, min_value=0)
 SCAN_SYMBOL_TIMEOUT = env_int("SCAN_SYMBOL_TIMEOUT_SEC", 90, min_value=10)
+SCAN_RETRY_FAILED_DELAY_MIN = env_int("SCAN_RETRY_FAILED_DELAY_MIN_SEC", 20, min_value=0)
+SCAN_RETRY_FAILED_DELAY_MAX = env_int("SCAN_RETRY_FAILED_DELAY_MAX_SEC", 60, min_value=0)
+SCAN_RETRY_FAILED_MAX_SYMBOLS = env_int("SCAN_RETRY_FAILED_MAX_SYMBOLS", 24, min_value=0)
+SCAN_FAILED_SYMBOLS: set[str] = set()
 
 
 SESSION_WINDOWS = {
@@ -327,12 +331,14 @@ async def scan_symbols(
     peak_store: dict[str, Any],
     label: str,
     stop_at: dt_time | None = None,
+    retry_failures: bool = True,
 ) -> dict[str, scan.ScanResult]:
     results: dict[str, scan.ScanResult] = {}
     if not symbols:
         return results
 
     stop_at_dt = session_target_datetime(stop_at)
+    failed_symbols: list[str] = []
     min_batch_seconds = max(1, int((scan.BATCH_SIZE / max(scan.REQUESTS_PER_MINUTE, 1)) * 60))
     for start in range(0, len(symbols), scan.BATCH_SIZE):
         if stop_at_dt is not None and datetime.now(VN_TZ) >= stop_at_dt:
@@ -361,6 +367,8 @@ async def scan_symbols(
             if df is not None and result:
                 results[symbol] = result
                 scan.save_history(symbol, df, history_store, peak_store)
+            else:
+                failed_symbols.append(symbol)
 
         elapsed = time.time() - batch_started
         if start + scan.BATCH_SIZE < len(symbols):
@@ -373,6 +381,36 @@ async def scan_symbols(
                 delay = min(delay, max(0.0, remaining))
             logger.info("%s sleep %.1fs before next batch", label, delay)
             await asyncio.sleep(delay)
+
+    failed_symbols = [symbol for symbol in dict.fromkeys(failed_symbols) if symbol not in results]
+    if retry_failures and failed_symbols and SCAN_RETRY_FAILED_MAX_SYMBOLS > 0:
+        retry_symbols = failed_symbols[:SCAN_RETRY_FAILED_MAX_SYMBOLS]
+        delay_max = max(SCAN_RETRY_FAILED_DELAY_MIN, SCAN_RETRY_FAILED_DELAY_MAX)
+        delay = random.uniform(SCAN_RETRY_FAILED_DELAY_MIN, delay_max)
+        logger.warning(
+            "%s retry pass for %s failed symbol(s) after %.1fs: %s",
+            label,
+            len(retry_symbols),
+            delay,
+            ",".join(retry_symbols),
+        )
+        if delay > 0:
+            await asyncio.sleep(delay)
+        retry_results = await scan_symbols(
+            retry_symbols,
+            force_refresh=True,
+            history_store=history_store,
+            peak_store=peak_store,
+            label=f"{label}-retry",
+            stop_at=stop_at,
+            retry_failures=False,
+        )
+        results.update(retry_results)
+        failed_symbols = [symbol for symbol in failed_symbols if symbol not in results]
+
+    for symbol in failed_symbols:
+        if symbol != "VNINDEX":
+            SCAN_FAILED_SYMBOLS.add(symbol)
 
     return results
 
@@ -517,6 +555,7 @@ async def main() -> None:
     mode = parse_mode()
     window = SESSION_WINDOWS[mode]
     configure_safe_api()
+    SCAN_FAILED_SYMBOLS.clear()
 
     if os.getenv("GITHUB_ACTIONS") and mode != "test":
         delay = random.randint(0, max(SESSION_RANDOM_START_MAX, 0))
@@ -570,6 +609,7 @@ async def main() -> None:
             peak_store=peak_store,
             label=f"{mode}-broad-nonfocus",
             stop_at=window["focus_after"],
+            retry_failures=False,
         )
         results.update(broad_results)
         await wait_until(window["focus_after"], "afternoon 14:03 priority scan")

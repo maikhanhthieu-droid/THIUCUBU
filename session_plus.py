@@ -175,7 +175,8 @@ async def main() -> None:
         intel.warn_uncovered_groups()
         await sess.main()
         results = _STATE.get("results", {})
-        summary = intel.build_scan_completion_summary(len(results), [], time.time() - float(_STATE.get("started_at", time.time())))
+        failed_symbols = sorted(getattr(sess, "SCAN_FAILED_SYMBOLS", set()))
+        summary = intel.build_scan_completion_summary(len(results), failed_symbols, time.time() - float(_STATE.get("started_at", time.time())))
         await scan.send_chunks("*THIEUCUTOO SUMMARY*", summary)
     except Exception as exc:
         logger.exception("Fatal enhanced session scan error")
