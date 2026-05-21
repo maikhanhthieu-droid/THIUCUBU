@@ -6,10 +6,28 @@ from typing import Any
 import scan
 
 
+def _dict_value(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def adv_score(result: scan.ScanResult, metrics: dict[str, Any] | None) -> int:
     if not metrics:
         return int(result.win_score)
-    return int(metrics.get("advanced_score", result.win_score))
+    return _safe_int(metrics.get("advanced_score"), int(result.win_score))
 
 
 def signal_allowed(
@@ -36,10 +54,14 @@ def signal_gate(
         return {"allowed": False, "reason": "CHUA_GAN_BREAK"}
 
     score = adv_score(result, metrics)
-    rs_score = int((metrics or {}).get("rs", {}).get("rs_score", 50))
-    rr = float((metrics or {}).get("trade", {}).get("risk_reward") or 0)
-    weekly = (metrics or {}).get("weekly", {})
-    regime = str((metrics or {}).get("regime", {}).get("regime", "UNKNOWN"))
+    info = _dict_value(metrics)
+    rs = _dict_value(info.get("rs"))
+    trade = _dict_value(info.get("trade"))
+    weekly = _dict_value(info.get("weekly"))
+    regime_info = _dict_value(info.get("regime"))
+    rs_score = _safe_int(rs.get("rs_score"), 50)
+    rr = _safe_float(trade.get("risk_reward"), 0.0)
+    regime = str(regime_info.get("regime") or "UNKNOWN").upper()
     deep_discount = result.discount_pct >= result.target_discount_pct + 8
     weekly_ok = bool(weekly.get("weekly_uptrend") or weekly.get("weekly_above_ema13"))
 

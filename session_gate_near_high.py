@@ -7,8 +7,8 @@ import sys
 from datetime import datetime
 from typing import Any
 
-import near_high_filter
 import scan
+import near_high_filter
 import scan_safe
 
 _ORIGINAL_SAFE_FETCH = scan_safe.fetch_ohlcv_safe

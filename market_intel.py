@@ -107,10 +107,11 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
         for alias in symbol_aliases(symbol):
             for source in scan_safe.source_order_for_symbol(alias):
                 limiter = scan_safe.API_LIMITERS[source]
+                if limiter.disabled:
+                    continue
                 limiter.wait_turn(alias)
                 try:
-                    q = scan.Quote(symbol=alias, source=source)
-                    raw = q.history(start=start, end=end, interval="1D")
+                    raw = scan_safe.fetch_source_history(source, alias, start, end)
                     df = validate_ohlcv(scan.normalize_ohlcv(raw))
                     if df is not None and len(df) >= 80:
                         limiter.record_success()
@@ -121,9 +122,20 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             pass
                         return df
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
+                except SystemExit as exc:
+                    logger.warning("[%s] %s/%s stopped by data quota: %s", source, symbol, alias, str(exc).splitlines()[0])
+                    if scan_safe.is_rate_limit_error(exc):
+                        limiter.record_failure(is_rate_limit=True)
+                    else:
+                        limiter.disable(str(exc)[:180])
                 except Exception as exc:
                     logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
-                    limiter.record_failure()
+                    if scan_safe.is_unsupported_source_error(exc):
+                        limiter.disable(str(exc)[:180])
+                    elif scan_safe.is_invalid_symbol_error(exc):
+                        logger.warning("[%s] %s/%s invalid symbol, skipping source penalty", source, symbol, alias)
+                    else:
+                        limiter.record_failure(is_rate_limit=scan_safe.is_rate_limit_error(exc))
         if attempt + 1 < attempts:
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, attempts, wait)
@@ -282,6 +294,8 @@ def position_size(rr: Any, score: int, regime: str) -> str:
     rr = safe_float(rr)
     if regime == "BEAR":
         return "KHONG MUA (thi truong downtrend)"
+    if score < 60:
+        return "NHO / THEO DOI (~2% danh muc)"
     if score >= 80 and rr >= 2.5 and regime == "BULL":
         return "FULL SIZE (~10% danh muc)"
     if score >= 70 and rr >= 2.0:
@@ -334,7 +348,14 @@ def build_market_metrics(results: dict[str, scan.ScanResult], history_store: dic
 
 
 def fmt_price(value: Any) -> str:
-    return "n/a" if value is None else f"{safe_float(value):.2f}"
+    if value is None:
+        return "n/a"
+    price = safe_float(value)
+    if price == 0:
+        return "n/a"
+    if abs(price) >= 1000:
+        return f"{price:,.0f}"
+    return f"{price:.2f}"
 
 
 def fmt_num(value: Any) -> str:
@@ -357,6 +378,7 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     volume = metrics.get("volume", {})
     vcp = metrics.get("vcp", {})
     regime = metrics.get("regime", {})
+    gate = metrics.get("gate", {})
     rr_text = f"{fmt_num(trade.get('risk_reward'))}x" if trade.get("risk_reward") is not None else "n/a"
     line1 = f"Intel {int(metrics.get('advanced_score', 0))}/100 | RS {int(rs.get('rs_score', 50))} | Regime {regime.get('regime', 'UNKNOWN')} | SL {fmt_price(trade.get('stop_loss'))} | TP {fmt_price(trade.get('take_profit'))} | R/R {rr_text}"
     flags: list[str] = []
@@ -372,7 +394,10 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
         flags.append("churning")
     if vcp.get("vcp_contracting") and int(vcp.get("vcp_score", 0)) > 0:
         flags.append(f"VCP co {int(vcp.get('vcp_score', 0))}d")
-    line2 = f"HT {fmt_price(levels.get('support'))} | KC {fmt_price(levels.get('resistance'))} | Size: {trade.get('position_size', 'THEO DOI')}"
+    size_text = trade.get("position_size", "THEO DOI")
+    if gate and not gate.get("allowed", True):
+        size_text = f"CHUA MUA / THEO DOI ({gate.get('reason', 'loc tin hieu')})"
+    line2 = f"HT {fmt_price(levels.get('support'))} | KC {fmt_price(levels.get('resistance'))} | Size: {size_text}"
     if flags:
         line2 += " | " + ", ".join(flags[:4])
     return [line1, line2]
