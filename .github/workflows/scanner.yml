@@ -7,7 +7,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
-  group: thieucutoo-scanner-${{ github.ref }}
+  group: thieucutoo-scanner-${{ github.ref }}-${{ github.event_name }}-${{ github.event.schedule || github.event.inputs.mode || github.run_id }}
   cancel-in-progress: true
 
 on:
@@ -90,6 +90,10 @@ jobs:
           DRY_RUN: "0"
         run: |
           MODE="$SCAN_MODE"
+          if [ "$SCAN_EVENT_NAME" = "push" ] && [ "$MODE" = "auto" ]; then
+            echo "Workflow file push only refreshes GitHub schedule registration; scanner is skipped."
+            exit 0
+          fi
           if [ "$MODE" = "auto" ]; then
             case "$SCAN_SCHEDULE" in
               "31 3 * * 1-5") MODE="morning_broad" ;;
