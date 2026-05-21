@@ -44,6 +44,7 @@ SESSION_FOCUS_LIMIT = env_int("SESSION_FOCUS_LIMIT", 28, min_value=5)
 SESSION_QUICK_LIMIT = env_int("SESSION_QUICK_LIMIT", 40, min_value=10)
 SESSION_QUICK_SIGNAL_LIMIT = env_int("SESSION_QUICK_SIGNAL_LIMIT", 30, min_value=5)
 SESSION_QUICK_NOTE_LIMIT = env_int("SESSION_QUICK_NOTE_LIMIT", 10, min_value=0)
+SCAN_SYMBOL_TIMEOUT = env_int("SCAN_SYMBOL_TIMEOUT_SEC", 90, min_value=10)
 
 
 SESSION_WINDOWS = {
@@ -344,7 +345,17 @@ async def scan_symbols(
 
         async def run_symbol(symbol: str) -> tuple[str, Any, scan.ScanResult | None]:
             async with semaphore:
-                return await asyncio.to_thread(scan.process_symbol, symbol, force_refresh)
+                try:
+                    return await asyncio.wait_for(
+                        asyncio.to_thread(scan.process_symbol, symbol, force_refresh),
+                        timeout=SCAN_SYMBOL_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning("%s %s timed out after %ss, skipping symbol", label, symbol, SCAN_SYMBOL_TIMEOUT)
+                    return symbol, None, None
+                except Exception as exc:
+                    logger.warning("%s %s failed unexpectedly: %s", label, symbol, exc)
+                    return symbol, None, None
 
         for symbol, df, result in await asyncio.gather(*(run_symbol(symbol) for symbol in batch)):
             if df is not None and result:

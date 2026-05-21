@@ -86,6 +86,7 @@ jobs:
           SESSION_QUICK_LIMIT: "40"
           SESSION_QUICK_SIGNAL_LIMIT: "30"
           SESSION_QUICK_NOTE_LIMIT: "10"
+          SCAN_SYMBOL_TIMEOUT_SEC: "90"
           SCAN_SKIP_NEAR_HIGH_WEEKDAY: "1"
           DRY_RUN: "0"
         run: |
