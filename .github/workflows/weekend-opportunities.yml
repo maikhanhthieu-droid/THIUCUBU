@@ -101,7 +101,7 @@ jobs:
           retention-days: 60
 
       - name: Commit weekend data
-        if: always() && github.ref == 'refs/heads/main'
+        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'test')
         run: |
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"

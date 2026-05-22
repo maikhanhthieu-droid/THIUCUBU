@@ -79,11 +79,12 @@ jobs:
           ACTIVE_GRACE_MINUTES=12
           if [ "$MODE" = "eod" ]; then ACTIVE_GRACE_MINUTES=25; fi
           REPORT_JSON="$(gh api "repos/${{ github.repository }}/contents/data/session_alerts_latest.json?ref=${{ github.ref_name }}" --jq '.content' 2>/dev/null | base64 -d || echo '{}')"
-          REPORT_FRESH="$(REPORT_JSON="$REPORT_JSON" MODE="$MODE" WINDOW_MINUTES="$WINDOW_MINUTES" python - <<'PY'
+          REPORT_FRESH="$(REPORT_JSON="$REPORT_JSON" MODE="$MODE" python - <<'PY'
           import json
           import os
           from datetime import datetime, timedelta, timezone
 
+          vn_tz = timezone(timedelta(hours=7))
           aliases = {
               "morning_broad": {"morning", "morning_broad"},
               "afternoon_split": {"afternoon", "afternoon_split"},
@@ -97,8 +98,8 @@ jobs:
                   updated = updated.replace(tzinfo=timezone.utc)
               mode = os.environ.get("MODE", "")
               mode_ok = str(report.get("mode") or "") in aliases.get(mode, {mode})
-              fresh = updated >= datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["WINDOW_MINUTES"]))
-              print("true" if mode_ok and fresh else "false")
+              same_vn_day = updated.astimezone(vn_tz).date() == datetime.now(vn_tz).date()
+              print("true" if mode_ok and same_vn_day else "false")
           except Exception:
               print("false")
           PY
@@ -264,7 +265,7 @@ jobs:
           retention-days: 30
 
       - name: Commit scanner data
-        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
+        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'test') && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
         run: |
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"

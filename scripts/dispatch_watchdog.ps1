@@ -66,7 +66,7 @@ function Test-FreshReport([string]$Mode, [int]$Minutes) {
         }
         $updated = [DateTimeOffset]::Parse([string]$report.updated_at).LocalDateTime
         $modeOk = (Get-BaseMode ([string]$report.mode)) -eq (Get-BaseMode $Mode)
-        return $modeOk -and ($updated -ge (Get-Date).AddMinutes(-1 * [Math]::Max(1, $Minutes)))
+        return $modeOk -and ($updated.Date -eq (Get-Date).Date)
     } catch {
         return $false
     }
