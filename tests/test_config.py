@@ -4,6 +4,7 @@ import config
 
 
 def test_settings_reads_env(monkeypatch):
+    monkeypatch.setenv("DRY_RUN", "0")
     monkeypatch.setenv("TELEGRAM_TOKEN", "token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat")
     monkeypatch.setenv("SCAN_SOURCE_USAGE_RATIO", "0.8")
