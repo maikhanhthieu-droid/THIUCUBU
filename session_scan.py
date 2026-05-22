@@ -43,9 +43,9 @@ def env_int(name: str, default: int, min_value: int = 0) -> int:
 
 SESSION_RANDOM_START_MAX = env_int("SESSION_RANDOM_START_MAX_SEC", 45, min_value=0)
 SESSION_FOCUS_LIMIT = env_int("SESSION_FOCUS_LIMIT", 28, min_value=5)
-SESSION_QUICK_LIMIT = env_int("SESSION_QUICK_LIMIT", 40, min_value=10)
-SESSION_QUICK_SIGNAL_LIMIT = env_int("SESSION_QUICK_SIGNAL_LIMIT", 30, min_value=5)
-SESSION_QUICK_NOTE_LIMIT = env_int("SESSION_QUICK_NOTE_LIMIT", 10, min_value=0)
+SESSION_QUICK_LIMIT = env_int("SESSION_QUICK_LIMIT", 50, min_value=10)
+SESSION_QUICK_SIGNAL_LIMIT = env_int("SESSION_QUICK_SIGNAL_LIMIT", 38, min_value=5)
+SESSION_QUICK_NOTE_LIMIT = env_int("SESSION_QUICK_NOTE_LIMIT", 12, min_value=0)
 SCAN_SYMBOL_TIMEOUT = env_int("SCAN_SYMBOL_TIMEOUT_SEC", 90, min_value=10)
 SCAN_RETRY_FAILED_DELAY_MIN = env_int("SCAN_RETRY_FAILED_DELAY_MIN_SEC", 20, min_value=0)
 SCAN_RETRY_FAILED_DELAY_MAX = env_int("SCAN_RETRY_FAILED_DELAY_MAX_SEC", 60, min_value=0)
@@ -67,7 +67,7 @@ SESSION_WINDOWS = {
         "broad_after": dt_time(10, 31),
         "focus_after": None,
         "report_after": None,
-        "description": "Quet nhanh note/co manh/gan break tu lan quet truoc, toi da 40 ma.",
+        "description": "Quet nhanh note/co manh/gan break tu lan quet truoc, toi da 50 ma.",
     },
     "morning_broad": {
         "title": "MORNING BROAD 10H31",
@@ -88,7 +88,7 @@ SESSION_WINDOWS = {
         "broad_after": dt_time(13, 31),
         "focus_after": None,
         "report_after": None,
-        "description": "Quet nhanh note/co manh/gan break dau phien chieu, toi da 40 ma.",
+        "description": "Quet nhanh note/co manh/gan break dau phien chieu, toi da 50 ma.",
     },
     "afternoon_broad": {
         "title": "AFTERNOON BROAD 14H01",
@@ -98,11 +98,11 @@ SESSION_WINDOWS = {
         "description": "Quet rong phien chieu sau 14h01, uu tien co co the mua ban kip.",
     },
     "afternoon_split": {
-        "title": "AFTERNOON SPLIT 13H46/14H03",
-        "broad_after": dt_time(13, 46),
-        "focus_after": dt_time(14, 3),
+        "title": "AFTERNOON SPLIT 13H31/14H00",
+        "broad_after": dt_time(13, 31),
+        "focus_after": dt_time(14, 0),
         "report_after": None,
-        "description": "13h46 quet cac ma chua uu tien, 14h03 quet lai co sang/note/co manh, muc tieu tra truoc 14h15.",
+        "description": "13h31 quet cac ma chua uu tien, 14h00 quet lai note/co manh/ma phien sang, muc tieu tra truoc 14h15.",
     },
     "eod": {
         "title": "EOD 15H+",
@@ -675,7 +675,7 @@ async def main() -> None:
             retry_failures=False,
         )
         results.update(broad_results)
-        await wait_until(window["focus_after"], "afternoon 14:03 priority scan")
+        await wait_until(window["focus_after"], "afternoon 14:00 priority scan")
         focus_results = await scan_symbols(
             focus_symbols,
             force_refresh=True,

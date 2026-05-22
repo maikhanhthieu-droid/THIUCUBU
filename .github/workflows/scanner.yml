@@ -24,10 +24,10 @@ on:
     - cron: "31 3 * * 1-5" # morning primary 10:31 VN
     - cron: "36 3 * * 1-5" # morning backup if GitHub queue skips/delays primary
     - cron: "43 3 * * 1-5" # morning final backup
-    - cron: "40 6 * * 1-5" # afternoon backup 13:40 VN, code waits until 13:46
-    - cron: "46 6 * * 1-5" # afternoon primary 13:46 VN
-    - cron: "52 6 * * 1-5" # afternoon backup
-    - cron: "57 6 * * 1-5" # afternoon final backup before 14:03 focus
+    - cron: "25 6 * * 1-5" # afternoon backup 13:25 VN, code waits until 13:31
+    - cron: "31 6 * * 1-5" # afternoon primary 13:31 VN
+    - cron: "36 6 * * 1-5" # afternoon backup if GitHub queue skips/delays primary
+    - cron: "43 6 * * 1-5" # afternoon final backup before 14:00 focus
     - cron: "0 8 * * 1-5"  # eod primary 15:00 VN, code waits until 15:05
     - cron: "10 8 * * 1-5" # eod backup
     - cron: "25 8 * * 1-5" # eod final backup
@@ -58,7 +58,7 @@ jobs:
           MODE="auto"
           case "$SCAN_SCHEDULE" in
             "25 3 * * 1-5"|"31 3 * * 1-5"|"36 3 * * 1-5"|"43 3 * * 1-5") MODE="morning_broad" ;;
-            "40 6 * * 1-5"|"46 6 * * 1-5"|"52 6 * * 1-5"|"57 6 * * 1-5") MODE="afternoon_split" ;;
+            "25 6 * * 1-5"|"31 6 * * 1-5"|"36 6 * * 1-5"|"43 6 * * 1-5") MODE="afternoon_split" ;;
             "0 8 * * 1-5"|"10 8 * * 1-5"|"25 8 * * 1-5") MODE="eod" ;;
           esac
           if [ "$MODE" = "auto" ]; then
@@ -66,7 +66,7 @@ jobs:
             NOW_VN_NUM=$((10#$NOW_VN))
             if [ "$NOW_VN_NUM" -ge 930 ] && [ "$NOW_VN_NUM" -le 1230 ]; then
               MODE="morning_broad"
-            elif [ "$NOW_VN_NUM" -ge 1330 ] && [ "$NOW_VN_NUM" -lt 1500 ]; then
+            elif [ "$NOW_VN_NUM" -ge 1325 ] && [ "$NOW_VN_NUM" -lt 1500 ]; then
               MODE="afternoon_split"
             elif [ "$NOW_VN_NUM" -ge 1500 ] && [ "$NOW_VN_NUM" -le 2100 ]; then
               MODE="eod"
@@ -190,9 +190,9 @@ jobs:
           SESSION_RANDOM_START_MAX_SEC: "45"
           SESSION_DATA_JITTER_MAX_SEC: "60"
           SESSION_FOCUS_LIMIT: "28"
-          SESSION_QUICK_LIMIT: "40"
-          SESSION_QUICK_SIGNAL_LIMIT: "30"
-          SESSION_QUICK_NOTE_LIMIT: "10"
+          SESSION_QUICK_LIMIT: "50"
+          SESSION_QUICK_SIGNAL_LIMIT: "38"
+          SESSION_QUICK_NOTE_LIMIT: "12"
           SCAN_SYMBOL_TIMEOUT_SEC: "90"
           SCAN_RETRY_FAILED_DELAY_MIN_SEC: "20"
           SCAN_RETRY_FAILED_DELAY_MAX_SEC: "60"
@@ -212,10 +212,10 @@ jobs:
               "31 3 * * 1-5") MODE="morning_broad" ;;
               "36 3 * * 1-5") MODE="morning_broad" ;;
               "43 3 * * 1-5") MODE="morning_broad" ;;
-              "40 6 * * 1-5") MODE="afternoon_split" ;;
-              "46 6 * * 1-5") MODE="afternoon_split" ;;
-              "52 6 * * 1-5") MODE="afternoon_split" ;;
-              "57 6 * * 1-5") MODE="afternoon_split" ;;
+              "25 6 * * 1-5") MODE="afternoon_split" ;;
+              "31 6 * * 1-5") MODE="afternoon_split" ;;
+              "36 6 * * 1-5") MODE="afternoon_split" ;;
+              "43 6 * * 1-5") MODE="afternoon_split" ;;
               "0 8 * * 1-5") MODE="eod" ;;
               "10 8 * * 1-5") MODE="eod" ;;
               "25 8 * * 1-5") MODE="eod" ;;
@@ -225,7 +225,7 @@ jobs:
             MODE="test"
           fi
           if [ "$MODE" = "afternoon_split" ]; then
-            export SESSION_FOCUS_LIMIT="24"
+            export SESSION_FOCUS_LIMIT="28"
           fi
           echo "Running scanner mode=$MODE schedule=$SCAN_SCHEDULE"
           if [ "$SCAN_EVENT_NAME" = "schedule" ]; then
@@ -234,7 +234,7 @@ jobs:
             LIVE_MODE=""
             if [ "$NOW_VN_NUM" -ge 930 ] && [ "$NOW_VN_NUM" -le 1230 ]; then
               LIVE_MODE="morning_broad"
-            elif [ "$NOW_VN_NUM" -ge 1330 ] && [ "$NOW_VN_NUM" -lt 1500 ]; then
+            elif [ "$NOW_VN_NUM" -ge 1325 ] && [ "$NOW_VN_NUM" -lt 1500 ]; then
               LIVE_MODE="afternoon_split"
             elif [ "$NOW_VN_NUM" -ge 1500 ] && [ "$NOW_VN_NUM" -le 2100 ]; then
               LIVE_MODE="eod"

@@ -15,7 +15,7 @@ Khong dua API key vao file code vi repo public.
 ## Lich chay
 
 - 10:31 VN: quet rong buoi sang, muc tieu tra Telegram truoc 11:15.
-- 13:46 VN: quet cac ma chua uu tien truoc; 14:03 quet lai note/co manh/ma phien sang, muc tieu tra truoc 14:15.
+- 13:31 VN: quet cac ma chua uu tien truoc; 14:00 quet lai note/co manh/ma phien sang, muc tieu tra truoc 14:15.
 - 15:05 VN: tong ket EOD sau ATC, co trang thai VNINDEX va canh bao risk.
 
 Moi lan chay co random start ngan, chia nguon API, dung khoang 75-80% quota moi nguon va nghi ngau nhien de giam rui ro bi limit.
@@ -53,7 +53,7 @@ Cac bien co the chinh trong workflow:
 Workflow ngay thuong chay qua `session_scan.py`.
 
 - Buoi sang: lay data sau 10:31, quet rong va gui report som de kip soi trong phien.
-- Buoi chieu: lay data sau 13:46, quet cac ma khong uu tien truoc; sau 14:03 quet lai note/co manh/ma phien sang, gui report truoc 14:15 neu API khong ngheo mang bat thuong.
+- Buoi chieu: lay data sau 13:31, quet cac ma khong uu tien truoc; sau 14:00 quet lai toi da 50 ma note/co manh/ma phien sang, gui report truoc 14:15 neu API khong ngheo mang bat thuong.
 - EOD: chay sau 15:05, khong ep nhanh, uu tien ket qua muot va co trang thai VNINDEX.
 - Cac ma trong `data/portfolio.json` va `data/notes.json` luon duoc dua vao focus scan vi day la nhom chiem ty trong lon trong danh muc.
 
