@@ -18,6 +18,7 @@ STRONG_LIMIT = 7
 WATCHLIST_LIMIT = 15
 SESSION_FOCUS_LIMIT = 40
 STALE_KEEP_DAYS = 21
+RETIRED_LIMIT = 50
 
 
 def now_vn() -> datetime:
@@ -42,9 +43,113 @@ def default_state() -> dict[str, Any]:
             "watchlist_limit": WATCHLIST_LIMIT,
             "session_focus_limit": SESSION_FOCUS_LIMIT,
             "stale_keep_days": STALE_KEEP_DAYS,
+            "retired_limit": RETIRED_LIMIT,
             "description": "Bot memory for strong stocks, VCP/VSA watchlist, and priority focus symbols.",
         },
     }
+
+
+class StateManager:
+    """Small persistent memory layer for stateless GitHub Actions runners."""
+
+    def __init__(self, path: Path = MEMORY_FILE) -> None:
+        self.path = Path(path)
+
+    def load(self) -> dict[str, Any]:
+        return load_state(self.path)
+
+    def save(self, state: dict[str, Any], mode: str | None = None) -> dict[str, Any]:
+        current = now_vn()
+        normalized = self.prune(state)
+        normalized["version"] = MEMORY_VERSION
+        normalized["last_updated"] = current.isoformat(timespec="seconds")
+        if mode:
+            normalized["last_mode"] = mode
+        save_state(normalized, self.path)
+        return normalized
+
+    def prune(self, state: dict[str, Any] | None = None) -> dict[str, Any]:
+        current = now_vn()
+        normalized = normalize_state(state or self.load())
+        normalized["strong_stocks"] = _unique_entries(
+            _drop_stale_entries(normalized.get("strong_stocks", []), current),
+            STRONG_LIMIT,
+        )
+        normalized["watchlist"] = _unique_entries(
+            _drop_stale_entries(normalized.get("watchlist", []), current),
+            WATCHLIST_LIMIT,
+        )
+        normalized["retired"] = _unique_entries(
+            _drop_stale_entries(normalized.get("retired", []), current),
+            RETIRED_LIMIT,
+        )
+        normalized["session_focus"] = _clean_symbols(
+            [item["symbol"] for item in normalized["strong_stocks"]]
+            + [item["symbol"] for item in normalized["watchlist"]]
+        )[:SESSION_FOCUS_LIMIT]
+        normalized["meta"].update(
+            {
+                "strong_count": len(normalized["strong_stocks"]),
+                "watchlist_count": len(normalized["watchlist"]),
+                "session_focus_count": len(normalized["session_focus"]),
+                "retired_count": len(normalized["retired"]),
+            }
+        )
+        return normalized
+
+    def update_from_results(
+        self,
+        results: dict[str, Any] | Iterable[Any],
+        mode: str,
+        focus_symbols: Iterable[Any] | None = None,
+        watch_items: dict[str, dict[str, Any]] | None = None,
+        metrics_by_symbol: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        return _update_memory_state_impl(results, mode, focus_symbols, watch_items, metrics_by_symbol, self.path)
+
+    def update_strong_stocks(
+        self,
+        results: dict[str, Any] | Iterable[Any],
+        mode: str = "manual",
+        metrics_by_symbol: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        return self._update_bucket(results, mode, "strong", metrics_by_symbol)
+
+    def update_watchlist(
+        self,
+        results: dict[str, Any] | Iterable[Any],
+        mode: str = "manual",
+        metrics_by_symbol: dict[str, dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        return self._update_bucket(results, mode, "watchlist", metrics_by_symbol)
+
+    def _update_bucket(
+        self,
+        results: dict[str, Any] | Iterable[Any],
+        mode: str,
+        category: str,
+        metrics_by_symbol: dict[str, dict[str, Any]] | None,
+    ) -> dict[str, Any]:
+        state = self.load()
+        updated_at = now_vn()
+        values = results.values() if isinstance(results, dict) else results
+        bucket_name = "strong_stocks" if category == "strong" else "watchlist"
+        limit = STRONG_LIMIT if category == "strong" else WATCHLIST_LIMIT
+        old_entries = {item["symbol"]: item for item in _clean_entries(state.get(bucket_name, []))}
+        merged = list(old_entries.values())
+        for result in values:
+            symbol = normalize_symbol(_get(result, "symbol"))
+            if not symbol or symbol == "VNINDEX":
+                continue
+            metrics = (metrics_by_symbol or {}).get(symbol, {})
+            merged.append(_entry_from_result(result, old_entries.get(symbol), metrics, mode, category, updated_at))
+        state[bucket_name] = _unique_entries(merged, limit)
+        state["session_focus"] = _clean_symbols(
+            [item["symbol"] for item in state.get("strong_stocks", [])]
+            + [item["symbol"] for item in state.get("watchlist", [])]
+            + state.get("session_focus", [])
+        )[:SESSION_FOCUS_LIMIT]
+        return self.save(state, mode)
 
 
 def load_state(path: Path = MEMORY_FILE) -> dict[str, Any]:
@@ -160,6 +265,10 @@ def _is_stale(entry: dict[str, Any], today: datetime) -> bool:
     return (today.date() - last.astimezone(VN_TZ).date()).days > STALE_KEEP_DAYS
 
 
+def _drop_stale_entries(entries: Iterable[dict[str, Any]], today: datetime) -> list[dict[str, Any]]:
+    return [entry for entry in _clean_entries(entries) if not _is_stale(entry, today)]
+
+
 def _entry_from_result(
     result: Any,
     existing: dict[str, Any] | None,
@@ -247,7 +356,7 @@ def _unique_entries(entries: Iterable[dict[str, Any]], limit: int) -> list[dict[
     return output
 
 
-def update_memory_state(
+def _update_memory_state_impl(
     results: dict[str, Any] | Iterable[Any],
     mode: str,
     focus_symbols: Iterable[Any] | None = None,
@@ -292,13 +401,13 @@ def update_memory_state(
             watch_entries.append(_entry_from_result(result, existing, metrics, mode, "watchlist", updated_at))
 
     today = updated_at
-    for item in _clean_entries(state.get("strong_stocks", [])):
+    for item in _drop_stale_entries(state.get("strong_stocks", []), today):
         symbol = item["symbol"]
-        if symbol not in by_symbol and not _is_stale(item, today):
+        if symbol not in by_symbol:
             strong_entries.append(item)
-    for item in _clean_entries(state.get("watchlist", [])):
+    for item in _drop_stale_entries(state.get("watchlist", []), today):
         symbol = item["symbol"]
-        if symbol not in by_symbol and not _is_stale(item, today):
+        if symbol not in by_symbol:
             watch_entries.append(item)
 
     strong = _unique_entries(strong_entries, STRONG_LIMIT)
@@ -318,16 +427,28 @@ def update_memory_state(
     state["strong_stocks"] = strong
     state["watchlist"] = watch
     state["session_focus"] = _clean_symbols(focus_seed)[:SESSION_FOCUS_LIMIT]
-    state["retired"] = _unique_entries(retired + _clean_entries(state.get("retired", [])), 50)
+    state["retired"] = _unique_entries(retired + _drop_stale_entries(state.get("retired", []), today), RETIRED_LIMIT)
     state["meta"].update(
         {
             "strong_count": len(strong),
             "watchlist_count": len(watch),
             "session_focus_count": len(state["session_focus"]),
+            "retired_count": len(state["retired"]),
         }
     )
     save_state(state, path)
     return state
+
+
+def update_memory_state(
+    results: dict[str, Any] | Iterable[Any],
+    mode: str,
+    focus_symbols: Iterable[Any] | None = None,
+    watch_items: dict[str, dict[str, Any]] | None = None,
+    metrics_by_symbol: dict[str, dict[str, Any]] | None = None,
+    path: Path = MEMORY_FILE,
+) -> dict[str, Any]:
+    return StateManager(path).update_from_results(results, mode, focus_symbols, watch_items, metrics_by_symbol)
 
 
 def memory_focus_symbols(state: dict[str, Any] | None = None, limit: int = SESSION_FOCUS_LIMIT) -> list[str]:

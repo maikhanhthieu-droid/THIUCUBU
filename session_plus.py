@@ -153,7 +153,7 @@ def save_session_outputs(mode: str, results: dict[str, scan.ScanResult], history
         memory_summary = state_manager.memory_summary()
     else:
         try:
-            memory_state = state_manager.update_memory_state(results, mode, focus_symbols, watch_items, metrics)
+            memory_state = state_manager.StateManager().update_from_results(results, mode, focus_symbols, watch_items, metrics)
             memory_summary = state_manager.memory_summary(memory_state)
         except Exception as exc:
             logger.warning("Cannot update memory_state.json: %s", exc)

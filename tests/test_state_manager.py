@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from datetime import datetime, timedelta, timezone
 
 import state_manager
 
@@ -43,3 +44,24 @@ def test_memory_focus_symbols_uses_strong_then_watchlist():
     }
 
     assert state_manager.memory_focus_symbols(state, limit=5) == ["TCB", "VCB", "FPT", "HPG", "DIG"]
+
+
+def test_state_manager_class_updates_and_prunes(tmp_path):
+    path = tmp_path / "memory_state.json"
+    manager = state_manager.StateManager(path)
+    stale_day = (datetime.now(timezone(timedelta(hours=7))) - timedelta(days=45)).date().isoformat()
+    manager.save(
+        {
+            "strong_stocks": [{"symbol": "OLD", "last_seen": stale_day, "score": 99}],
+            "watchlist": [{"symbol": "FPT", "last_seen": stale_day, "score": 70}],
+            "session_focus": ["OLD", "FPT"],
+        },
+        mode="seed",
+    )
+
+    state = manager.update_strong_stocks({"TCB": make_result("TCB", 95)}, mode="unit")
+
+    assert path.exists()
+    assert state["last_mode"] == "unit"
+    assert [item["symbol"] for item in state["strong_stocks"]] == ["TCB"]
+    assert "OLD" not in state["session_focus"]

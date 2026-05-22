@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import asyncio
+import re
 import logging
 import os
 import random
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 
 import pandas as pd
 from vnstock.api.quote import Quote
@@ -166,6 +168,8 @@ REQUEST_JITTER_MAX = max(REQUEST_JITTER_MIN, env_float("SCAN_REQUEST_JITTER_MAX_
 SOURCE_COOLDOWN_MIN = env_float("SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC", 45.0, min_value=0.0)
 SOURCE_COOLDOWN_MAX = max(SOURCE_COOLDOWN_MIN, env_float("SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC", 150.0, min_value=0.0))
 SOURCE_DISABLE_AFTER_FAILURES = env_int("SCAN_SOURCE_DISABLE_AFTER_FAILURES", 3, min_value=0)
+SOURCE_RECOVER_AFTER = env_float("SCAN_SOURCE_RECOVER_AFTER_SEC", 300.0, min_value=30.0)
+RETRY_AFTER_MAX = env_float("SCAN_RETRY_AFTER_MAX_SEC", 300.0, min_value=1.0)
 FETCH_MAX_ATTEMPTS = env_int("SCAN_FETCH_MAX_ATTEMPTS", 3, min_value=1)
 INDEX_ALIASES = {"VNINDEX": ["VNINDEX", "^VNINDEX", "VN-INDEX"]}
 
@@ -203,7 +207,7 @@ class ApiSourceLimiter:
             self.successes += 1
             self.failures = 0
 
-    def record_failure(self, is_rate_limit: bool = False) -> None:
+    def record_failure(self, is_rate_limit: bool = False, retry_after_seconds: float | None = None) -> None:
         with self.lock:
             self.failures += 1
             if (
@@ -211,17 +215,29 @@ class ApiSourceLimiter:
                 and SOURCE_DISABLE_AFTER_FAILURES
                 and self.failures >= SOURCE_DISABLE_AFTER_FAILURES
             ):
-                self.disabled = True
-                self.cooldown_until = 0.0
-                logger.warning("[%s] disabled after %s consecutive failure(s)", self.source, self.failures)
+                cooldown = SOURCE_RECOVER_AFTER + random.uniform(REQUEST_JITTER_MIN, REQUEST_JITTER_MAX)
+                self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
+                self.failures = 0
+                logger.warning(
+                    "[%s] parked %.1fs after consecutive transient failures; source can recover later",
+                    self.source,
+                    cooldown,
+                )
                 return
-            if is_rate_limit:
+            if is_rate_limit and retry_after_seconds is not None:
+                cooldown = min(RETRY_AFTER_MAX, max(0.0, retry_after_seconds)) + random.uniform(
+                    REQUEST_JITTER_MIN,
+                    REQUEST_JITTER_MAX,
+                )
+                reason = f"rate-limit Retry-After={retry_after_seconds:.1f}s"
+            elif is_rate_limit:
                 multiplier = min(self.failures, 4)
                 reason = "rate-limit"
+                cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
             else:
                 multiplier = min(max(self.failures * 0.3, 0.5), 2.0)
                 reason = "transient"
-            cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
+                cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
             self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
             logger.warning(
                 "[%s] cooling down %.1fs after %s %s failure(s)",
@@ -250,6 +266,46 @@ API_LIMITERS = {
     source: ApiSourceLimiter(source, SOURCE_RPM_LIMITS.get(source, scan.REQUESTS_PER_MINUTE), SOURCE_USAGE_RATIO)
     for source in API_SOURCES
 }
+
+
+def extract_retry_after_seconds(exc: BaseException) -> float | None:
+    """Best-effort parser for API Retry-After hints exposed through wrappers."""
+    header_value: str | None = None
+    for container in (getattr(exc, "response", None), exc):
+        headers = getattr(container, "headers", None)
+        if not headers:
+            continue
+        try:
+            header_value = headers.get("Retry-After") or headers.get("retry-after")
+        except AttributeError:
+            try:
+                header_value = headers["Retry-After"] or headers["retry-after"]
+            except Exception:
+                header_value = None
+        if header_value:
+            break
+
+    text = str(exc)
+    if not header_value:
+        match = re.search(r"retry-after\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)", text, flags=re.IGNORECASE)
+        if match:
+            header_value = match.group(1)
+    if not header_value:
+        return None
+
+    raw = str(header_value).strip()
+    try:
+        return max(0.0, min(float(raw), RETRY_AFTER_MAX))
+    except ValueError:
+        pass
+    try:
+        parsed = parsedate_to_datetime(raw)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        seconds = (parsed.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds()
+        return max(0.0, min(seconds, RETRY_AFTER_MAX))
+    except Exception:
+        return None
 
 
 def source_order_for_symbol(symbol: str) -> list[str]:
@@ -306,7 +362,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                 except SystemExit as exc:
                     logger.warning("[%s] %s/%s stopped by vnstock quota: %s", source, symbol, alias, str(exc).splitlines()[0])
                     if is_rate_limit_error(exc):
-                        limiter.record_failure(is_rate_limit=True)
+                        limiter.record_failure(is_rate_limit=True, retry_after_seconds=extract_retry_after_seconds(exc))
                     else:
                         limiter.disable(str(exc)[:180])
                 except Exception as exc:
@@ -316,7 +372,10 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     elif is_invalid_symbol_error(exc):
                         logger.warning("[%s] %s/%s invalid symbol, skipping source penalty", source, symbol, alias)
                     else:
-                        limiter.record_failure(is_rate_limit=is_rate_limit_error(exc))
+                        limiter.record_failure(
+                            is_rate_limit=is_rate_limit_error(exc),
+                            retry_after_seconds=extract_retry_after_seconds(exc),
+                        )
         if attempt + 1 < FETCH_MAX_ATTEMPTS:
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, FETCH_MAX_ATTEMPTS, wait)

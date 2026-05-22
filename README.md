@@ -26,6 +26,9 @@ Scanner chia luong request qua `SCAN_API_SOURCES`, mac dinh `VCI,KBS,DNSE`.
 Moi ma co mot nguon uu tien rieng va nguon con lai lam fallback. Truoc moi request co
 sleep + jitter ngau nhien, neu mot nguon loi se cooldown ngau nhien truoc khi dung tiep.
 Workflow phien chay qua `session_scan.py`, ben trong van dung `scan_safe.py` de boc lop bao ve API quanh scanner goc.
+Neu API tra ve dau hieu rate-limit kem `Retry-After`, scanner uu tien dung dung thoi gian do
+thay vi chi sleep co dinh. Neu mot nguon chi loi tam thoi lien tiep, nguon do bi park vai phut
+roi tu duoc thu lai trong chinh run sau, khong lam chet ca phien quet.
 
 Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
 `SCAN_SOURCE_USAGE_RATIO=0.78`, tuc chi dung khoang 75-80% quota khai bao moi nguon.
@@ -39,6 +42,8 @@ Cac bien co the chinh trong workflow:
 - `SCAN_SOURCE_USAGE_RATIO`: ty le dung quota, mac dinh workflow `0.78`.
 - `SCAN_REQUEST_JITTER_MIN_SEC` / `SCAN_REQUEST_JITTER_MAX_SEC`: jitter truoc moi request.
 - `SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC` / `SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC`: cooldown khi nguon loi.
+- `SCAN_SOURCE_RECOVER_AFTER_SEC`: thoi gian park mot nguon loi tam thoi lien tiep truoc khi thu lai.
+- `SCAN_RETRY_AFTER_MAX_SEC`: tran toi da khi doc `Retry-After` tu API.
 - `SCAN_MAX_WORKERS`: so luong worker song song, nen <= so nguon API.
 
 ## Dieu phoi theo phien
@@ -72,14 +77,18 @@ Khi do scanner van chay va dung du lieu moi nhat ma API tra ve, chap nhan tin hi
 
 ## Tri nho cua bot
 
-Bot co file `data/memory_state.json` de giu tri nho giua cac lan chay GitHub Actions:
+Bot co file `data/memory_state.json` va lop `StateManager` trong `state_manager.py` de giu tri nho
+giua cac lan chay GitHub Actions:
 
 - `strong_stocks`: toi da 7 ma dang rat manh/dong tien tot.
 - `watchlist`: toi da 15 ma dang co form nen/VCP/VSA can theo doi 1-3 tuan.
 - `session_focus`: toi da 40 ma uu tien cho lan quet nhanh tiep theo.
 - `retired`: cac ma bi loai do failed-break hoac diem yeu.
 
-File nay chi luu trang thai gon nhe, khong luu OHLCV day du. Sau moi phien quet that, workflow se commit lai file nay voi `[skip ci]` de lan chay sau bot van nho nhom co can uu tien.
+File nay chi luu trang thai gon nhe, khong luu OHLCV day du. State duoc cap version/timestamp,
+gioi han toi da 7 ma manh, 15 ma watchlist, 40 ma focus, va tu prune entry cu qua han de file
+khong phinh vo han. Sau moi phien quet that, workflow se commit lai file nay voi `[skip ci]`
+de lan chay sau bot van nho nhom co can uu tien.
 
 ## Quet co hoi cuoi tuan
 
