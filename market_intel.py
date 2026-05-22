@@ -125,7 +125,10 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                 except SystemExit as exc:
                     logger.warning("[%s] %s/%s stopped by data quota: %s", source, symbol, alias, str(exc).splitlines()[0])
                     if scan_safe.is_rate_limit_error(exc):
-                        limiter.record_failure(is_rate_limit=True)
+                        limiter.record_failure(
+                            is_rate_limit=True,
+                            retry_after_seconds=scan_safe.extract_retry_after_seconds(exc),
+                        )
                     else:
                         limiter.disable(str(exc)[:180])
                 except Exception as exc:
@@ -135,7 +138,10 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     elif scan_safe.is_invalid_symbol_error(exc):
                         logger.warning("[%s] %s/%s invalid symbol, skipping source penalty", source, symbol, alias)
                     else:
-                        limiter.record_failure(is_rate_limit=scan_safe.is_rate_limit_error(exc))
+                        limiter.record_failure(
+                            is_rate_limit=scan_safe.is_rate_limit_error(exc),
+                            retry_after_seconds=scan_safe.extract_retry_after_seconds(exc),
+                        )
         if attempt + 1 < attempts:
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, attempts, wait)

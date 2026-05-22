@@ -50,6 +50,7 @@ SCAN_SYMBOL_TIMEOUT = env_int("SCAN_SYMBOL_TIMEOUT_SEC", 90, min_value=10)
 SCAN_RETRY_FAILED_DELAY_MIN = env_int("SCAN_RETRY_FAILED_DELAY_MIN_SEC", 20, min_value=0)
 SCAN_RETRY_FAILED_DELAY_MAX = env_int("SCAN_RETRY_FAILED_DELAY_MAX_SEC", 60, min_value=0)
 SCAN_RETRY_FAILED_MAX_SYMBOLS = env_int("SCAN_RETRY_FAILED_MAX_SYMBOLS", 24, min_value=0)
+SESSION_DEADLINE_BUFFER = env_int("SESSION_DEADLINE_BUFFER_SEC", 90, min_value=0)
 SCAN_FAILED_SYMBOLS: set[str] = set()
 
 
@@ -169,6 +170,21 @@ def session_target_datetime(target: dt_time | None) -> datetime | None:
         return None
     now = datetime.now(VN_TZ)
     return datetime.combine(now.date(), target, tzinfo=VN_TZ)
+
+
+def session_deadline(mode: str) -> dt_time | None:
+    raw = os.getenv(f"SESSION_{mode.upper()}_DEADLINE", "").strip()
+    if raw:
+        try:
+            hour, minute = raw.split(":", 1)
+            return dt_time(int(hour), int(minute))
+        except Exception:
+            logger.warning("Invalid SESSION_%s_DEADLINE=%r", mode.upper(), raw)
+    defaults = {
+        "morning_broad": dt_time(11, 13),
+        "afternoon_split": dt_time(14, 13),
+    }
+    return defaults.get(mode)
 
 
 async def wait_until(target: dt_time | None, label: str) -> None:
@@ -390,10 +406,25 @@ async def scan_symbols(
             await asyncio.sleep(delay)
 
     failed_symbols = [symbol for symbol in dict.fromkeys(failed_symbols) if symbol not in results]
+    retry_symbols: list[str] = []
     if retry_failures and failed_symbols and SCAN_RETRY_FAILED_MAX_SYMBOLS > 0:
-        retry_symbols = failed_symbols[:SCAN_RETRY_FAILED_MAX_SYMBOLS]
+        if stop_at_dt is not None and datetime.now(VN_TZ) >= stop_at_dt:
+            logger.warning("%s reached stop time before retry pass, keeping %s failed symbol(s)", label, len(failed_symbols))
+        else:
+            retry_symbols = failed_symbols[:SCAN_RETRY_FAILED_MAX_SYMBOLS]
+
+    if retry_symbols:
         delay_max = max(SCAN_RETRY_FAILED_DELAY_MIN, SCAN_RETRY_FAILED_DELAY_MAX)
         delay = random.uniform(SCAN_RETRY_FAILED_DELAY_MIN, delay_max)
+        if stop_at_dt is not None:
+            remaining = (stop_at_dt - datetime.now(VN_TZ)).total_seconds()
+            if remaining <= 0:
+                delay = 0
+                retry_symbols = []
+            else:
+                delay = min(delay, max(0.0, remaining))
+
+    if retry_symbols:
         logger.warning(
             "%s retry pass for %s failed symbol(s) after %.1fs: %s",
             label,
@@ -594,6 +625,7 @@ async def main() -> None:
     history_store: dict[str, Any] = {}
     peak_store: dict[str, Any] = scan.json_load(DATA_DIR / "historical_peaks.json", {})
     results: dict[str, scan.ScanResult] = {}
+    hard_stop = session_deadline(mode)
 
     index_result = await scan_symbols(["VNINDEX"], force_refresh=True, history_store=history_store, peak_store=peak_store, label="index")
     results.update(index_result)
@@ -612,7 +644,14 @@ async def main() -> None:
         results.update(quick_results)
     elif mode == "eod" or is_broad_mode(mode):
         scan_list = universe
-        broad_results = await scan_symbols(scan_list, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-broad")
+        broad_results = await scan_symbols(
+            scan_list,
+            force_refresh=True,
+            history_store=history_store,
+            peak_store=peak_store,
+            label=f"{mode}-broad",
+            stop_at=hard_stop,
+        )
         results.update(broad_results)
         focus_symbols = sorted(set(watch_symbols) | set(strong_candidates(results, watch_symbols)))
     elif mode == "afternoon_split":
@@ -643,6 +682,7 @@ async def main() -> None:
             history_store=history_store,
             peak_store=peak_store,
             label=f"{mode}-focus-1403",
+            stop_at=hard_stop,
         )
         results.update(focus_results)
     else:
@@ -651,7 +691,14 @@ async def main() -> None:
         results.update(broad_results)
         focus_symbols = sorted(watch_symbols | set(strong_candidates(results, watch_symbols)))
         await wait_until(window["focus_after"], "focus scan")
-        focus_results = await scan_symbols(focus_symbols, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-focus")
+        focus_results = await scan_symbols(
+            focus_symbols,
+            force_refresh=True,
+            history_store=history_store,
+            peak_store=peak_store,
+            label=f"{mode}-focus",
+            stop_at=hard_stop,
+        )
         results.update(focus_results)
 
     await wait_until(window["report_after"], "report")

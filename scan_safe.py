@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 import asyncio
-import re
 import logging
 import os
 import random
+import re
 import threading
 import time
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from vnstock.api.quote import Quote
@@ -21,6 +23,8 @@ except Exception:  # pragma: no cover - optional source adapter
     vf = None
 
 logger = logging.getLogger("thieucutoo.safe")
+DATA_DIR = scan.DATA_DIR
+SOURCE_HEALTH_PATH = DATA_DIR / "source_health.json"
 
 
 def env_int(name: str, default: int, min_value: int = 0) -> int:
@@ -174,6 +178,19 @@ FETCH_MAX_ATTEMPTS = env_int("SCAN_FETCH_MAX_ATTEMPTS", 3, min_value=1)
 INDEX_ALIASES = {"VNINDEX": ["VNINDEX", "^VNINDEX", "VN-INDEX"]}
 
 
+def load_source_health(path: Path = SOURCE_HEALTH_PATH) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        raw = scan.json_load(path, {})
+    except Exception:
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
+PREVIOUS_SOURCE_HEALTH = load_source_health()
+
+
 class ApiSourceLimiter:
     def __init__(self, source: str, rpm_limit: int, usage_ratio: float) -> None:
         self.source = source
@@ -186,6 +203,10 @@ class ApiSourceLimiter:
         self.failures = 0
         self.attempts = 0
         self.successes = 0
+        self.rate_limit_failures = 0
+        self.transient_failures = 0
+        self.parked_count = 0
+        self.last_error = ""
         self.disabled = False
         self.lock = threading.Lock()
 
@@ -215,6 +236,9 @@ class ApiSourceLimiter:
                 and SOURCE_DISABLE_AFTER_FAILURES
                 and self.failures >= SOURCE_DISABLE_AFTER_FAILURES
             ):
+                self.transient_failures += 1
+                self.parked_count += 1
+                self.last_error = "transient parked"
                 cooldown = SOURCE_RECOVER_AFTER + random.uniform(REQUEST_JITTER_MIN, REQUEST_JITTER_MAX)
                 self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
                 self.failures = 0
@@ -225,19 +249,23 @@ class ApiSourceLimiter:
                 )
                 return
             if is_rate_limit and retry_after_seconds is not None:
+                self.rate_limit_failures += 1
                 cooldown = min(RETRY_AFTER_MAX, max(0.0, retry_after_seconds)) + random.uniform(
                     REQUEST_JITTER_MIN,
                     REQUEST_JITTER_MAX,
                 )
                 reason = f"rate-limit Retry-After={retry_after_seconds:.1f}s"
             elif is_rate_limit:
+                self.rate_limit_failures += 1
                 multiplier = min(self.failures, 4)
                 reason = "rate-limit"
                 cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
             else:
+                self.transient_failures += 1
                 multiplier = min(max(self.failures * 0.3, 0.5), 2.0)
                 reason = "transient"
                 cooldown = random.uniform(SOURCE_COOLDOWN_MIN, SOURCE_COOLDOWN_MAX) * multiplier
+            self.last_error = reason
             self.cooldown_until = max(self.cooldown_until, time.monotonic() + cooldown)
             logger.warning(
                 "[%s] cooling down %.1fs after %s %s failure(s)",
@@ -260,6 +288,27 @@ class ApiSourceLimiter:
                 f"{self.source}: limit {self.rpm_limit}/min, use {self.effective_rpm:.1f}/min "
                 f"({self.usage_ratio:.0%}), ok {self.successes}/{self.attempts}, fail {self.failures}, {status}"
             )
+
+    def health_dict(self) -> dict[str, Any]:
+        with self.lock:
+            attempts = max(1, self.attempts)
+            success_rate = self.successes / attempts
+            penalty = self.rate_limit_failures * 18 + self.transient_failures * 8 + self.parked_count * 12
+            score = max(0, min(100, int(success_rate * 100 - penalty)))
+            return {
+                "source": self.source,
+                "rpm_limit": self.rpm_limit,
+                "effective_rpm": round(self.effective_rpm, 2),
+                "attempts": self.attempts,
+                "successes": self.successes,
+                "failures": self.failures,
+                "rate_limit_failures": self.rate_limit_failures,
+                "transient_failures": self.transient_failures,
+                "parked_count": self.parked_count,
+                "disabled": self.disabled,
+                "last_error": self.last_error,
+                "health_score": score,
+            }
 
 
 API_LIMITERS = {
@@ -314,7 +363,14 @@ def source_order_for_symbol(symbol: str) -> list[str]:
         sources = [source for source in API_SOURCES if source in INDEX_CAPABLE_SOURCES]
     sources = sources or API_SOURCES
     start = sum(ord(char) for char in symbol.upper()) % len(sources)
-    return sources[start:] + sources[:start]
+    rotated = sources[start:] + sources[:start]
+    previous = PREVIOUS_SOURCE_HEALTH.get("sources", {}) if isinstance(PREVIOUS_SOURCE_HEALTH, dict) else {}
+    return sorted(
+        rotated,
+        key=lambda source: (
+            int((previous.get(source, {}) or {}).get("health_score", 100)) < 40,
+        ),
+    )
 
 
 def symbol_aliases(symbol: str) -> list[str]:
@@ -323,6 +379,22 @@ def symbol_aliases(symbol: str) -> list[str]:
 
 def effective_total_api_rpm() -> float:
     return sum(limiter.effective_rpm for limiter in API_LIMITERS.values())
+
+
+def source_health_payload() -> dict[str, Any]:
+    return {
+        "updated_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
+        "sources": {source: limiter.health_dict() for source, limiter in API_LIMITERS.items()},
+    }
+
+
+def save_source_health(path: Path = SOURCE_HEALTH_PATH) -> dict[str, Any]:
+    payload = source_health_payload()
+    try:
+        scan.json_save(path, payload, pretty=True)
+    except Exception as exc:
+        logger.warning("Cannot save source health %s: %s", path, exc)
+    return payload
 
 
 def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:

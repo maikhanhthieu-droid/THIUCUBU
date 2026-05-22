@@ -84,6 +84,8 @@ def build_health() -> dict[str, Any]:
             "portfolio": file_info(data_dir / "portfolio.json"),
             "notes": file_info(data_dir / "notes.json"),
             "market_holidays": file_info(data_dir / "market_holidays.json"),
+            "run_journal": file_info(data_dir / "run_journal.json"),
+            "source_health": file_info(data_dir / "source_health.json"),
             "session_latest": file_info(data_dir / "session_alerts_latest.json"),
             "weekend_latest": file_info(data_dir / "weekend_opportunities_latest.json"),
         },

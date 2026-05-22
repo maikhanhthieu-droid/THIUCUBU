@@ -100,6 +100,8 @@ jobs:
             data/weekend_opportunities_history.json
             data/signal_tracker.json
             data/near_high_skiplist.json
+            data/run_journal.json
+            data/source_health.json
           retention-days: 60
 
       - name: Commit weekend data
@@ -115,7 +117,9 @@ jobs:
             data/weekend_opportunities_latest.json \
             data/weekend_opportunities_history.json \
             data/signal_tracker.json \
-            data/near_high_skiplist.json
+            data/near_high_skiplist.json \
+            data/run_journal.json \
+            data/source_health.json
           do
             if [ -e "$path" ]; then
               git add "$path"

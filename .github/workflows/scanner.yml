@@ -261,6 +261,8 @@ jobs:
             data/historical_peaks.json
             data/failed_breaks.json
             data/session_alerts_latest.json
+            data/run_journal.json
+            data/source_health.json
             data/memory_state.json
             data/market_holidays.json
             data/signal_tracker.json
@@ -281,6 +283,8 @@ jobs:
           for path in \
             data/results_latest.json \
             data/session_alerts_latest.json \
+            data/run_journal.json \
+            data/source_health.json \
             data/memory_state.json \
             data/market_holidays.json \
             data/historical_peaks.json \

@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any
 
 import market_intel as intel
+import run_journal
 import scan
 import scan_safe
 import session_scan as sess
@@ -143,7 +144,7 @@ def build_session_report(mode: str, results: dict[str, scan.ScanResult], focus_s
 def save_session_outputs(mode: str, results: dict[str, scan.ScanResult], history_store: dict[str, Any], peak_store: dict[str, Any], focus_symbols: list[str], watch_items: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     metrics, regime = intel.build_market_metrics(results, history_store)
     _, rotation_alerts = intel.update_sector_rotation([x for x in results.values() if x.symbol != "VNINDEX"])
-    _STATE.update({"results": results, "metrics": metrics, "regime": regime, "rotation": rotation_alerts})
+    _STATE.update({"mode": mode, "results": results, "metrics": metrics, "regime": regime, "rotation": rotation_alerts})
     failed_breaks = _old_save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)
     new_signals = intel.update_signal_tracker(results, metrics, mode)
     if mode == "eod":
@@ -179,19 +180,91 @@ sess.build_session_report = build_session_report
 sess.save_session_outputs = save_session_outputs
 
 
+def actual_mode(default: str) -> str:
+    mode = str(_STATE.get("mode") or "").strip()
+    if mode:
+        return mode
+    latest = scan.json_load(sess.DATA_DIR / "session_alerts_latest.json", {})
+    if isinstance(latest, dict) and latest.get("mode"):
+        return str(latest.get("mode"))
+    return default
+
+
+def build_fallback_report(mode: str, error: BaseException) -> str:
+    latest = scan.json_load(sess.DATA_DIR / "session_alerts_latest.json", {})
+    memory = state_manager.memory_summary()
+    source_health = scan_safe.source_health_payload()
+    latest_at = latest.get("updated_at") if isinstance(latest, dict) else None
+    latest_mode = latest.get("mode") if isinstance(latest, dict) else None
+    source_bits = []
+    for source, item in (source_health.get("sources") or {}).items():
+        source_bits.append(
+            f"{source} score {item.get('health_score')} ok {item.get('successes')}/{item.get('attempts')} "
+            f"rl {item.get('rate_limit_failures')} err {item.get('transient_failures')}"
+        )
+    focus = ", ".join(memory.get("session_focus", [])[:12]) if isinstance(memory, dict) else ""
+    lines = [
+        f"*THIEUCUTOO FALLBACK* `{mode}`",
+        "Scanner gap loi giua phien, da ghi journal/source health de run sau tu hoi phuc.",
+        f"Loi: `{str(error)[:260]}`",
+        f"Latest report: {latest_mode or 'n/a'} | {latest_at or 'n/a'}",
+        f"Memory: strong {memory.get('strong_count', 0)} | watch {memory.get('watchlist_count', 0)}",
+    ]
+    if focus:
+        lines.append("Focus gan nhat: " + focus)
+    if source_bits:
+        lines.append("Sources: " + " | ".join(source_bits))
+    lines.append("Watchdog se tu dispatch lai neu chua co report moi dung phien.")
+    return "\n".join(lines)
+
+
 async def main() -> None:
     _STATE["started_at"] = time.time()
     mode_hint = os.getenv("SCAN_MODE", "auto")
+    run_id = run_journal.start_run(mode_hint, os.getenv("SCAN_EVENT_NAME", ""))
+    summary_sent = False
     try:
         intel.warn_uncovered_groups()
         await sess.main()
         results = _STATE.get("results", {})
         failed_symbols = sorted(getattr(sess, "SCAN_FAILED_SYMBOLS", set()))
         summary = intel.build_scan_completion_summary(len(results), failed_symbols, time.time() - float(_STATE.get("started_at", time.time())))
-        await scan.send_chunks("*THIEUCUTOO SUMMARY*", summary)
+        try:
+            await scan.send_chunks("*THIEUCUTOO SUMMARY*", summary)
+            summary_sent = True
+        except Exception as exc:
+            logger.warning("Cannot send completion summary, main report may already be sent: %s", exc)
+        scan_safe.save_source_health()
+        run_journal.finish_run(
+            run_id,
+            actual_mode(mode_hint),
+            "success",
+            success_count=len(results),
+            failed_symbols=failed_symbols,
+            elapsed_sec=time.time() - float(_STATE.get("started_at", time.time())),
+            telegram_sent=True,
+        )
     except Exception as exc:
         logger.exception("Fatal enhanced session scan error")
-        await scan.send_telegram(f"*THIEUCUTOO ALERT* `{mode_hint}` FAILED\n`{str(exc)[:300]}`")
+        fallback_sent = False
+        try:
+            await scan.send_chunks("*THIEUCUTOO FALLBACK*", build_fallback_report(mode_hint, exc))
+            fallback_sent = True
+        except Exception as fallback_exc:
+            logger.warning("Cannot send fallback report: %s", fallback_exc)
+            try:
+                await scan.send_telegram(f"*THIEUCUTOO ALERT* `{mode_hint}` FAILED\n`{str(exc)[:300]}`")
+                fallback_sent = True
+            except Exception:
+                logger.exception("Cannot send fatal Telegram alert")
+        scan_safe.save_source_health()
+        run_journal.fail_run(
+            run_id,
+            actual_mode(mode_hint),
+            exc,
+            elapsed_sec=time.time() - float(_STATE.get("started_at", time.time())),
+            fallback_sent=fallback_sent,
+        )
         raise
 
 

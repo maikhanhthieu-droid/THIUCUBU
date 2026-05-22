@@ -29,6 +29,8 @@ Workflow phien chay qua `session_scan.py`, ben trong van dung `scan_safe.py` de 
 Neu API tra ve dau hieu rate-limit kem `Retry-After`, scanner uu tien dung dung thoi gian do
 thay vi chi sleep co dinh. Neu mot nguon chi loi tam thoi lien tiep, nguon do bi park vai phut
 roi tu duoc thu lai trong chinh run sau, khong lam chet ca phien quet.
+Suc khoe tung nguon duoc ghi vao `data/source_health.json`; nguon diem qua yeu se bi day xuong
+cuoi thu tu uu tien o run sau, nhung van co co hoi tu hoi phuc.
 
 Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
 `SCAN_SOURCE_USAGE_RATIO=0.78`, tuc chi dung khoang 75-80% quota khai bao moi nguon.
@@ -56,6 +58,9 @@ Workflow ngay thuong chay qua `session_scan.py`.
 - Cac ma trong `data/portfolio.json` va `data/notes.json` luon duoc dua vao focus scan vi day la nhom chiem ty trong lon trong danh muc.
 
 Ket qua focus gan nhat duoc luu vao `data/session_alerts_latest.json`.
+Neu den deadline (`morning_broad` mac dinh 11:13, `afternoon_split` mac dinh 14:13) ma chua quet
+xong, scanner cat phan con lai va gui report voi du lieu da co. Muc tieu la dung gio hon la co
+quet bang moi ma nhung tre co hoi mua ban.
 
 Neu GitHub Actions bi tre/hut cron trong cac moc quan trong, workflow `Thieucutoo Scanner Watchdog`
 se kiem tra sau do va tu dispatch lai scanner neu chua co report cung ngay. Day la lop fallback,
@@ -89,6 +94,13 @@ File nay chi luu trang thai gon nhe, khong luu OHLCV day du. State duoc cap vers
 gioi han toi da 7 ma manh, 15 ma watchlist, 40 ma focus, va tu prune entry cu qua han de file
 khong phinh vo han. Sau moi phien quet that, workflow se commit lai file nay voi `[skip ci]`
 de lan chay sau bot van nho nhom co can uu tien.
+
+## Run journal va fallback
+
+Moi lan scanner/weekend chay se ghi `data/run_journal.json` voi trang thai `started`, `success`
+hoac `failed`, so ma OK/fail, elapsed time va viec Telegram da gui hay chua. Neu scanner gap loi
+giua phien, `session_plus.py` se co gang gui mot fallback report ngan gom loi, memory gan nhat va
+suc khoe API. Workflow van de fail de watchdog co the dispatch lai neu chua co report moi dung phien.
 
 ## Quet co hoi cuoi tuan
 
