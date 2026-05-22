@@ -73,19 +73,28 @@ def fetch_fundamental_safe(symbol: str) -> Any:
 
 
 def build_report_compat(opportunities, sectors, mode, near_high=None, missing_fundamental=None) -> str:
-    try:
-        return _old_build_report(opportunities, sectors, mode, near_high, missing_fundamental)
-    except TypeError:
-        report = _old_build_report(opportunities, sectors, mode, near_high)
-        if missing_fundamental:
-            preview = ",".join(missing_fundamental[:12])
-            suffix = "..." if len(missing_fundamental) > 12 else ""
-            report = report.replace(
-                "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.",
-                "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.\n"
-                f"Fundamental missing: {len(missing_fundamental)} ma ({preview}{suffix})",
-            )
-        return report
+    report = None
+    for args in (
+        (opportunities, sectors, mode, near_high, missing_fundamental),
+        (opportunities, sectors, mode, near_high),
+        (opportunities, sectors, mode),
+    ):
+        try:
+            report = _old_build_report(*args)
+            break
+        except TypeError:
+            continue
+    if report is None:
+        raise TypeError("No compatible weekend build_report signature")
+    if missing_fundamental:
+        preview = ",".join(missing_fundamental[:12])
+        suffix = "..." if len(missing_fundamental) > 12 else ""
+        report = report.replace(
+            "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.",
+            "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.\n"
+            f"Fundamental missing: {len(missing_fundamental)} ma ({preview}{suffix})",
+        )
+    return report
 
 
 patch_scan_metadata()
@@ -149,12 +158,14 @@ async def main() -> None:
 
     sectors = plus.weekend.build_sector_snapshots(packets)
     opportunities = plus.weekend.build_opportunities(packets, sectors)
-    near_high = (
-        plus.weekend.build_near_high_snapshots(packets)
-        if plus.weekend.UPDATE_NEAR_HIGH and mode != "test"
-        else []
-    )
-    plus.weekend.save_outputs(opportunities, sectors, near_high)
+    near_high = []
+    build_near_high = getattr(plus.weekend, "build_near_high_snapshots", None)
+    if callable(build_near_high) and plus.weekend.UPDATE_NEAR_HIGH and mode != "test":
+        near_high = build_near_high(packets)
+    try:
+        plus.weekend.save_outputs(opportunities, sectors, near_high)
+    except TypeError:
+        plus.weekend.save_outputs(opportunities, sectors)
 
     report = plus.weekend.build_report(opportunities, sectors, mode, near_high, missing_fundamental)
     await scan.send_chunks("*THIEUCUTOO WEEKEND*", report)
