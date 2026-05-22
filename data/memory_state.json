@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "last_updated": null,
+  "last_mode": null,
+  "strong_stocks": [],
+  "watchlist": [],
+  "session_focus": [],
+  "retired": [],
+  "meta": {
+    "strong_limit": 7,
+    "watchlist_limit": 15,
+    "session_focus_limit": 40,
+    "stale_keep_days": 21,
+    "description": "Bot memory for strong stocks, VCP/VSA watchlist, and priority focus symbols."
+  }
+}

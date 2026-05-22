@@ -52,6 +52,17 @@ Workflow ngay thuong chay qua `session_scan.py`.
 
 Ket qua focus gan nhat duoc luu vao `data/session_alerts_latest.json`.
 
+## Tri nho cua bot
+
+Bot co file `data/memory_state.json` de giu tri nho giua cac lan chay GitHub Actions:
+
+- `strong_stocks`: toi da 7 ma dang rat manh/dong tien tot.
+- `watchlist`: toi da 15 ma dang co form nen/VCP/VSA can theo doi 1-3 tuan.
+- `session_focus`: toi da 40 ma uu tien cho lan quet nhanh tiep theo.
+- `retired`: cac ma bi loai do failed-break hoac diem yeu.
+
+File nay chi luu trang thai gon nhe, khong luu OHLCV day du. Sau moi phien quet that, workflow se commit lai file nay voi `[skip ci]` de lan chay sau bot van nho nhom co can uu tien.
+
 ## Quet co hoi cuoi tuan
 
 Workflow `Thieucutoo Weekend Opportunities` chay luc 08:30 va 14:30 Thu bay gio Viet Nam

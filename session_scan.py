@@ -13,6 +13,7 @@ from typing import Any
 
 import scan
 import scan_safe
+import state_manager
 import telegram_format as tf
 
 logging.basicConfig(
@@ -279,6 +280,11 @@ def previous_focus_symbols(watch_items: dict[str, dict[str, Any]], limit: int | 
     signal_symbols: list[str] = []
     note_symbols: list[str] = []
     seen: set[str] = set()
+
+    for symbol in state_manager.memory_focus_symbols(limit=signal_limit):
+        add_symbol_once(signal_symbols, seen, symbol)
+        if len(signal_symbols) >= signal_limit:
+            break
 
     latest = scan.json_load(DATA_DIR / "session_alerts_latest.json", {})
     if isinstance(latest, dict):

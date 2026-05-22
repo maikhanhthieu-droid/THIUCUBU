@@ -13,6 +13,7 @@ import market_intel as intel
 import scan
 import scan_safe
 import session_scan as sess
+import state_manager
 import telegram_format as tf
 
 logger = logging.getLogger("thieucutoo.session_plus")
@@ -147,6 +148,12 @@ def save_session_outputs(mode: str, results: dict[str, scan.ScanResult], history
     new_signals = intel.update_signal_tracker(results, metrics, mode)
     if mode == "eod":
         intel.auto_update_portfolio_thresholds(results)
+    memory_summary: dict[str, Any] = {}
+    try:
+        memory_state = state_manager.update_memory_state(results, mode, focus_symbols, watch_items, metrics)
+        memory_summary = state_manager.memory_summary(memory_state)
+    except Exception as exc:
+        logger.warning("Cannot update memory_state.json: %s", exc)
     ordered = sorted(results.values(), key=lambda x: (adv_score(x, metrics), x.win_score, x.flow_score), reverse=True)
     scan.json_save(sess.DATA_DIR / "results_latest.json", [asdict(x) for x in ordered], pretty=False)
     latest = {
@@ -157,6 +164,7 @@ def save_session_outputs(mode: str, results: dict[str, scan.ScanResult], history
         "market": asdict(results["VNINDEX"]) if "VNINDEX" in results else None,
         "market_regime": regime,
         "new_signals": new_signals,
+        "memory": memory_summary,
         "advanced_top": {x.symbol: metrics.get(x.symbol, {}) for x in ordered[:20]},
         "top": [asdict(x) for x in ordered[:20]],
     }

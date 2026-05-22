@@ -258,6 +258,7 @@ jobs:
             data/historical_peaks.json
             data/failed_breaks.json
             data/session_alerts_latest.json
+            data/memory_state.json
             data/signal_tracker.json
             data/sector_rotation_history.json
             data/portfolio_threshold_state.json
@@ -273,6 +274,7 @@ jobs:
           for path in \
             data/results_latest.json \
             data/session_alerts_latest.json \
+            data/memory_state.json \
             data/historical_peaks.json \
             data/failed_breaks.json \
             data/signal_tracker.json \
