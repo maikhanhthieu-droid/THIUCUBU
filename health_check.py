@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import config
+import market_calendar
 import scan
 
 VN_TZ = timezone(timedelta(hours=7))
@@ -54,8 +55,11 @@ def build_health() -> dict[str, Any]:
         source_stats = [f"scan_safe unavailable: {exc}"]
 
     warnings: list[str] = []
+    market_status = market_calendar.get_market_day_status()
     if settings.effective_dry_run:
         warnings.append("telegram not configured or DRY_RUN enabled")
+    if market_status.closed:
+        warnings.append(f"market closed: {market_status.reason} ({market_status.policy})")
     if age_minutes is None:
         warnings.append("missing session_alerts_latest.json")
     elif age_minutes > 24 * 60:
@@ -70,9 +74,16 @@ def build_health() -> dict[str, Any]:
             "updated_at": latest.get("updated_at") if isinstance(latest, dict) else None,
             "age_minutes": age_minutes,
         },
+        "market_day": {
+            "date": market_status.date,
+            "closed": market_status.closed,
+            "reason": market_status.reason,
+            "policy": market_status.policy,
+        },
         "files": {
             "portfolio": file_info(data_dir / "portfolio.json"),
             "notes": file_info(data_dir / "notes.json"),
+            "market_holidays": file_info(data_dir / "market_holidays.json"),
             "session_latest": file_info(data_dir / "session_alerts_latest.json"),
             "weekend_latest": file_info(data_dir / "weekend_opportunities_latest.json"),
         },

@@ -14,11 +14,11 @@ Khong dua API key vao file code vi repo public.
 
 ## Lich chay
 
-- 10:35 VN: bat dau quet rong buoi sang, chi tra report sau 12:30.
-- 13:45 VN: quet rong phien chieu, quet lai note/co manh sau 14:00 va tra report sau 14:15.
+- 10:31 VN: quet rong buoi sang, muc tieu tra Telegram truoc 11:15.
+- 13:46 VN: quet cac ma chua uu tien truoc; 14:03 quet lai note/co manh/ma phien sang, muc tieu tra truoc 14:15.
 - 15:05 VN: tong ket EOD sau ATC, co trang thai VNINDEX va canh bao risk.
 
-Moi lan chay co random start ngan, chia nguon API, dung khoang 70% quota moi nguon va nghi ngau nhien de giam rui ro bi limit.
+Moi lan chay co random start ngan, chia nguon API, dung khoang 75-80% quota moi nguon va nghi ngau nhien de giam rui ro bi limit.
 
 ## Co che chong limit API
 
@@ -45,8 +45,8 @@ Cac bien co the chinh trong workflow:
 
 Workflow ngay thuong chay qua `session_scan.py`.
 
-- Buoi sang: lay data sau 10:30, quet rong truoc, den sau 12:30 quet lai ma trong note/danh muc va cac co manh roi moi gui Telegram.
-- Buoi chieu: lay data sau 13:45, quet cac ma khong uu tien truoc; sau 14:00 quet lai note/co manh, gui report sau 14:15.
+- Buoi sang: lay data sau 10:31, quet rong va gui report som de kip soi trong phien.
+- Buoi chieu: lay data sau 13:46, quet cac ma khong uu tien truoc; sau 14:03 quet lai note/co manh/ma phien sang, gui report truoc 14:15 neu API khong ngheo mang bat thuong.
 - EOD: chay sau 15:05, khong ep nhanh, uu tien ket qua muot va co trang thai VNINDEX.
 - Cac ma trong `data/portfolio.json` va `data/notes.json` luon duoc dua vao focus scan vi day la nhom chiem ty trong lon trong danh muc.
 
@@ -55,6 +55,20 @@ Ket qua focus gan nhat duoc luu vao `data/session_alerts_latest.json`.
 Neu GitHub Actions bi tre/hut cron trong cac moc quan trong, workflow `Thieucutoo Scanner Watchdog`
 se kiem tra sau do va tu dispatch lai scanner neu chua co report cung ngay. Day la lop fallback,
 khong thay the scanner chinh.
+
+## Ngay nghi / data khong doi
+
+Bot doc lich nghi trong `data/market_holidays.json`. Neu hom nay la thu 7, chu nhat hoac ngay nghi
+co trong file nay, mac dinh `MARKET_CLOSED_POLICY=skip`: bot gui mot notice ngan, ghi marker vao
+`data/session_alerts_latest.json`, roi dung quet de watchdog khong dispatch lap lai.
+
+Neu van muon quet data cu trong ngay nghi, doi bien workflow thanh:
+
+```yaml
+MARKET_CLOSED_POLICY: "scan_old"
+```
+
+Khi do scanner van chay va dung du lieu moi nhat ma API tra ve, chap nhan tin hieu co the la stale.
 
 ## Tri nho cua bot
 

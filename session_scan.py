@@ -13,6 +13,7 @@ from typing import Any
 
 import scan
 import scan_safe
+import market_calendar
 import state_manager
 import telegram_format as tf
 
@@ -562,6 +563,23 @@ async def main() -> None:
     window = SESSION_WINDOWS[mode]
     configure_safe_api()
     SCAN_FAILED_SYMBOLS.clear()
+
+    market_status = market_calendar.get_market_day_status()
+    if mode != "test" and market_status.closed:
+        if market_calendar.should_skip_scan(market_status):
+            logger.info(
+                "Market closed on %s (%s), policy=skip. Writing closed marker and stopping scan.",
+                market_status.date,
+                market_status.reason,
+            )
+            scan.json_save(DATA_DIR / "session_alerts_latest.json", market_calendar.closed_alert_payload(mode, market_status), pretty=False)
+            await scan.send_chunks("*THIEUCUTOO SESSION*", market_calendar.closed_notice(mode, market_status))
+            return
+        logger.info(
+            "Market closed on %s (%s), policy=scan_old. Scanner will continue using latest available data.",
+            market_status.date,
+            market_status.reason,
+        )
 
     if os.getenv("GITHUB_ACTIONS") and mode != "test":
         delay = random.randint(0, max(SESSION_RANDOM_START_MAX, 0))

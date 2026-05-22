@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "market": "Vietnam HOSE/HNX/UPCOM",
+  "timezone": "Asia/Ho_Chi_Minh",
+  "note": "Update this file when VNX/HOSE/HNX publishes a new official holiday schedule.",
+  "holidays": [
+    { "date": "2026-01-01", "name": "New Year's Day" },
+    { "date": "2026-02-16", "name": "Lunar New Year / Tet" },
+    { "date": "2026-02-17", "name": "Lunar New Year / Tet" },
+    { "date": "2026-02-18", "name": "Lunar New Year / Tet" },
+    { "date": "2026-02-19", "name": "Lunar New Year / Tet" },
+    { "date": "2026-02-20", "name": "Lunar New Year / Tet" },
+    { "date": "2026-04-27", "name": "Hung Kings Commemoration Day" },
+    { "date": "2026-04-30", "name": "Reunification Day" },
+    { "date": "2026-05-01", "name": "International Labor Day" },
+    { "date": "2026-08-31", "name": "National Day holiday" },
+    { "date": "2026-09-01", "name": "National Day holiday" },
+    { "date": "2026-09-02", "name": "National Day" }
+  ]
+}
