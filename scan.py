@@ -18,6 +18,8 @@ import numpy as np
 import pandas as pd
 from vnstock.api.quote import Quote
 
+from config import env_int, get_settings
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s - %(message)s",
@@ -31,26 +33,11 @@ CACHE_DIR = DATA_DIR / "cache"
 DATA_DIR.mkdir(exist_ok=True)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-TOKEN = os.getenv("TELEGRAM_TOKEN", "").strip()
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
-DRY_RUN = os.getenv("DRY_RUN", "").strip().lower() in {"1", "true", "yes"} or not (TOKEN and CHAT_ID)
-
-VNSTOCK_API_KEY = os.getenv("VNSTOCK_API_KEY", "").strip()
-if VNSTOCK_API_KEY:
-    os.environ.setdefault("VNSTOCK_API_KEY", VNSTOCK_API_KEY)
-    os.environ.setdefault("VNDATA_API_KEY", VNSTOCK_API_KEY)
-
-
-def env_int(name: str, default: int, min_value: int = 0) -> int:
-    raw = os.getenv(name, "").strip()
-    if not raw:
-        return default
-    try:
-        value = int(raw)
-    except ValueError:
-        logger.warning("Invalid %s=%r, using %s", name, raw, default)
-        return default
-    return max(min_value, value)
+SETTINGS = get_settings()
+TOKEN = SETTINGS.telegram_token
+CHAT_ID = SETTINGS.telegram_chat_id
+DRY_RUN = SETTINGS.effective_dry_run
+VNSTOCK_API_KEY = SETTINGS.vnstock_api_key
 
 
 BATCH_SIZE = env_int("SCAN_BATCH_SIZE", 10, min_value=1)
@@ -80,7 +67,7 @@ SECTORS: dict[str, list[str]] = {
     "Det may san xuat": ["VEA", "TNG", "GIL", "MSH", "VGT", "TCM"],
     "Thuy san": ["ANV", "VHC", "FMC", "IDI", "ASM", "CMX"],
     "Nong nghiep chan nuoi": ["HAG", "DBC", "PAN", "BAF", "LTG", "TAR", "HNG"],
-    "Cong nghe vien thong": ["FPT", "CMG", "ELC", "VGI", "CTR", "FOX", "LC"],
+    "Cong nghe vien thong": ["FPT", "CMG", "ELC", "VGI", "CTR", "FOX"],
     "Logistics cang bien": ["GMD", "HAH", "VOS", "VTO", "VIP", "TCL", "SGP", "STG", "MHC"],
 }
 
@@ -547,7 +534,7 @@ def portfolio_report(results: list[ScanResult]) -> str:
         if not r:
             lines.append(f"`{symbol}` no data | {note}")
             continue
-        if r.win_score <= sell or r.failed_break:
+        if r.win_score < sell or r.failed_break:
             action = "CANH BAN / GIAM TY TRONG"
         elif r.win_score >= buy_more:
             action = "CANH MUA THEM"
@@ -557,6 +544,26 @@ def portfolio_report(results: list[ScanResult]) -> str:
     return "\n".join(lines)
 
 
+def normalize_failed_break_symbol(value: Any) -> str:
+    return str(value or "").replace("`", "").upper().strip()
+
+
+def latest_failed_breaks(failed_breaks: list[dict[str, Any]], limit: int = 10, only_date: str | None = None) -> list[dict[str, Any]]:
+    seen: dict[str, dict[str, Any]] = {}
+    for item in failed_breaks:
+        if not isinstance(item, dict):
+            continue
+        if only_date and item.get("date") != only_date:
+            continue
+        symbol = normalize_failed_break_symbol(item.get("symbol"))
+        if not symbol:
+            continue
+        normalized = dict(item)
+        normalized["symbol"] = symbol
+        seen[symbol] = normalized
+    return sorted(seen.values(), key=lambda item: str(item.get("date", "")), reverse=True)[:limit]
+
+
 def update_failed_breaks(results: list[ScanResult]) -> list[dict[str, Any]]:
     path = DATA_DIR / "failed_breaks.json"
     old = json_load(path, [])
@@ -564,6 +571,13 @@ def update_failed_breaks(results: list[ScanResult]) -> list[dict[str, Any]]:
     keep = []
     for item in old:
         try:
+            if not isinstance(item, dict):
+                continue
+            symbol = normalize_failed_break_symbol(item.get("symbol"))
+            if not symbol:
+                continue
+            item = dict(item)
+            item["symbol"] = symbol
             item_date = datetime.fromisoformat(item["date"]).date()
             if (today - item_date).days <= 25:
                 keep.append(item)
@@ -573,9 +587,10 @@ def update_failed_breaks(results: list[ScanResult]) -> list[dict[str, Any]]:
     for r in results:
         if r.failed_break:
             date_str = today.isoformat()
-            key = (r.symbol, date_str)
+            symbol = normalize_failed_break_symbol(r.symbol)
+            key = (symbol, date_str)
             if key not in seen:
-                keep.append({"symbol": r.symbol, "date": date_str, "score": r.win_score, "reason": r.reason})
+                keep.append({"symbol": symbol, "date": date_str, "score": r.win_score, "reason": r.reason})
     json_save(path, keep)
     return keep
 
@@ -714,8 +729,9 @@ async def main() -> None:
     report = build_report(mode, results)
     await send_chunks("*THIEUCUTOO REPORT*", report)
 
-    if failed_breaks and mode != "eod":
-        recent = failed_breaks[-10:]
+    today = datetime.now(VN_TZ).date().isoformat()
+    recent = latest_failed_breaks(failed_breaks, limit=10, only_date=today)
+    if recent and mode not in {"eod", "test"}:
         text = "*FAILED BREAK WATCH 25D*\n" + "\n".join(f"`{x['symbol']}` {x['date']} score {x.get('score')}: {x.get('reason','')}" for x in recent)
         await send_chunks("*THIEUCUTOO RISK*", text)
 
