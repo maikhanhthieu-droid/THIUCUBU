@@ -2,6 +2,7 @@ name: Thieucutoo Scanner
 
 permissions:
   contents: write
+  actions: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -19,9 +20,17 @@ on:
   schedule:
     # Start a little early; the runner waits inside session_gate.py for the exact Vietnam-time data windows.
     # Keep this workflow file touched without skip-ci when schedules need to be re-registered by GitHub.
-    - cron: "31 3 * * 1-5" # morning broad: full scan from 10:31 VN, target before 11:15
-    - cron: "40 6 * * 1-5" # afternoon split: 13:46 broad-nonfocus, 14:03 focus, target before 14:15
-    - cron: "0 8 * * 1-5"  # eod: wait for 15:05 VN data
+    - cron: "25 3 * * 1-5" # morning backup 10:25 VN, code waits until 10:31
+    - cron: "31 3 * * 1-5" # morning primary 10:31 VN
+    - cron: "36 3 * * 1-5" # morning backup if GitHub queue skips/delays primary
+    - cron: "43 3 * * 1-5" # morning final backup
+    - cron: "40 6 * * 1-5" # afternoon backup 13:40 VN, code waits until 13:46
+    - cron: "46 6 * * 1-5" # afternoon primary 13:46 VN
+    - cron: "52 6 * * 1-5" # afternoon backup
+    - cron: "57 6 * * 1-5" # afternoon final backup before 14:03 focus
+    - cron: "0 8 * * 1-5"  # eod primary 15:00 VN, code waits until 15:05
+    - cron: "10 8 * * 1-5" # eod backup
+    - cron: "25 8 * * 1-5" # eod final backup
   workflow_dispatch:
     inputs:
       mode:
@@ -38,19 +47,82 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Schedule duplicate guard
+        id: guard
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCAN_SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          MODE="auto"
+          case "$SCAN_SCHEDULE" in
+            "25 3 * * 1-5"|"31 3 * * 1-5"|"36 3 * * 1-5"|"43 3 * * 1-5") MODE="morning_broad" ;;
+            "40 6 * * 1-5"|"46 6 * * 1-5"|"52 6 * * 1-5"|"57 6 * * 1-5") MODE="afternoon_split" ;;
+            "0 8 * * 1-5"|"10 8 * * 1-5"|"25 8 * * 1-5") MODE="eod" ;;
+          esac
+          if [ "$MODE" = "auto" ]; then
+            NOW_VN="$(TZ=Asia/Ho_Chi_Minh date +%H%M)"
+            NOW_VN_NUM=$((10#$NOW_VN))
+            if [ "$NOW_VN_NUM" -ge 930 ] && [ "$NOW_VN_NUM" -le 1230 ]; then
+              MODE="morning_broad"
+            elif [ "$NOW_VN_NUM" -ge 1330 ] && [ "$NOW_VN_NUM" -lt 1500 ]; then
+              MODE="afternoon_split"
+            elif [ "$NOW_VN_NUM" -ge 1500 ] && [ "$NOW_VN_NUM" -le 2100 ]; then
+              MODE="eod"
+            fi
+          fi
+          WINDOW_MINUTES=25
+          if [ "$MODE" = "morning_broad" ]; then WINDOW_MINUTES=25; fi
+          if [ "$MODE" = "afternoon_split" ]; then WINDOW_MINUTES=20; fi
+          if [ "$MODE" = "eod" ]; then WINDOW_MINUTES=35; fi
+          RUNS_JSON="$(gh run list -R "${{ github.repository }}" --workflow scanner.yml --limit 30 --json databaseId,status,conclusion,createdAt,event)"
+          SHOULD_RUN="$(RUNS_JSON="$RUNS_JSON" CURRENT_RUN_ID="$GITHUB_RUN_ID" WINDOW_MINUTES="$WINDOW_MINUTES" python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+
+          runs = json.loads(os.environ.get("RUNS_JSON") or "[]")
+          current = int(os.environ["CURRENT_RUN_ID"])
+          cutoff = datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["WINDOW_MINUTES"]))
+          should_run = True
+          for run in runs:
+              if int(run.get("databaseId") or 0) == current:
+                  continue
+              if run.get("event") not in {"schedule", "workflow_dispatch"}:
+                  continue
+              created = datetime.fromisoformat(str(run["createdAt"]).replace("Z", "+00:00"))
+              if created < cutoff:
+                  continue
+              status = run.get("status")
+              conclusion = run.get("conclusion")
+              if status in {"queued", "in_progress", "waiting", "requested"} or conclusion == "success":
+                  should_run = False
+                  break
+          print("true" if should_run else "false")
+          PY
+          )"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          if [ "$SHOULD_RUN" != "true" ]; then
+            echo "Recent scanner run already active/successful; this backup schedule will skip."
+          fi
+
       - name: Setup Python
+        if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
       - name: Install dependencies
+        if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
         run: |
           python -m pip install --upgrade pip
           python -m pip uninstall vnstock3 -y || true
           python -m pip install --disable-pip-version-check -r requirements.txt
 
       - name: Restore cache
+        if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
         uses: actions/cache@v4
         with:
           path: data/cache
@@ -59,6 +131,7 @@ jobs:
             scan-cache-${{ runner.os }}-
 
       - name: Run scanner
+        if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -100,9 +173,17 @@ jobs:
           fi
           if [ "$MODE" = "auto" ]; then
             case "$SCAN_SCHEDULE" in
+              "25 3 * * 1-5") MODE="morning_broad" ;;
               "31 3 * * 1-5") MODE="morning_broad" ;;
+              "36 3 * * 1-5") MODE="morning_broad" ;;
+              "43 3 * * 1-5") MODE="morning_broad" ;;
               "40 6 * * 1-5") MODE="afternoon_split" ;;
+              "46 6 * * 1-5") MODE="afternoon_split" ;;
+              "52 6 * * 1-5") MODE="afternoon_split" ;;
+              "57 6 * * 1-5") MODE="afternoon_split" ;;
               "0 8 * * 1-5") MODE="eod" ;;
+              "10 8 * * 1-5") MODE="eod" ;;
+              "25 8 * * 1-5") MODE="eod" ;;
             esac
           fi
           if [ "$MODE" = "auto" ] && [ "$SCAN_EVENT_NAME" = "workflow_dispatch" ]; then
@@ -135,7 +216,7 @@ jobs:
           python session_gate_near_high.py --mode "$MODE"
 
       - name: Upload data artifact
-        if: always()
+        if: always() && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
         uses: actions/upload-artifact@v4
         with:
           name: thieucutoo-data-${{ github.run_number }}
@@ -152,7 +233,7 @@ jobs:
           retention-days: 30
 
       - name: Commit scanner data
-        if: always() && github.ref == 'refs/heads/main'
+        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
         run: |
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"
