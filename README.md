@@ -52,6 +52,10 @@ Workflow ngay thuong chay qua `session_scan.py`.
 
 Ket qua focus gan nhat duoc luu vao `data/session_alerts_latest.json`.
 
+Neu GitHub Actions bi tre/hut cron trong cac moc quan trong, workflow `Thieucutoo Scanner Watchdog`
+se kiem tra sau do va tu dispatch lai scanner neu chua co report cung ngay. Day la lop fallback,
+khong thay the scanner chinh.
+
 ## Tri nho cua bot
 
 Bot co file `data/memory_state.json` de giu tri nho giua cac lan chay GitHub Actions:

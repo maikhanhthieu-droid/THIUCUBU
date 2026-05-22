@@ -14,11 +14,14 @@ param(
 $ErrorActionPreference = "Stop"
 
 function Find-Gh {
-    $candidates = @(
-        (Join-Path $env:ProgramFiles "GitHub CLI\gh.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\GitHub CLI\gh.exe"),
-        "gh"
-    )
+    $candidates = @()
+    if ($env:ProgramFiles) {
+        $candidates += (Join-Path $env:ProgramFiles "GitHub CLI\gh.exe")
+    }
+    if ($env:LOCALAPPDATA) {
+        $candidates += (Join-Path $env:LOCALAPPDATA "Programs\GitHub CLI\gh.exe")
+    }
+    $candidates += "gh"
     foreach ($candidate in $candidates) {
         try {
             $cmd = Get-Command $candidate -ErrorAction Stop
@@ -64,9 +67,11 @@ function Test-FreshReport([string]$Mode, [int]$Minutes) {
         if (-not $report.updated_at -or -not $report.mode) {
             return $false
         }
-        $updated = [DateTimeOffset]::Parse([string]$report.updated_at).LocalDateTime
+        $vnOffset = [TimeSpan]::FromHours(7)
+        $updated = [DateTimeOffset]::Parse([string]$report.updated_at).ToOffset($vnOffset)
+        $nowVn = ([DateTimeOffset]::UtcNow).ToOffset($vnOffset)
         $modeOk = (Get-BaseMode ([string]$report.mode)) -eq (Get-BaseMode $Mode)
-        return $modeOk -and ($updated.Date -eq (Get-Date).Date)
+        return $modeOk -and ($updated.Date -eq $nowVn.Date)
     } catch {
         return $false
     }

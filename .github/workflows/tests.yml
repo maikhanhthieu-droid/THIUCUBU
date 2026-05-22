@@ -7,8 +7,9 @@ on:
     paths:
       - "*.py"
       - "tests/**"
+      - "scripts/**"
       - "requirements*.txt"
-      - ".github/workflows/tests.yml"
+      - ".github/workflows/*.yml"
   workflow_dispatch:
 
 jobs:

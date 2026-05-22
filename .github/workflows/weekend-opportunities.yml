@@ -105,7 +105,10 @@ jobs:
         run: |
           git config user.name "ThieucutooBot"
           git config user.email "bot@thieucutoo.local"
-          git pull --rebase --autostash || true
+          if ! git pull --rebase --autostash; then
+            echo "::warning::Initial pull/rebase failed; aborting rebase if needed and continuing with local data commit."
+            git rebase --abort || true
+          fi
           for path in \
             data/weekend_opportunities_latest.json \
             data/weekend_opportunities_history.json \
@@ -119,6 +122,33 @@ jobs:
           if git diff --staged --quiet; then
             echo "No weekend data changes."
           else
-            git commit -m "chore: update weekend opportunities [skip ci]"
-            git push
+            if git commit -m "chore: update weekend opportunities [skip ci]"; then
+              if ! git push; then
+                echo "::warning::Weekend data push failed; retrying after pull/rebase."
+                if git pull --rebase --autostash; then
+                  git push || echo "::warning::Weekend data push failed after retry; report was already sent."
+                else
+                  echo "::warning::Retry pull/rebase failed; leaving run green because report was already sent."
+                  git rebase --abort || true
+                fi
+              fi
+            else
+              echo "::warning::Weekend data commit failed; report was already sent."
+            fi
           fi
+
+      - name: Notify workflow failure
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not configured; cannot send failure notice."
+            exit 0
+          fi
+          TEXT="THIEUCUTOO weekend workflow failed: ${GITHUB_WORKFLOW} run ${GITHUB_RUN_ID}
+${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${TEXT}" || true

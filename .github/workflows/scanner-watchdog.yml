@@ -1,0 +1,67 @@
+name: Thieucutoo Scanner Watchdog
+
+permissions:
+  actions: write
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+concurrency:
+  group: thieucutoo-scanner-watchdog-${{ github.ref }}-${{ github.event.schedule || github.event.inputs.mode || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: "50 3 * * 1-5" # 10:50 VN: morning fallback if scanner/report missing
+    - cron: "8 7 * * 1-5"  # 14:08 VN: afternoon focus fallback if scanner/report missing
+    - cron: "40 8 * * 1-5" # 15:40 VN: eod fallback if scanner/report missing
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "morning_broad | afternoon_split | eod"
+        required: false
+        default: "morning_broad"
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve mode
+        id: resolve
+        env:
+          SCAN_SCHEDULE: ${{ github.event.schedule }}
+          INPUT_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || '' }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          MODE="${INPUT_MODE:-morning_broad}"
+          LOOKBACK="45"
+          ACTIVE="35"
+          MAX_DISPATCHES="2"
+          if [ "$EVENT_NAME" = "schedule" ]; then
+            case "$SCAN_SCHEDULE" in
+              "50 3 * * 1-5") MODE="morning_broad"; LOOKBACK="55"; ACTIVE="40"; MAX_DISPATCHES="2" ;;
+              "8 7 * * 1-5") MODE="afternoon_split"; LOOKBACK="40"; ACTIVE="22"; MAX_DISPATCHES="2" ;;
+              "40 8 * * 1-5") MODE="eod"; LOOKBACK="70"; ACTIVE="45"; MAX_DISPATCHES="2" ;;
+            esac
+          fi
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "lookback=$LOOKBACK" >> "$GITHUB_OUTPUT"
+          echo "active=$ACTIVE" >> "$GITHUB_OUTPUT"
+          echo "max_dispatches=$MAX_DISPATCHES" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch fallback if needed
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/dispatch_watchdog.ps1 `
+            -Mode "${{ steps.resolve.outputs.mode }}" `
+            -LookbackMinutes ${{ steps.resolve.outputs.lookback }} `
+            -MaxActiveMinutes ${{ steps.resolve.outputs.active }} `
+            -MaxDispatchesInWindow ${{ steps.resolve.outputs.max_dispatches }}
