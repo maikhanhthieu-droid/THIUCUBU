@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 from vnstock.api.quote import Quote
 
-from config import env_int, get_settings
+from config import env_csv, env_int, get_settings
 
 logging.basicConfig(
     level=logging.INFO,
@@ -194,7 +194,12 @@ def cache_path(symbol: str, bars: int) -> Path:
 
 
 def is_cache_fresh(path: Path, ttl_minutes: int) -> bool:
-    return path.exists() and (time.time() - path.stat().st_mtime) <= ttl_minutes * 60
+    if not path.exists():
+        return False
+    mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=VN_TZ)
+    if mtime.date() < datetime.now(VN_TZ).date():
+        return False
+    return (time.time() - path.stat().st_mtime) <= ttl_minutes * 60
 
 
 def normalize_ohlcv(raw: pd.DataFrame) -> pd.DataFrame | None:
@@ -238,11 +243,15 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-    sources = ["VCI", "TCBS"]
+    sources = [
+        source
+        for source in env_csv("SCAN_DIRECT_API_SOURCES", os.getenv("SCAN_API_SOURCES", "VCI,KBS,DNSE"))
+        if source in {"VCI", "KBS", "DNSE"}
+    ] or ["VCI", "KBS"]
     random.shuffle(sources)
     for source in sources:
         try:
-            q = Quote(symbol=symbol, source=source)
+            q = Quote(symbol=symbol, source=source.lower())
             raw = q.history(start=start, end=end, interval="1D")
             df = normalize_ohlcv(raw)
             if df is not None and len(df) >= 80:
