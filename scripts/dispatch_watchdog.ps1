@@ -41,6 +41,37 @@ function Invoke-GhJson([string[]]$GhArgs) {
     return $raw | ConvertFrom-Json
 }
 
+function Get-BaseMode([string]$Value) {
+    if ($Value -like "morning*") {
+        return "morning"
+    }
+    if ($Value -like "afternoon*") {
+        return "afternoon"
+    }
+    return $Value
+}
+
+function Test-FreshReport([string]$Mode, [int]$Minutes) {
+    try {
+        $raw = & $script:Gh api "repos/$Repo/contents/data/session_alerts_latest.json?ref=$Branch" --jq ".content" 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $raw) {
+            return $false
+        }
+        $compact = (($raw -join "") -replace "\s", "")
+        $bytes = [Convert]::FromBase64String($compact)
+        $text = [System.Text.Encoding]::UTF8.GetString($bytes)
+        $report = $text | ConvertFrom-Json
+        if (-not $report.updated_at -or -not $report.mode) {
+            return $false
+        }
+        $updated = [DateTimeOffset]::Parse([string]$report.updated_at).LocalDateTime
+        $modeOk = (Get-BaseMode ([string]$report.mode)) -eq (Get-BaseMode $Mode)
+        return $modeOk -and ($updated -ge (Get-Date).AddMinutes(-1 * [Math]::Max(1, $Minutes)))
+    } catch {
+        return $false
+    }
+}
+
 $script:Gh = Find-Gh
 & $script:Gh auth status | Out-Null
 if ($LASTEXITCODE -ne 0) {
@@ -70,6 +101,11 @@ $active = @($recent | Where-Object { $_.status -in @("queued", "requested", "wai
 $success = @($recent | Where-Object { $_.status -eq "completed" -and $_.conclusion -eq "success" })
 $dispatchCount = @($recent | Where-Object { $_.event -eq "workflow_dispatch" }).Count
 
+if (Test-FreshReport $Mode $LookbackMinutes) {
+    Write-Host "OK: fresh scanner report already exists for $Mode in data/session_alerts_latest.json."
+    exit 0
+}
+
 if ($active.Count -gt 0) {
     $run = $active[0]
     $runStarted = [DateTimeOffset]::Parse($run.createdAt).LocalDateTime
@@ -79,12 +115,6 @@ if ($active.Count -gt 0) {
         exit 0
     }
     Write-Host "WATCHDOG: active scanner run=$($run.databaseId) for $Mode is stale age=$([Math]::Round($activeMinutes, 1))m >= ${MaxActiveMinutes}m. Dispatching replacement..."
-}
-
-if ($success.Count -gt 0) {
-    $run = $success[0]
-    Write-Host "OK: scanner already completed successfully for $Mode. run=$($run.databaseId) url=$($run.url)"
-    exit 0
 }
 
 if ($dispatchCount -ge $MaxDispatchesInWindow) {

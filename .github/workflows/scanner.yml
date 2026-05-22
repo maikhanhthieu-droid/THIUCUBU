@@ -40,6 +40,7 @@ on:
 
 jobs:
   scan:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 180
 
@@ -75,15 +76,48 @@ jobs:
           if [ "$MODE" = "morning_broad" ]; then WINDOW_MINUTES=25; fi
           if [ "$MODE" = "afternoon_split" ]; then WINDOW_MINUTES=20; fi
           if [ "$MODE" = "eod" ]; then WINDOW_MINUTES=35; fi
+          ACTIVE_GRACE_MINUTES=12
+          if [ "$MODE" = "eod" ]; then ACTIVE_GRACE_MINUTES=25; fi
+          REPORT_JSON="$(gh api "repos/${{ github.repository }}/contents/data/session_alerts_latest.json?ref=${{ github.ref_name }}" --jq '.content' 2>/dev/null | base64 -d || echo '{}')"
+          REPORT_FRESH="$(REPORT_JSON="$REPORT_JSON" MODE="$MODE" WINDOW_MINUTES="$WINDOW_MINUTES" python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+
+          aliases = {
+              "morning_broad": {"morning", "morning_broad"},
+              "afternoon_split": {"afternoon", "afternoon_split"},
+              "eod": {"eod"},
+          }
+          try:
+              report = json.loads(os.environ.get("REPORT_JSON") or "{}")
+              updated_raw = str(report.get("updated_at") or "")
+              updated = datetime.fromisoformat(updated_raw.replace("Z", "+00:00"))
+              if updated.tzinfo is None:
+                  updated = updated.replace(tzinfo=timezone.utc)
+              mode = os.environ.get("MODE", "")
+              mode_ok = str(report.get("mode") or "") in aliases.get(mode, {mode})
+              fresh = updated >= datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["WINDOW_MINUTES"]))
+              print("true" if mode_ok and fresh else "false")
+          except Exception:
+              print("false")
+          PY
+          )"
+          if [ "$REPORT_FRESH" = "true" ]; then
+            echo "Fresh $MODE report already exists in data/session_alerts_latest.json; this backup schedule will skip."
+            echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           RUNS_JSON="$(gh run list -R "${{ github.repository }}" --workflow scanner.yml --limit 30 --json databaseId,status,conclusion,createdAt,event)"
-          SHOULD_RUN="$(RUNS_JSON="$RUNS_JSON" CURRENT_RUN_ID="$GITHUB_RUN_ID" WINDOW_MINUTES="$WINDOW_MINUTES" python - <<'PY'
+          SHOULD_RUN="$(RUNS_JSON="$RUNS_JSON" CURRENT_RUN_ID="$GITHUB_RUN_ID" ACTIVE_GRACE_MINUTES="$ACTIVE_GRACE_MINUTES" python - <<'PY'
           import json
           import os
           from datetime import datetime, timedelta, timezone
 
           runs = json.loads(os.environ.get("RUNS_JSON") or "[]")
           current = int(os.environ["CURRENT_RUN_ID"])
-          cutoff = datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["WINDOW_MINUTES"]))
+          active_cutoff = datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["ACTIVE_GRACE_MINUTES"]))
           should_run = True
           for run in runs:
               if int(run.get("databaseId") or 0) == current:
@@ -91,11 +125,8 @@ jobs:
               if run.get("event") not in {"schedule", "workflow_dispatch"}:
                   continue
               created = datetime.fromisoformat(str(run["createdAt"]).replace("Z", "+00:00"))
-              if created < cutoff:
-                  continue
               status = run.get("status")
-              conclusion = run.get("conclusion")
-              if status in {"queued", "in_progress", "waiting", "requested"} or conclusion == "success":
+              if created >= active_cutoff and status in {"queued", "in_progress", "waiting", "requested"}:
                   should_run = False
                   break
           print("true" if should_run else "false")
@@ -104,7 +135,7 @@ jobs:
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
           if [ "$SHOULD_RUN" != "true" ]; then
-            echo "Recent scanner run already active/successful; this backup schedule will skip."
+            echo "Recent scanner run is still active; this backup schedule will skip."
           fi
 
       - name: Setup Python
