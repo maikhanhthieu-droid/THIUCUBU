@@ -122,7 +122,11 @@ jobs:
             data/source_health.json
           do
             if [ -e "$path" ]; then
-              git add "$path"
+              if git check-ignore -q "$path"; then
+                git add -f "$path"
+              else
+                git add "$path"
+              fi
             fi
           done
           if git diff --staged --quiet; then
