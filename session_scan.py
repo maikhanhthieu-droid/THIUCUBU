@@ -84,11 +84,11 @@ SESSION_WINDOWS = {
         "description": "Lay data sau 13h45, uu tien note/co manh sau 14h.",
     },
     "afternoon_focus": {
-        "title": "AFTERNOON QUICK 13H31",
+        "title": "AFTERNOON QUICK / FALLBACK",
         "broad_after": dt_time(13, 31),
         "focus_after": None,
         "report_after": None,
-        "description": "Quet nhanh note/co manh/gan break dau phien chieu, toi da 50 ma.",
+        "description": "Quet nhanh note/co manh/gan break phien chieu, toi da 50 ma.",
     },
     "afternoon_broad": {
         "title": "AFTERNOON BROAD 14H01",

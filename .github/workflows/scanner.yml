@@ -77,6 +77,8 @@ jobs:
           if [ "$MODE" = "afternoon_split" ]; then WINDOW_MINUTES=20; fi
           if [ "$MODE" = "eod" ]; then WINDOW_MINUTES=35; fi
           ACTIVE_GRACE_MINUTES=12
+          if [ "$MODE" = "morning_broad" ]; then ACTIVE_GRACE_MINUTES=55; fi
+          if [ "$MODE" = "afternoon_split" ]; then ACTIVE_GRACE_MINUTES=55; fi
           if [ "$MODE" = "eod" ]; then ACTIVE_GRACE_MINUTES=25; fi
           REPORT_JSON="$(gh api "repos/${{ github.repository }}/contents/data/session_alerts_latest.json?ref=${{ github.ref_name }}" --jq '.content' 2>/dev/null | base64 -d || echo '{}')"
           REPORT_FRESH="$(REPORT_JSON="$REPORT_JSON" MODE="$MODE" python - <<'PY'

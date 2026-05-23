@@ -65,6 +65,8 @@ quet bang moi ma nhung tre co hoi mua ban.
 Neu GitHub Actions bi tre/hut cron trong cac moc quan trong, workflow `Thieucutoo Scanner Watchdog`
 se kiem tra sau do va tu dispatch lai scanner neu chua co report cung ngay. Day la lop fallback,
 khong thay the scanner chinh.
+Watchdog phien chieu chay sau deadline, luc 14:18 VN, va chi dispatch mode `afternoon_focus`
+de quet nhanh nhom note/co manh thay vi quet rong lai tu dau.
 
 ## Ngay nghi / data khong doi
 

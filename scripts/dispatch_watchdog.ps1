@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet("morning_broad", "afternoon_split", "eod", "test")]
+    [ValidateSet("morning_broad", "afternoon_split", "afternoon_focus", "eod", "test")]
     [string]$Mode,
 
     [string]$Repo = "maikhanhthieu-droid/THIUCUBU",

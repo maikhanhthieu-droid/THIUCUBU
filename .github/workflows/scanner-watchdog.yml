@@ -14,12 +14,12 @@ concurrency:
 on:
   schedule:
     - cron: "50 3 * * 1-5" # 10:50 VN: morning fallback if scanner/report missing
-    - cron: "8 7 * * 1-5"  # 14:08 VN: afternoon focus fallback if scanner/report missing
+    - cron: "18 7 * * 1-5" # 14:18 VN: afternoon focus-only fallback if scanner/report missing
     - cron: "40 8 * * 1-5" # 15:40 VN: eod fallback if scanner/report missing
   workflow_dispatch:
     inputs:
       mode:
-        description: "morning_broad | afternoon_split | eod"
+        description: "morning_broad | afternoon_focus | eod"
         required: false
         default: "morning_broad"
 
@@ -46,7 +46,7 @@ jobs:
           if [ "$EVENT_NAME" = "schedule" ]; then
             case "$SCAN_SCHEDULE" in
               "50 3 * * 1-5") MODE="morning_broad"; LOOKBACK="55"; ACTIVE="40"; MAX_DISPATCHES="2" ;;
-              "8 7 * * 1-5") MODE="afternoon_split"; LOOKBACK="40"; ACTIVE="22"; MAX_DISPATCHES="2" ;;
+              "18 7 * * 1-5") MODE="afternoon_focus"; LOOKBACK="75"; ACTIVE="60"; MAX_DISPATCHES="1" ;;
               "40 8 * * 1-5") MODE="eod"; LOOKBACK="70"; ACTIVE="45"; MAX_DISPATCHES="2" ;;
             esac
           fi
