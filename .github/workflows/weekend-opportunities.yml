@@ -116,45 +116,15 @@ jobs:
       - name: Commit weekend data
         if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'test')
         run: |
-          git config user.name "ThieucutooBot"
-          git config user.email "bot@thieucutoo.local"
-          if ! git pull --rebase --autostash; then
-            echo "::warning::Initial pull/rebase failed; aborting rebase if needed and continuing with local data commit."
-            git rebase --abort || true
-          fi
-          for path in \
+          python scripts/safe_commit_data.py \
+            --message "chore: update weekend opportunities [skip ci]" \
+            --paths \
             data/weekend_opportunities_latest.json \
             data/weekend_opportunities_history.json \
             data/signal_tracker.json \
             data/near_high_skiplist.json \
             data/run_journal.json \
             data/source_health.json
-          do
-            if [ -e "$path" ]; then
-              if git check-ignore -q "$path"; then
-                git add -f "$path"
-              else
-                git add "$path"
-              fi
-            fi
-          done
-          if git diff --staged --quiet; then
-            echo "No weekend data changes."
-          else
-            if git commit -m "chore: update weekend opportunities [skip ci]"; then
-              if ! git push; then
-                echo "::warning::Weekend data push failed; retrying after pull/rebase."
-                if git pull --rebase --autostash; then
-                  git push || echo "::warning::Weekend data push failed after retry; report was already sent."
-                else
-                  echo "::warning::Retry pull/rebase failed; leaving run green because report was already sent."
-                  git rebase --abort || true
-                fi
-              fi
-            else
-              echo "::warning::Weekend data commit failed; report was already sent."
-            fi
-          fi
 
       - name: Notify workflow failure
         if: failure()

@@ -300,13 +300,9 @@ jobs:
       - name: Commit scanner data
         if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'test') && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
         run: |
-          git config user.name "ThieucutooBot"
-          git config user.email "bot@thieucutoo.local"
-          if ! git pull --rebase --autostash; then
-            echo "::warning::Initial pull/rebase failed; aborting rebase if needed and continuing with local data commit."
-            git rebase --abort || true
-          fi
-          for path in \
+          python scripts/safe_commit_data.py \
+            --message "chore: update scanner data [skip ci]" \
+            --paths \
             data/results_latest.json \
             data/session_alerts_latest.json \
             data/run_journal.json \
@@ -322,32 +318,6 @@ jobs:
             data/near_high_skiplist.json \
             data/notes.json \
             data/portfolio.json
-          do
-            if [ -e "$path" ]; then
-              if git check-ignore -q "$path"; then
-                git add -f "$path"
-              else
-                git add "$path"
-              fi
-            fi
-          done
-          if git diff --staged --quiet; then
-            echo "No scanner data changes."
-          else
-            if git commit -m "chore: update scanner data [skip ci]"; then
-              if ! git push; then
-                echo "::warning::Scanner data push failed; retrying after pull/rebase."
-                if git pull --rebase --autostash; then
-                  git push || echo "::warning::Scanner data push failed after retry; report was already sent."
-                else
-                  echo "::warning::Retry pull/rebase failed; leaving run green because report was already sent."
-                  git rebase --abort || true
-                fi
-              fi
-            else
-              echo "::warning::Scanner data commit failed; report was already sent."
-            fi
-          fi
 
       - name: Notify workflow failure
         if: failure() && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')

@@ -43,6 +43,9 @@ Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
 `SCAN_SOURCE_USAGE_RATIO=0.78`, tuc chi dung khoang 75-80% quota khai bao moi nguon.
 `TCBS` khong duoc dung mac dinh vi source nay co the khong duoc `vnstock` 4.x ho tro on dinh.
 
+Telegram duoc gui truc tiep bang `httpx`, nen repo khong can `python-telegram-bot`. Code hien tai
+khong import `requests`; cac request HTTP production di qua `httpx` hoac thu vien nguon du lieu.
+
 Cac bien co the chinh trong workflow:
 
 - `SCAN_API_SOURCES`: danh sach nguon, vi du `VCI,KBS,DNSE`.
@@ -117,6 +120,16 @@ File nay chi luu trang thai gon nhe, khong luu OHLCV day du. State duoc cap vers
 gioi han toi da 7 ma manh, 15 ma watchlist, 40 ma focus, va tu prune entry cu qua han de file
 khong phinh vo han. Sau moi phien quet that, workflow se commit lai file nay voi `[skip ci]`
 de lan chay sau bot van nho nhom co can uu tien.
+`run_journal.json` cung duoc gioi han so entry, `signal_tracker.json` va rotation history deu ghi
+chen/giu tail thay vi append vo han, giup repo khong phinh to vi data rac.
+
+## Commit data ben hon
+
+Sau khi report da gui va artifact da upload, workflow dung `scripts/safe_commit_data.py` de commit
+du lieu nhe ve repo. Script nay chup lai data vua quet, fetch remote moi nhat, reset index theo
+remote, chen lai data moi cua run hien tai, commit/push toi da 3 lan. Neu van gap conflict/push fail,
+workflow van duoc giu xanh vi Telegram va artifact da co; lan chay sau bot tiep tuc hoat dong binh
+thuong thay vi bi ket do git conflict.
 
 ## Run journal va fallback
 

@@ -169,7 +169,9 @@ def json_save(path: Path, data: Any, pretty: bool = True) -> None:
         text = json.dumps(data, ensure_ascii=False, indent=2)
     else:
         text = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    path.write_text(text, encoding="utf-8")
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
 
 
 def parse_mode() -> str:

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -166,7 +167,9 @@ def load_state(path: Path = MEMORY_FILE) -> dict[str, Any]:
 def save_state(state: dict[str, Any], path: Path = MEMORY_FILE) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     normalized = normalize_state(state)
-    path.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(normalized, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
 
 
 def normalize_state(raw: Any) -> dict[str, Any]:

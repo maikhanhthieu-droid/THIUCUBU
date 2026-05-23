@@ -41,7 +41,9 @@ def _save(data: dict[str, Any], path: Path = JOURNAL_PATH) -> dict[str, Any]:
     data["version"] = int(data.get("version") or 1)
     data["last_updated"] = now_vn().isoformat(timespec="seconds")
     data["runs"] = runs[-max(1, JOURNAL_LIMIT):]
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
     return data
 
 
