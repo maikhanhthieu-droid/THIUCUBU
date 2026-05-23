@@ -87,6 +87,12 @@ Bot doc lich nghi trong `data/market_holidays.json`. Neu hom nay la thu 7, chu n
 co trong file nay, mac dinh `MARKET_CLOSED_POLICY=skip`: bot gui mot notice ngan, ghi marker vao
 `data/session_alerts_latest.json`, roi dung quet de watchdog khong dispatch lap lai.
 
+Ngoai lich nghi khai bao, scanner con co activity probe tu dong. Truoc khi quet nang, bot lay mau
+khoang 38 ma lon/bluechip/nganh dan dat va luu moc vao `data/market_probe_state.json`. Neu mau nay
+cho thay hang loat ma khong doi so voi lan truoc, ngay candle cu, hoac volume bang 0, bot se ket luan
+thi truong nghi / API chua cap nhat / data dang dung, gui Telegram notice va dung som. Nhu vay khong
+can tu khai moi dot nghi le 1-3 ngay; he thong van tu nhan ra data stale va tranh spam tin hieu gia.
+
 Neu van muon quet data cu trong ngay nghi, doi bien workflow thanh:
 
 ```yaml
@@ -94,6 +100,7 @@ MARKET_CLOSED_POLICY: "scan_old"
 ```
 
 Khi do scanner van chay va dung du lieu moi nhat ma API tra ve, chap nhan tin hieu co the la stale.
+Bien `MARKET_ACTIVITY_PROBE_ENABLED=0` co the tat lop probe nay neu can test tay.
 
 ## Tri nho cua bot
 

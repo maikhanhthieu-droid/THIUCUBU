@@ -208,6 +208,12 @@ jobs:
           SCAN_RETRY_FAILED_MAX_SYMBOLS: "24"
           SCAN_SKIP_NEAR_HIGH_WEEKDAY: "1"
           MARKET_CLOSED_POLICY: "skip"
+          MARKET_ACTIVITY_PROBE_ENABLED: "1"
+          MARKET_PROBE_SAMPLE_SIZE: "38"
+          MARKET_PROBE_MIN_CHECKED: "24"
+          MARKET_PROBE_UNCHANGED_RATIO: "0.85"
+          MARKET_PROBE_OLD_DATE_RATIO: "0.80"
+          MARKET_PROBE_ZERO_VOLUME_RATIO: "0.80"
           DRY_RUN: "0"
         run: |
           MODE="$SCAN_MODE"
@@ -282,6 +288,7 @@ jobs:
             data/run_journal.json
             data/source_health.json
             data/memory_state.json
+            data/market_probe_state.json
             data/market_holidays.json
             data/signal_tracker.json
             data/sector_rotation_history.json
@@ -304,6 +311,7 @@ jobs:
             data/run_journal.json \
             data/source_health.json \
             data/memory_state.json \
+            data/market_probe_state.json \
             data/market_holidays.json \
             data/historical_peaks.json \
             data/failed_breaks.json \

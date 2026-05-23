@@ -14,6 +14,7 @@ from typing import Any
 import scan
 import scan_safe
 import market_calendar
+import market_probe
 import state_manager
 import telegram_format as tf
 
@@ -627,8 +628,44 @@ async def main() -> None:
     results: dict[str, scan.ScanResult] = {}
     hard_stop = session_deadline(mode)
 
-    index_result = await scan_symbols(["VNINDEX"], force_refresh=True, history_store=history_store, peak_store=peak_store, label="index")
-    results.update(index_result)
+    if mode != "test" and market_probe.enabled():
+        probe_symbols = market_probe.choose_probe_symbols(universe, watch_symbols)
+        logger.info("%s market activity probe symbols=%s: %s", mode, len(probe_symbols), ",".join(probe_symbols))
+        probe_results = await scan_symbols(
+            probe_symbols,
+            force_refresh=True,
+            history_store=history_store,
+            peak_store=peak_store,
+            label=f"{mode}-activity-probe",
+            retry_failures=False,
+        )
+        results.update(probe_results)
+        probe_snapshots = market_probe.snapshots_from_history(
+            {symbol: history_store.get(symbol) for symbol in probe_symbols if symbol in history_store}
+        )
+        probe_result = market_probe.evaluate_activity(
+            probe_snapshots,
+            market_probe.previous_snapshots(),
+            no_data_count=max(0, len(probe_symbols) - len(probe_snapshots)),
+            policy=market_calendar.market_closed_policy(),
+        )
+        market_probe.save_state(probe_snapshots, probe_result, mode)
+        logger.info(
+            "%s market activity probe: inactive=%s reason=%s checked=%s no_data=%s",
+            mode,
+            probe_result.inactive,
+            probe_result.reason,
+            probe_result.checked,
+            probe_result.no_data,
+        )
+        if market_probe.should_stop_for_inactive(probe_result):
+            scan.json_save(DATA_DIR / "session_alerts_latest.json", market_probe.inactive_alert_payload(mode, probe_result), pretty=False)
+            await scan.send_chunks("*THIEUCUTOO SESSION*", market_probe.inactive_notice(mode, probe_result))
+            return
+
+    if "VNINDEX" not in results:
+        index_result = await scan_symbols(["VNINDEX"], force_refresh=True, history_store=history_store, peak_store=peak_store, label="index")
+        results.update(index_result)
 
     if is_quick_mode(mode):
         focus_symbols = previous_focus_symbols(watch_items, SESSION_QUICK_LIMIT)
@@ -640,10 +677,11 @@ async def main() -> None:
             SESSION_QUICK_NOTE_LIMIT,
             ",".join(focus_symbols),
         )
-        quick_results = await scan_symbols(focus_symbols, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-quick")
+        quick_scan_symbols = [symbol for symbol in focus_symbols if symbol not in results]
+        quick_results = await scan_symbols(quick_scan_symbols, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-quick")
         results.update(quick_results)
     elif mode == "eod" or is_broad_mode(mode):
-        scan_list = universe
+        scan_list = [symbol for symbol in universe if symbol not in results]
         broad_results = await scan_symbols(
             scan_list,
             force_refresh=True,
@@ -657,7 +695,7 @@ async def main() -> None:
     elif mode == "afternoon_split":
         focus_symbols = previous_focus_symbols(watch_items, SESSION_QUICK_LIMIT)
         focus_set = set(focus_symbols)
-        scan_list = [symbol for symbol in universe if symbol not in focus_set]
+        scan_list = [symbol for symbol in universe if symbol not in focus_set and symbol not in results]
         logger.info(
             "%s broad_nonfocus=%s focus_1403=%s: %s",
             mode,
@@ -686,7 +724,7 @@ async def main() -> None:
         )
         results.update(focus_results)
     else:
-        scan_list = [symbol for symbol in universe if symbol not in watch_symbols]
+        scan_list = [symbol for symbol in universe if symbol not in watch_symbols and symbol not in results]
         broad_results = await scan_symbols(scan_list, force_refresh=True, history_store=history_store, peak_store=peak_store, label=f"{mode}-broad")
         results.update(broad_results)
         focus_symbols = sorted(watch_symbols | set(strong_candidates(results, watch_symbols)))
