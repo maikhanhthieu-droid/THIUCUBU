@@ -206,6 +206,46 @@ def is_cache_fresh(path: Path, ttl_minutes: int) -> bool:
     return (time.time() - path.stat().st_mtime) <= ttl_minutes * 60
 
 
+def discard_bad_cache(path: Path, reason: str) -> None:
+    try:
+        path.unlink()
+        logger.warning("Discarded bad cache %s: %s", path.name, reason)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        logger.warning("Cannot discard bad cache %s: %s", path, exc)
+
+
+def read_cache_frame(path: Path, min_rows: int = 80) -> pd.DataFrame | None:
+    try:
+        df = normalize_ohlcv(pd.read_parquet(path))
+    except Exception as exc:
+        discard_bad_cache(path, f"read failed: {exc}")
+        return None
+    if df is None or len(df) < min_rows:
+        rows = 0 if df is None else len(df)
+        discard_bad_cache(path, f"invalid frame rows={rows}")
+        return None
+    return df
+
+
+def write_cache_frame(path: Path, df: pd.DataFrame) -> None:
+    normalized = normalize_ohlcv(df)
+    if normalized is None or len(normalized) < 80:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.stem}.{os.getpid()}.tmp{path.suffix}")
+    try:
+        normalized.to_parquet(tmp, index=False)
+        tmp.replace(path)
+    except Exception as exc:
+        logger.debug("Cannot write cache %s: %s", path, exc)
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+
+
 def read_stale_cache(path: Path, max_days: int | None = None) -> pd.DataFrame | None:
     if not path.exists():
         return None
@@ -216,59 +256,72 @@ def read_stale_cache(path: Path, max_days: int | None = None) -> pd.DataFrame | 
     age_days = (datetime.now(VN_TZ) - mtime).total_seconds() / 86400
     if age_days > max_age_days:
         return None
-    try:
-        df = normalize_ohlcv(pd.read_parquet(path))
-    except Exception as exc:
-        logger.debug("Cannot read stale cache %s: %s", path, exc)
-        return None
+    df = read_cache_frame(path)
     if df is not None and len(df) >= 80:
         logger.warning("Using stale cache %s age %.1fd after live fetch failed", path.name, age_days)
         return df
     return None
 
 
-def normalize_ohlcv(raw: pd.DataFrame) -> pd.DataFrame | None:
-    if raw is None or raw.empty:
+def normalize_ohlcv(raw: Any) -> pd.DataFrame | None:
+    if raw is None:
         return None
-    df = raw.copy()
-    df.columns = [str(c).lower() for c in df.columns]
-    col_map = {
-        "date": "time",
-        "datetime": "time",
-        "time": "time",
-        "tradingdate": "time",
-        "open": "open",
-        "high": "high",
-        "low": "low",
-        "close": "close",
-        "volume": "volume",
-    }
-    df = df.rename(columns={c: col_map[c] for c in df.columns if c in col_map})
-    required = {"time", "open", "high", "low", "close", "volume"}
-    if not required.issubset(df.columns):
-        return None
-    df = df[["time", "open", "high", "low", "close", "volume"]].copy()
-    time_as_text = df["time"].astype(str).str.strip()
-    if pd.api.types.is_numeric_dtype(df["time"]) or time_as_text.str.fullmatch(r"\d{9,13}").all():
-        numeric_time = pd.to_numeric(df["time"], errors="coerce")
-        unit = "ms" if numeric_time.dropna().median() > 10_000_000_000 else "s"
-        df["time"] = pd.to_datetime(numeric_time, unit=unit, utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
+    if isinstance(raw, pd.DataFrame):
+        df = raw.copy()
+    elif isinstance(raw, (dict, list, tuple)):
+        if not raw:
+            return None
+        try:
+            df = pd.DataFrame(raw).copy()
+        except (AttributeError, TypeError, ValueError):
+            return None
     else:
-        df["time"] = pd.to_datetime(df["time"], errors="coerce")
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-    df = df.dropna(subset=["time", "close", "volume"]).sort_values("time").reset_index(drop=True)
-    return df
+        return None
+    if df.empty:
+        return None
+    try:
+        df.columns = [str(c).lower() for c in df.columns]
+        col_map = {
+            "date": "time",
+            "datetime": "time",
+            "time": "time",
+            "tradingdate": "time",
+            "open": "open",
+            "high": "high",
+            "low": "low",
+            "close": "close",
+            "volume": "volume",
+        }
+        df = df.rename(columns={c: col_map[c] for c in df.columns if c in col_map})
+        required = {"time", "open", "high", "low", "close", "volume"}
+        if not required.issubset(df.columns):
+            return None
+        df = df[["time", "open", "high", "low", "close", "volume"]].copy()
+        time_as_text = df["time"].astype(str).str.strip()
+        if pd.api.types.is_numeric_dtype(df["time"]) or time_as_text.str.fullmatch(r"\d{9,13}").all():
+            numeric_time = pd.to_numeric(df["time"], errors="coerce")
+            valid_time = numeric_time.dropna()
+            if valid_time.empty:
+                return None
+            unit = "ms" if valid_time.median() > 10_000_000_000 else "s"
+            df["time"] = pd.to_datetime(numeric_time, unit=unit, utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
+        else:
+            df["time"] = pd.to_datetime(df["time"], errors="coerce")
+        for col in ["open", "high", "low", "close", "volume"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        df = df.dropna(subset=["time", "close", "volume"]).sort_values("time").reset_index(drop=True)
+    except (AttributeError, KeyError, TypeError, ValueError, pd.errors.ParserError):
+        return None
+    return df if not df.empty else None
 
 
 def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:
     ttl = 480 if not force_refresh else 0
     path = cache_path(symbol, bars)
     if not force_refresh and is_cache_fresh(path, ttl):
-        try:
-            return pd.read_parquet(path)
-        except Exception:
-            pass
+        cached = read_cache_frame(path)
+        if cached is not None:
+            return cached.tail(bars).reset_index(drop=True)
 
     sources = fetcher.filter_sources(
         env_csv("SCAN_DIRECT_API_SOURCES", os.getenv("SCAN_API_SOURCES", "VCI,KBS,DNSE")),
@@ -276,11 +329,9 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
     )
     random.shuffle(sources)
     df = fetcher.fetch_ohlcv(symbol, bars=bars, sources=sources)
+    df = normalize_ohlcv(df)
     if df is not None:
-        try:
-            df.to_parquet(path, index=False)
-        except Exception:
-            pass
+        write_cache_frame(path, df)
         return df
     cached = read_stale_cache(path)
     if cached is not None:

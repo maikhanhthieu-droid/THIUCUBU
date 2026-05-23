@@ -19,15 +19,15 @@ VN_TZ = timezone(timedelta(hours=7))
 
 try:  # vnstock has moved public import paths across releases.
     from vnstock.api.quote import Quote as VnQuote
-except Exception:  # pragma: no cover - depends on installed vnstock build
+except ImportError:  # pragma: no cover - depends on installed vnstock build
     try:
         from vnstock import Quote as VnQuote
-    except Exception:  # pragma: no cover
+    except ImportError:  # pragma: no cover
         VnQuote = None
 
 try:
     from vietfin import vf as Vietfin
-except Exception:  # pragma: no cover - optional adapter
+except ImportError:  # pragma: no cover - optional adapter
     Vietfin = None
 
 SUPPORTED_SOURCES = {"VCI", "KBS", "DNSE"}
@@ -37,6 +37,7 @@ SOURCE_ALIASES = {
     "VIETFIN": "DNSE",
     "VFIN": "DNSE",
 }
+HTTP_TIMEOUT = httpx.Timeout(20.0, connect=10.0, write=10.0, pool=10.0)
 
 VCI_HEADERS = {
     "Accept": "application/json, text/plain, */*",
@@ -92,43 +93,60 @@ def filter_sources(sources: list[str], include_index_sources_only: bool = False)
 def normalize_ohlcv(raw: Any) -> pd.DataFrame | None:
     if raw is None:
         return None
-    df = pd.DataFrame(raw).copy()
+    if isinstance(raw, pd.DataFrame):
+        df = raw.copy()
+    elif isinstance(raw, (dict, list, tuple)):
+        if not raw:
+            return None
+        try:
+            df = pd.DataFrame(raw).copy()
+        except (AttributeError, TypeError, ValueError):
+            return None
+    else:
+        return None
+
     if df.empty:
         return None
-    df.columns = [str(c).lower() for c in df.columns]
-    col_map = {
-        "date": "time",
-        "datetime": "time",
-        "time": "time",
-        "tradingdate": "time",
-        "t": "time",
-        "o": "open",
-        "open": "open",
-        "h": "high",
-        "high": "high",
-        "l": "low",
-        "low": "low",
-        "c": "close",
-        "close": "close",
-        "v": "volume",
-        "volume": "volume",
-    }
-    df = df.rename(columns={c: col_map[c] for c in df.columns if c in col_map})
-    required = {"time", "open", "high", "low", "close", "volume"}
-    if not required.issubset(df.columns):
+    try:
+        df.columns = [str(c).lower() for c in df.columns]
+        col_map = {
+            "date": "time",
+            "datetime": "time",
+            "time": "time",
+            "tradingdate": "time",
+            "t": "time",
+            "o": "open",
+            "open": "open",
+            "h": "high",
+            "high": "high",
+            "l": "low",
+            "low": "low",
+            "c": "close",
+            "close": "close",
+            "v": "volume",
+            "volume": "volume",
+        }
+        df = df.rename(columns={c: col_map[c] for c in df.columns if c in col_map})
+        required = {"time", "open", "high", "low", "close", "volume"}
+        if not required.issubset(df.columns):
+            return None
+        df = df[["time", "open", "high", "low", "close", "volume"]].copy()
+        time_as_text = df["time"].astype(str).str.strip()
+        if pd.api.types.is_numeric_dtype(df["time"]) or time_as_text.str.fullmatch(r"\d{9,13}").all():
+            numeric_time = pd.to_numeric(df["time"], errors="coerce")
+            valid_time = numeric_time.dropna()
+            if valid_time.empty:
+                return None
+            unit = "ms" if valid_time.median() > 10_000_000_000 else "s"
+            df["time"] = pd.to_datetime(numeric_time, unit=unit, utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
+        else:
+            df["time"] = pd.to_datetime(df["time"], errors="coerce")
+        for col in ["open", "high", "low", "close", "volume"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        df = df.dropna(subset=["time", "close", "volume"]).sort_values("time").reset_index(drop=True)
+    except (AttributeError, KeyError, TypeError, ValueError, pd.errors.ParserError):
         return None
-    df = df[["time", "open", "high", "low", "close", "volume"]].copy()
-    time_as_text = df["time"].astype(str).str.strip()
-    if pd.api.types.is_numeric_dtype(df["time"]) or time_as_text.str.fullmatch(r"\d{9,13}").all():
-        numeric_time = pd.to_numeric(df["time"], errors="coerce")
-        unit = "ms" if numeric_time.dropna().median() > 10_000_000_000 else "s"
-        df["time"] = pd.to_datetime(numeric_time, unit=unit, utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
-    else:
-        df["time"] = pd.to_datetime(df["time"], errors="coerce")
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
-    df = df.dropna(subset=["time", "close", "volume"]).sort_values("time").reset_index(drop=True)
-    return df
+    return df if not df.empty else None
 
 
 def _vn_ts(value: str, end_of_day: bool = False) -> int:
@@ -138,7 +156,9 @@ def _vn_ts(value: str, end_of_day: bool = False) -> int:
     return int(base.timestamp())
 
 
-def _from_dnse_payload(data: dict[str, Any]) -> pd.DataFrame | None:
+def _from_dnse_payload(data: Any) -> pd.DataFrame | None:
+    if not isinstance(data, dict):
+        return normalize_ohlcv(data)
     if {"t", "o", "h", "l", "c", "v"}.issubset(data):
         return normalize_ohlcv(
             {
@@ -162,7 +182,7 @@ def fetch_dnse_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
         "resolution": "1D",
     }
     url = "https://services.entrade.com.vn/chart-api/v2/ohlcs/stock"
-    with httpx.Client(timeout=20) as client:
+    with httpx.Client(timeout=HTTP_TIMEOUT) as client:
         response = client.get(url, params=params)
         response.raise_for_status()
         data = response.json()
@@ -246,7 +266,7 @@ def fetch_vci_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
         "countBack": _business_countback(start, end),
     }
     url = "https://trading.vietcap.com.vn/api/chart/OHLCChart/gap-chart"
-    with httpx.Client(timeout=20) as client:
+    with httpx.Client(timeout=HTTP_TIMEOUT) as client:
         response = client.post(url, headers=VCI_HEADERS, json=payload)
         response.raise_for_status()
         data = response.json()
@@ -265,7 +285,7 @@ def fetch_kbs_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
     segment = "index" if is_index else "stocks"
     url = f"https://kbbuddywts.kbsec.com.vn/iis-server/investment/{segment}/{symbol.upper()}/data_day"
     params = {"sdate": _kbs_date(start), "edate": _kbs_date(end)}
-    with httpx.Client(timeout=20) as client:
+    with httpx.Client(timeout=HTTP_TIMEOUT) as client:
         response = client.get(url, headers=KBS_HEADERS, params=params)
         response.raise_for_status()
         data = response.json()

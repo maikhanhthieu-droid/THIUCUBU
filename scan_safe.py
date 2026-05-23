@@ -382,12 +382,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     ttl = 480 if not force_refresh else 0
     path = scan.cache_path(symbol, bars)
     if not force_refresh and intel.is_cache_fresh_today(path, ttl):
-        try:
-            cached = intel.validate_ohlcv(pd.read_parquet(path))
-            if cached is not None and len(cached) >= 80:
-                return cached
-        except Exception as exc:
-            logger.debug("Cannot read cache %s: %s", path, exc)
+        cached = intel.validate_ohlcv(scan.read_cache_frame(path))
+        if cached is not None and len(cached) >= 80:
+            return cached.tail(bars).reset_index(drop=True)
 
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
@@ -406,10 +403,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     if df is not None and len(df) >= 80:
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
-                        try:
-                            df.to_parquet(path, index=False)
-                        except Exception:
-                            pass
+                        scan.write_cache_frame(path, df)
                         return df
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
                 except SystemExit as exc:

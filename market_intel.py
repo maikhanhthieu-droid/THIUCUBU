@@ -92,12 +92,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     ttl = 480 if not force_refresh else 0
     path = scan.cache_path(symbol, bars)
     if not force_refresh and is_cache_fresh_today(path, ttl):
-        try:
-            cached = validate_ohlcv(pd.read_parquet(path))
-            if cached is not None and len(cached) >= 80:
-                return cached.tail(bars).reset_index(drop=True)
-        except Exception as exc:
-            logger.debug("Cannot read cache %s: %s", path, exc)
+        cached = validate_ohlcv(scan.read_cache_frame(path))
+        if cached is not None and len(cached) >= 80:
+            return cached.tail(bars).reset_index(drop=True)
 
     attempts = env_int("SCAN_FETCH_MAX_ATTEMPTS", 3, min_value=1)
     days_back = max(300, int(bars * 1.7))
@@ -116,10 +113,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     if df is not None and len(df) >= 80:
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
-                        try:
-                            df.to_parquet(path, index=False)
-                        except Exception:
-                            pass
+                        scan.write_cache_frame(path, df)
                         return df
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
                 except SystemExit as exc:
@@ -146,6 +140,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, attempts, wait)
             time.sleep(wait)
+    cached = scan.read_stale_cache(path)
+    if cached is not None:
+        return cached.tail(bars).reset_index(drop=True)
     return None
 
 

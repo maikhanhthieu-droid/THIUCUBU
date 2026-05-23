@@ -15,7 +15,7 @@ FALSE_VALUES = {"0", "false", "no", "n", "off"}
 try:  # Keep local scripts usable even before dependencies are installed.
     from pydantic import Field
     from pydantic_settings import BaseSettings, SettingsConfigDict
-except Exception:  # pragma: no cover - fallback is for bare local Python only
+except ImportError:  # pragma: no cover - fallback is for bare local Python only
     BaseSettings = None
     Field = None
     SettingsConfigDict = None
@@ -90,6 +90,7 @@ else:
 
     class Settings:  # pragma: no cover - exercised only without pydantic-settings
         def __init__(self) -> None:
+            logger.warning("pydantic-settings unavailable; using lightweight env fallback")
             self.telegram_token = os.getenv("TELEGRAM_TOKEN", "").strip()
             self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
             self.vnstock_api_key = os.getenv("VNSTOCK_API_KEY", "").strip()

@@ -40,6 +40,37 @@ def test_stale_cache_can_be_used_after_live_fetch_fails(tmp_path):
     assert len(cached) == 90
 
 
+def test_corrupt_fresh_cache_is_discarded_and_refetched(monkeypatch, tmp_path):
+    path = tmp_path / "VCB_D_260.parquet"
+    path.write_bytes(b"not a parquet file")
+    df = pd.DataFrame(
+        {
+            "time": pd.date_range("2026-01-01", periods=90, freq="D"),
+            "open": range(90),
+            "high": range(1, 91),
+            "low": range(90),
+            "close": range(1, 91),
+            "volume": [1000] * 90,
+        }
+    )
+    calls: list[list[str]] = []
+
+    def fake_fetch_ohlcv(symbol: str, bars: int, sources: list[str]) -> pd.DataFrame | None:
+        calls.append(sources)
+        return df
+
+    monkeypatch.setattr(scan, "cache_path", lambda symbol, bars: path)
+    monkeypatch.setattr(scan.fetcher, "fetch_ohlcv", fake_fetch_ohlcv)
+    monkeypatch.setattr(scan.random, "shuffle", lambda values: None)
+
+    result = scan.fetch_ohlcv("VCB", force_refresh=False)
+
+    assert result is not None
+    assert len(result) == 90
+    assert calls
+    assert scan.read_cache_frame(path) is not None
+
+
 def test_direct_fetch_filters_unsupported_tcbs(monkeypatch, tmp_path):
     calls: list[list[str]] = []
 
@@ -74,6 +105,13 @@ def test_fetcher_normalizes_numeric_string_timestamps():
 
     assert df is not None
     assert str(df.loc[0, "time"].date()) == "2025-05-08"
+
+
+def test_fetcher_rejects_malformed_payloads_without_crashing():
+    assert fetcher.normalize_ohlcv("not-json") is None
+    assert fetcher.normalize_ohlcv({"unexpected": "scalar"}) is None
+    assert fetcher._from_dnse_payload(None) is None
+    assert fetcher._from_vci_payload({"data": None}) is None
 
 
 def test_vci_direct_payload_matches_quote_price_units():
