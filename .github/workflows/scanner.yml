@@ -155,13 +155,19 @@ jobs:
           python -m pip uninstall vnstock3 -y || true
           python -m pip install --disable-pip-version-check -r requirements.txt
 
+      - name: Resolve cache date
+        id: cache-date
+        if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
+        run: echo "date=$(TZ=Asia/Ho_Chi_Minh date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
       - name: Restore cache
         if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
         uses: actions/cache@v4
         with:
           path: data/cache
-          key: scan-cache-${{ runner.os }}-${{ github.run_id }}
+          key: scan-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ github.run_id }}
           restore-keys: |
+            scan-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
             scan-cache-${{ runner.os }}-
 
       - name: Run scanner

@@ -16,8 +16,8 @@ from typing import Any
 import httpx
 import numpy as np
 import pandas as pd
-from vnstock.api.quote import Quote
 
+import fetcher
 from config import env_csv, env_int, get_settings
 
 logging.basicConfig(
@@ -124,6 +124,7 @@ for ticker in ["ANV", "IDI", "ASM", "FMC", "CMX", "LCG", "HHV", "CII", "HAG", "D
     TICKER_GROUP[ticker] = "G6"
 for ticker in ["HNG", "VIG", "TTF", "PSH", "PVC", "PVB"]:
     TICKER_GROUP[ticker] = "G7"
+TICKER_GROUP["VNINDEX"] = "G1"
 
 
 @dataclass
@@ -239,30 +240,18 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
         except Exception:
             pass
 
-    days_back = max(300, int(bars * 1.7))
-    end = datetime.now().strftime("%Y-%m-%d")
-    start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
-
-    sources = [
-        source
-        for source in env_csv("SCAN_DIRECT_API_SOURCES", os.getenv("SCAN_API_SOURCES", "VCI,KBS,DNSE"))
-        if source in {"VCI", "KBS", "DNSE"}
-    ] or ["VCI", "KBS"]
+    sources = fetcher.filter_sources(
+        env_csv("SCAN_DIRECT_API_SOURCES", os.getenv("SCAN_API_SOURCES", "VCI,KBS,DNSE")),
+        include_index_sources_only=symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30"},
+    )
     random.shuffle(sources)
-    for source in sources:
+    df = fetcher.fetch_ohlcv(symbol, bars=bars, sources=sources)
+    if df is not None:
         try:
-            q = Quote(symbol=symbol, source=source.lower())
-            raw = q.history(start=start, end=end, interval="1D")
-            df = normalize_ohlcv(raw)
-            if df is not None and len(df) >= 80:
-                df = df.tail(bars).reset_index(drop=True)
-                try:
-                    df.to_parquet(path, index=False)
-                except Exception:
-                    pass
-                return df
-        except Exception as exc:
-            logger.warning("[%s] %s failed: %s", source, symbol, exc)
+            df.to_parquet(path, index=False)
+        except Exception:
+            pass
+        return df
     return None
 
 
@@ -304,6 +293,92 @@ def safe_float(value: Any, default: float = 0.0) -> float:
         return float(value)
     except Exception:
         return default
+
+
+def analyze_index(symbol: str, df: pd.DataFrame) -> ScanResult | None:
+    if df is None or len(df) < 80:
+        return None
+
+    df = df.copy().reset_index(drop=True)
+    close = df["close"]
+    volume = df["volume"]
+    df["ema34"] = ema(close, 34)
+    df["ema89"] = ema(close, 89)
+    df["ema200"] = ema(close, 200)
+    df["rsi"] = rsi(close)
+    df["mfi"] = mfi(df)
+    df["obv"] = obv(df)
+    df["obv_ema"] = ema(df["obv"], 21)
+
+    last = df.iloc[-1]
+    close_last = safe_float(last["close"])
+    rsi_last = safe_float(last["rsi"], 50)
+    mfi_last = safe_float(last["mfi"], 50)
+    obv_last = safe_float(last["obv"])
+    obv_up = bool(
+        obv_last > safe_float(last["obv_ema"])
+        and len(df) > 6
+        and obv_last > safe_float(df["obv"].iloc[-6])
+    )
+    vol_avg20 = safe_float(volume.rolling(20).mean().iloc[-1], 1.0)
+    vol_ratio = safe_float(last["volume"] / max(vol_avg20, 1.0), 0.0)
+
+    trend_score = 0
+    if close_last > safe_float(last["ema34"]):
+        trend_score += 25
+    if safe_float(last["ema34"]) > safe_float(last["ema89"]):
+        trend_score += 20
+    if close_last > safe_float(last["ema89"]):
+        trend_score += 15
+    if close_last > safe_float(last["ema200"]):
+        trend_score += 15
+    if len(df) > 6 and safe_float(last["ema34"]) > safe_float(df["ema34"].iloc[-6]):
+        trend_score += 10
+
+    flow_score = 0
+    if 42 <= rsi_last <= 70:
+        flow_score += 10
+    if mfi_last >= 50:
+        flow_score += 10
+    if obv_up:
+        flow_score += 10
+    win_score = int(clamp(trend_score + flow_score, 0, 100))
+
+    high20_prev = safe_float(df["high"].shift(1).rolling(20).max().iloc[-1], close_last)
+    near_break = close_last >= high20_prev * 0.96
+    reason_parts = []
+    reason_parts.append("tren EMA34" if close_last > safe_float(last["ema34"]) else "duoi EMA34")
+    reason_parts.append("tren EMA89" if close_last > safe_float(last["ema89"]) else "duoi EMA89")
+    if mfi_last >= 50:
+        reason_parts.append("MFI tot")
+    if obv_up:
+        reason_parts.append("OBV up")
+    if near_break:
+        reason_parts.append("gan nen break")
+
+    return ScanResult(
+        symbol=symbol.upper(),
+        sector="Index",
+        close=round(close_last, 2),
+        win_score=win_score,
+        setup="INDEX",
+        discount_pct=0.0,
+        target_discount_pct=0.0,
+        discount_group="INDEX",
+        trend_score=int(clamp(trend_score, 0, 100)),
+        base_score=0,
+        flow_score=int(clamp(flow_score, 0, 100)),
+        break_score=0,
+        risk_score=0,
+        rsi=round(rsi_last, 1),
+        mfi=round(mfi_last, 1),
+        vol_ratio=round(vol_ratio, 2),
+        obv_up=obv_up,
+        near_break=near_break,
+        failed_break=False,
+        warning="",
+        reason="; ".join(reason_parts),
+    )
 
 
 def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
@@ -382,7 +457,7 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
 
     rsi_last = safe_float(last["rsi"], 50)
     mfi_last = safe_float(last["mfi"], 50)
-    obv_up = bool(safe_float(last["obv"]) > safe_float(last["obv_ema"]) and safe_float(last["obv"]) >= safe_float(df["obv"].iloc[-6]))
+    obv_up = bool(safe_float(last["obv"]) > safe_float(last["obv_ema"]) and safe_float(last["obv"]) > safe_float(df["obv"].iloc[-6]))
     flow_score = 0
     if 43 <= rsi_last <= 68:
         flow_score += 8
@@ -468,13 +543,31 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
 
 
 async def send_telegram(text: str) -> bool:
+    if len(text) > 4000:
+        ok = True
+        current = ""
+        for line in text.splitlines():
+            if len(line) > 4000:
+                if current.strip():
+                    ok = await send_telegram(current.rstrip()) and ok
+                    current = ""
+                for start in range(0, len(line), 4000):
+                    ok = await send_telegram(line[start:start + 4000]) and ok
+                continue
+            if len(current) + len(line) + 1 > 4000:
+                ok = await send_telegram(current.rstrip()) and ok
+                current = ""
+            current += line + "\n"
+        if current.strip():
+            ok = await send_telegram(current.rstrip()) and ok
+        return ok
     if DRY_RUN:
         print(text)
         return True
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
-        "text": text[:4096],
+        "text": text,
         "parse_mode": "Markdown",
         "disable_web_page_preview": True,
     }
@@ -625,6 +718,8 @@ def process_symbol(symbol: str, force_refresh: bool) -> tuple[str, pd.DataFrame 
         df = fetch_ohlcv(symbol, bars=260, force_refresh=force_refresh)
         if df is None:
             return symbol, None, None
+        if symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30"}:
+            return symbol, df, analyze_index(symbol, df)
         return symbol, df, analyze_symbol(symbol, df)
     except Exception as exc:
         logger.exception("[%s] scan failed: %s", symbol, exc)

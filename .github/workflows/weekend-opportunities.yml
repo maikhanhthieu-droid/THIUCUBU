@@ -42,13 +42,19 @@ jobs:
           python -m pip uninstall vnstock3 -y || true
           python -m pip install --disable-pip-version-check -r requirements.txt
 
+      - name: Resolve cache date
+        id: cache-date
+        run: echo "date=$(TZ=Asia/Ho_Chi_Minh date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
       - name: Restore cache
         uses: actions/cache@v4
         with:
           path: data/cache
-          key: weekend-cache-${{ runner.os }}-${{ github.run_id }}
+          key: weekend-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ github.run_id }}
           restore-keys: |
+            weekend-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
             weekend-cache-${{ runner.os }}-
+            scan-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
             scan-cache-${{ runner.os }}-
 
       - name: Run weekend opportunity scanner

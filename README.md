@@ -26,6 +26,9 @@ Scanner chia luong request qua `SCAN_API_SOURCES`, mac dinh `VCI,KBS,DNSE`.
 Moi ma co mot nguon uu tien rieng va nguon con lai lam fallback. Truoc moi request co
 sleep + jitter ngau nhien, neu mot nguon loi se cooldown ngau nhien truoc khi dung tiep.
 Workflow phien chay qua `session_scan.py`, ben trong van dung `scan_safe.py` de boc lop bao ve API quanh scanner goc.
+Lop `fetcher.py` cach ly scanner khoi thay doi import/API cua `vnstock`: `VCI/KBS` di qua
+`vnstock`, `DNSE` di qua `vietfin` va co fallback HTTP truc tiep toi EnTrade neu adapter loi.
+`VIETFIN` trong `SCAN_API_SOURCES` duoc hieu nhu alias cua `DNSE`, khong phai mot lane API rieng.
 Neu API tra ve dau hieu rate-limit kem `Retry-After`, scanner uu tien dung dung thoi gian do
 thay vi chi sleep co dinh. Neu mot nguon chi loi tam thoi lien tiep, nguon do bi park vai phut
 roi tu duoc thu lai trong chinh run sau, khong lam chet ca phien quet.
@@ -39,6 +42,7 @@ Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
 Cac bien co the chinh trong workflow:
 
 - `SCAN_API_SOURCES`: danh sach nguon, vi du `VCI,KBS,DNSE`.
+- `VIETFIN`: alias cua `DNSE`; dung de tranh cau hinh sai, nhung khong tang them quota.
 - `SCAN_SOURCE_REQUESTS_PER_MINUTE`: tran request/phut cua moi nguon.
 - `SCAN_SOURCE_LIMITS`: tran rieng tung nguon, vi du `VCI=20,KBS=20,DNSE=15`.
 - `SCAN_SOURCE_USAGE_RATIO`: ty le dung quota, mac dinh workflow `0.78`.

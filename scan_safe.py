@@ -12,15 +12,10 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from vnstock.api.quote import Quote
 
+import fetcher
 import market_intel as intel
 import scan
-
-try:
-    from vietfin import vf
-except Exception:  # pragma: no cover - optional source adapter
-    vf = None
 
 logger = logging.getLogger("thieucutoo.safe")
 DATA_DIR = scan.DATA_DIR
@@ -59,46 +54,32 @@ def env_csv(name: str, default: str) -> list[str]:
     return [item for item in values if item]
 
 
-SUPPORTED_QUOTE_SOURCES = {"VCI", "KBS", "DNSE"}
-DEFAULT_API_SOURCES = ["VCI", "KBS", "DNSE"]
-INDEX_CAPABLE_SOURCES = {"VCI", "KBS"}
+SUPPORTED_QUOTE_SOURCES = fetcher.SUPPORTED_SOURCES
+DEFAULT_API_SOURCES = fetcher.DEFAULT_SOURCES
+INDEX_CAPABLE_SOURCES = fetcher.INDEX_CAPABLE_SOURCES
 
 
 def filter_api_sources(sources: list[str]) -> list[str]:
     valid: list[str] = []
     ignored: list[str] = []
     for source in sources:
-        if source in SUPPORTED_QUOTE_SOURCES:
-            if source not in valid:
-                valid.append(source)
+        normalized = fetcher.normalize_source(source)
+        if normalized in SUPPORTED_QUOTE_SOURCES:
+            if normalized not in valid:
+                valid.append(normalized)
         else:
             ignored.append(source)
     if ignored:
-        logger.warning("Ignoring unsupported vnstock Quote source(s): %s", ",".join(ignored))
+        logger.warning("Ignoring unsupported OHLCV source(s): %s", ",".join(ignored))
     return valid or DEFAULT_API_SOURCES.copy()
 
 
 def quote_source_name(source: str) -> str:
-    return source.lower()
+    return fetcher.normalize_source(source).lower()
 
 
 def fetch_source_history(source: str, symbol: str, start: str, end: str) -> pd.DataFrame:
-    if source == "DNSE":
-        if vf is None:
-            raise RuntimeError("vietfin is not installed, cannot use DNSE source")
-        packet = vf.equity.price.historical(
-            symbol=symbol.lower(),
-            provider="dnse",
-            start_date=start,
-            end_date=end,
-            interval="1d",
-        )
-        df = packet.to_df()
-        if df is not None and "time" not in df.columns and "date" not in df.columns:
-            df = df.reset_index()
-        return df
-    q = Quote(symbol=symbol, source=quote_source_name(source))
-    return q.history(start=start, end=end, interval="1D")
+    return fetcher.fetch_source_history(source, symbol, start, end)
 
 
 def is_unsupported_source_error(exc: Exception) -> bool:
