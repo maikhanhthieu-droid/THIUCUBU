@@ -211,6 +211,9 @@ def build_session_report_compat(
     regime: dict[str, Any] | None = None,
     rotation_alerts: list[str] | None = None,
     performance_text: str = "",
+    activity_probe: Any | None = None,
+    market_day: Any | None = None,
+    **kwargs: Any,
 ) -> str:
     try:
         return _old_build_session_report(
@@ -218,10 +221,9 @@ def build_session_report_compat(
             results,
             focus_symbols,
             watch_items,
-            metrics_by_symbol,
-            regime,
-            rotation_alerts,
-            performance_text,
+            activity_probe=activity_probe,
+            market_day=market_day,
+            **kwargs,
         )
     except TypeError:
         return _old_build_session_report(mode, results, focus_symbols, watch_items)
@@ -236,6 +238,9 @@ def save_session_outputs_compat(
     watch_items: dict[str, dict[str, Any]],
     metrics_by_symbol: dict[str, dict[str, Any]] | None = None,
     regime: dict[str, Any] | None = None,
+    activity_probe: Any | None = None,
+    market_day: Any | None = None,
+    **kwargs: Any,
 ) -> list[dict[str, Any]]:
     try:
         failed_breaks = _old_save_session_outputs(
@@ -245,8 +250,9 @@ def save_session_outputs_compat(
             peak_store,
             focus_symbols,
             watch_items,
-            metrics_by_symbol,
-            regime,
+            activity_probe=activity_probe,
+            market_day=market_day,
+            **kwargs,
         )
     except TypeError:
         failed_breaks = _old_save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)

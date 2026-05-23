@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any
 
 import market_intel as intel
+import market_probe
 import run_journal
 import scan
 import scan_safe
@@ -97,7 +98,15 @@ def projection_line(result: scan.ScanResult, mode: str, metrics: dict[str, dict[
     return with_intel(tf.format_stock_card(result, action=action, timing=timing), metrics.get(result.symbol))
 
 
-def build_session_report(mode: str, results: dict[str, scan.ScanResult], focus_symbols: list[str], watch_items: dict[str, dict[str, Any]]) -> str:
+def build_session_report(
+    mode: str,
+    results: dict[str, scan.ScanResult],
+    focus_symbols: list[str],
+    watch_items: dict[str, dict[str, Any]],
+    activity_probe: Any | None = None,
+    market_day: Any | None = None,
+    **_: Any,
+) -> str:
     window = sess.SESSION_WINDOWS[mode]
     metrics = _STATE.get("metrics", {})
     regime = _STATE.get("regime", {})
@@ -118,9 +127,16 @@ def build_session_report(mode: str, results: dict[str, scan.ScanResult], focus_s
         f"{window['description']} Score 0-100, khong phai cam ket loi nhuan.",
         market_status(market, regime),
         intel.format_regime(regime),
-        "",
-        "*PORTFOLIO / NOTE BAT BUOC*",
     ]
+    if market_day and getattr(market_day, "closed", False):
+        lines += [
+            "",
+            f"*CALENDAR*: {getattr(market_day, 'reason', 'Market closed')} `{getattr(market_day, 'date', '')}` | van quet data moi nhat theo policy `{getattr(market_day, 'policy', '')}`.",
+        ]
+    probe_note = market_probe.report_note(activity_probe)
+    if probe_note:
+        lines += ["", probe_note]
+    lines += ["", "*PORTFOLIO / NOTE BAT BUOC*"]
     lines += portfolio_lines(results, watch_items, metrics)
     lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
     lines += [projection_line(x, mode, metrics) for x in (focus_results or strong)[:12]] or ["Chua co co manh du nguong."]
@@ -141,11 +157,30 @@ def build_session_report(mode: str, results: dict[str, scan.ScanResult], focus_s
     return "\n".join(lines)
 
 
-def save_session_outputs(mode: str, results: dict[str, scan.ScanResult], history_store: dict[str, Any], peak_store: dict[str, Any], focus_symbols: list[str], watch_items: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+def save_session_outputs(
+    mode: str,
+    results: dict[str, scan.ScanResult],
+    history_store: dict[str, Any],
+    peak_store: dict[str, Any],
+    focus_symbols: list[str],
+    watch_items: dict[str, dict[str, Any]],
+    activity_probe: Any | None = None,
+    market_day: Any | None = None,
+    **_: Any,
+) -> list[dict[str, Any]]:
     metrics, regime = intel.build_market_metrics(results, history_store)
     _, rotation_alerts = intel.update_sector_rotation([x for x in results.values() if x.symbol != "VNINDEX"])
     _STATE.update({"mode": mode, "results": results, "metrics": metrics, "regime": regime, "rotation": rotation_alerts})
-    failed_breaks = _old_save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)
+    failed_breaks = _old_save_session_outputs(
+        mode,
+        results,
+        history_store,
+        peak_store,
+        focus_symbols,
+        watch_items,
+        activity_probe=activity_probe,
+        market_day=market_day,
+    )
     new_signals = intel.update_signal_tracker(results, metrics, mode)
     if mode == "eod":
         intel.auto_update_portfolio_thresholds(results)
@@ -166,6 +201,8 @@ def save_session_outputs(mode: str, results: dict[str, scan.ScanResult], history
         "focus_symbols": focus_symbols,
         "portfolio_symbols": list(watch_items.keys()),
         "market": asdict(results["VNINDEX"]) if "VNINDEX" in results else None,
+        "market_day": asdict(market_day) if market_day else None,
+        "market_activity": asdict(activity_probe) if activity_probe else None,
         "market_regime": regime,
         "new_signals": new_signals,
         "memory": memory_summary,

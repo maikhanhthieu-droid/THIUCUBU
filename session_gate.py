@@ -10,6 +10,7 @@ from typing import Any
 
 import market_intel as intel
 import regime_gate
+import market_probe
 import scan
 import session_plus as plus
 import telegram_format as tf
@@ -127,6 +128,9 @@ def build_session_report(
     results: dict[str, scan.ScanResult],
     focus_symbols: list[str],
     watch_items: dict[str, dict[str, Any]],
+    activity_probe: Any | None = None,
+    market_day: Any | None = None,
+    **_: Any,
 ) -> str:
     window = plus.sess.SESSION_WINDOWS[mode]
     metrics = plus._STATE.get("metrics", {})
@@ -149,9 +153,16 @@ def build_session_report(
         f"{window['description']} Score 0-100, khong phai cam ket loi nhuan.",
         plus.market_status(market, regime),
         intel.format_regime(regime),
-        "",
-        "*PORTFOLIO / NOTE BAT BUOC*",
     ]
+    if market_day and getattr(market_day, "closed", False):
+        lines += [
+            "",
+            f"*CALENDAR*: {getattr(market_day, 'reason', 'Market closed')} `{getattr(market_day, 'date', '')}` | van quet data moi nhat theo policy `{getattr(market_day, 'policy', '')}`.",
+        ]
+    probe_note = market_probe.report_note(activity_probe)
+    if probe_note:
+        lines += ["", probe_note]
+    lines += ["", "*PORTFOLIO / NOTE BAT BUOC*"]
     lines += plus.portfolio_lines(results, watch_items, metrics)
     lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
     lines += [plus.projection_line(x, mode, metrics) for x in (focus_results or strong)[:12]] or ["Chua co co manh du nguong sau khi loc market regime."]
@@ -182,8 +193,20 @@ def save_session_outputs(
     peak_store: dict[str, Any],
     focus_symbols: list[str],
     watch_items: dict[str, dict[str, Any]],
+    activity_probe: Any | None = None,
+    market_day: Any | None = None,
+    **_: Any,
 ) -> list[dict[str, Any]]:
-    failed_breaks = plus.save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)
+    failed_breaks = plus.save_session_outputs(
+        mode,
+        results,
+        history_store,
+        peak_store,
+        focus_symbols,
+        watch_items,
+        activity_probe=activity_probe,
+        market_day=market_day,
+    )
     metrics = plus._STATE.get("metrics", {})
     ordered = sorted(results.values(), key=lambda x: (regime_gate.adv_score(x, metrics.get(x.symbol)), x.win_score, x.flow_score), reverse=True)
     latest_path = plus.sess.DATA_DIR / "session_alerts_latest.json"
