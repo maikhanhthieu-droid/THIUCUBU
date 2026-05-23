@@ -27,13 +27,17 @@ Moi ma co mot nguon uu tien rieng va nguon con lai lam fallback. Truoc moi reque
 sleep + jitter ngau nhien, neu mot nguon loi se cooldown ngau nhien truoc khi dung tiep.
 Workflow phien chay qua `session_scan.py`, ben trong van dung `scan_safe.py` de boc lop bao ve API quanh scanner goc.
 Lop `fetcher.py` cach ly scanner khoi thay doi import/API cua `vnstock`: `VCI/KBS` di qua
-`vnstock`, `DNSE` di qua `vietfin` va co fallback HTTP truc tiep toi EnTrade neu adapter loi.
+`vnstock` va co fallback HTTP truc tiep toi endpoint cua VCI/KBS neu `vnstock` loi. `DNSE` di qua
+`vietfin` va co fallback HTTP truc tiep toi EnTrade neu adapter loi.
 `VIETFIN` trong `SCAN_API_SOURCES` duoc hieu nhu alias cua `DNSE`, khong phai mot lane API rieng.
 Neu API tra ve dau hieu rate-limit kem `Retry-After`, scanner uu tien dung dung thoi gian do
 thay vi chi sleep co dinh. Neu mot nguon chi loi tam thoi lien tiep, nguon do bi park vai phut
 roi tu duoc thu lai trong chinh run sau, khong lam chet ca phien quet.
 Suc khoe tung nguon duoc ghi vao `data/source_health.json`; nguon diem qua yeu se bi day xuong
 cuoi thu tu uu tien o run sau, nhung van co co hoi tu hoi phuc.
+Neu tat ca nguon live deu fail, scanner duoc phep dung lai parquet cache cu toi da
+`SCAN_STALE_CACHE_MAX_DAYS` ngay (mac dinh workflow ngay thuong 3 ngay, weekend 7 ngay) de van
+co report tham khao thay vi im lang.
 
 Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
 `SCAN_SOURCE_USAGE_RATIO=0.78`, tuc chi dung khoang 75-80% quota khai bao moi nguon.
@@ -71,6 +75,11 @@ se kiem tra sau do va tu dispatch lai scanner neu chua co report cung ngay. Day 
 khong thay the scanner chinh.
 Watchdog phien chieu chay sau deadline, luc 14:18 VN, va chi dispatch mode `afternoon_focus`
 de quet nhanh nhom note/co manh thay vi quet rong lai tu dau.
+Ngoai ra watchdog co cac moc quick fallback som: 10:39/11:12 VN cho buoi sang va 13:39/14:12 VN
+cho buoi chieu. Cac moc nay chi dispatch neu chua co report cung phien va khong thay run scanner
+dang khoe, giup he thong tu hoi phuc khi cron bi hut hoac run loi som.
+Moi scanner run co hard timeout theo mode (`focus` 25 phut, morning broad 55 phut, afternoon 50 phut,
+EOD 160 phut) de mot run treo khong nam do ca ngay.
 
 ## Ngay nghi / data khong doi
 

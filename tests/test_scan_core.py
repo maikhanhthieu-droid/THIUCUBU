@@ -18,6 +18,28 @@ def test_cache_fresh_rejects_previous_vn_day(tmp_path):
     assert scan.is_cache_fresh(path, ttl_minutes=999_999) is False
 
 
+def test_stale_cache_can_be_used_after_live_fetch_fails(tmp_path):
+    path = tmp_path / "cached.parquet"
+    df = pd.DataFrame(
+        {
+            "time": pd.date_range("2026-01-01", periods=90, freq="D"),
+            "open": range(90),
+            "high": range(1, 91),
+            "low": range(90),
+            "close": range(1, 91),
+            "volume": [1000] * 90,
+        }
+    )
+    df.to_parquet(path, index=False)
+    yesterday = datetime.now(scan.VN_TZ) - timedelta(days=1)
+    os.utime(path, (yesterday.timestamp(), yesterday.timestamp()))
+
+    cached = scan.read_stale_cache(path, max_days=3)
+
+    assert cached is not None
+    assert len(cached) == 90
+
+
 def test_direct_fetch_filters_unsupported_tcbs(monkeypatch, tmp_path):
     calls: list[list[str]] = []
 
@@ -36,6 +58,31 @@ def test_direct_fetch_filters_unsupported_tcbs(monkeypatch, tmp_path):
 
 def test_vietfin_source_aliases_to_dnse():
     assert fetcher.filter_sources(["VCI", "VIETFIN", "TCBS"]) == ["VCI", "DNSE"]
+
+
+def test_fetcher_normalizes_numeric_string_timestamps():
+    df = fetcher.normalize_ohlcv(
+        {
+            "t": ["1746662400"],
+            "o": [59000],
+            "h": [60000],
+            "l": [58000],
+            "c": [59500],
+            "v": [123],
+        }
+    )
+
+    assert df is not None
+    assert str(df.loc[0, "time"].date()) == "2025-05-08"
+
+
+def test_vci_direct_payload_matches_quote_price_units():
+    payload = [{"symbol": "VCB", "t": ["1746662400"], "o": [59000], "h": [60000], "l": [58000], "c": [59500], "v": [123]}]
+
+    df = fetcher._scale_vnd_ohlc_to_quote_units(fetcher._from_vci_payload(payload), "VCB")
+
+    assert df is not None
+    assert df.loc[0, "close"] == 59.5
 
 
 def test_analyze_index_does_not_apply_stock_discount_rules():

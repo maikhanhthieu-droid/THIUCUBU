@@ -38,6 +38,35 @@ SOURCE_ALIASES = {
     "VFIN": "DNSE",
 }
 
+VCI_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9,vi-VN;q=0.8,vi;q=0.7",
+    "Connection": "keep-alive",
+    "Content-Type": "application/json",
+    "Cache-Control": "no-cache",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "DNT": "1",
+    "Pragma": "no-cache",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-ch-ua-mobile": "?0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "Referer": "https://trading.vietcap.com.vn/",
+    "Origin": "https://trading.vietcap.com.vn/",
+    "Device-Id": "f208a1226230bf66",
+    "Cookie": "device_id=f208a1226230bf66",
+}
+
+KBS_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9,vi-VN;q=0.8,vi;q=0.7",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+    "Referer": "https://kbbuddywts.kbsec.com.vn/",
+}
+
 
 def normalize_source(source: str) -> str:
     value = str(source or "").strip().upper()
@@ -89,8 +118,11 @@ def normalize_ohlcv(raw: Any) -> pd.DataFrame | None:
     if not required.issubset(df.columns):
         return None
     df = df[["time", "open", "high", "low", "close", "volume"]].copy()
-    if pd.api.types.is_numeric_dtype(df["time"]):
-        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
+    time_as_text = df["time"].astype(str).str.strip()
+    if pd.api.types.is_numeric_dtype(df["time"]) or time_as_text.str.fullmatch(r"\d{9,13}").all():
+        numeric_time = pd.to_numeric(df["time"], errors="coerce")
+        unit = "ms" if numeric_time.dropna().median() > 10_000_000_000 else "s"
+        df["time"] = pd.to_datetime(numeric_time, unit=unit, utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
     else:
         df["time"] = pd.to_datetime(df["time"], errors="coerce")
     for col in ["open", "high", "low", "close", "volume"]:
@@ -169,6 +201,81 @@ def fetch_vnstock_quote(source: str, symbol: str, start: str, end: str) -> pd.Da
     return df
 
 
+def _business_countback(start: str, end: str, minimum: int = 260) -> int:
+    try:
+        days = len(pd.bdate_range(pd.to_datetime(start), pd.to_datetime(end))) + 5
+    except Exception:
+        days = minimum
+    return max(minimum, int(days))
+
+
+def _from_vci_payload(data: Any) -> pd.DataFrame | None:
+    if isinstance(data, dict) and "data" in data:
+        data = data["data"]
+    if isinstance(data, list) and data:
+        first = data[0]
+        if isinstance(first, dict) and {"t", "o", "h", "l", "c", "v"}.issubset(first):
+            return normalize_ohlcv(
+                {
+                    "time": first["t"],
+                    "open": first["o"],
+                    "high": first["h"],
+                    "low": first["l"],
+                    "close": first["c"],
+                    "volume": first["v"],
+                }
+            )
+    return normalize_ohlcv(data)
+
+
+def _scale_vnd_ohlc_to_quote_units(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
+    if symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30", "HNXINDEX", "UPCOMINDEX"}:
+        return df
+    out = df.copy()
+    for col in ["open", "high", "low", "close"]:
+        out[col] = out[col] / 1000.0
+    return out
+
+
+def fetch_vci_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
+    end_dt = datetime.fromisoformat(end) + timedelta(days=1)
+    payload = {
+        "timeFrame": "ONE_DAY",
+        "symbols": [symbol.upper()],
+        "to": int(end_dt.timestamp()),
+        "countBack": _business_countback(start, end),
+    }
+    url = "https://trading.vietcap.com.vn/api/chart/OHLCChart/gap-chart"
+    with httpx.Client(timeout=20) as client:
+        response = client.post(url, headers=VCI_HEADERS, json=payload)
+        response.raise_for_status()
+        data = response.json()
+    df = _from_vci_payload(data)
+    if df is None or df.empty:
+        raise ValueError(f"VCI direct returned no OHLCV for {symbol}")
+    return _scale_vnd_ohlc_to_quote_units(df, symbol)
+
+
+def _kbs_date(value: str) -> str:
+    return datetime.fromisoformat(value).strftime("%d-%m-%Y")
+
+
+def fetch_kbs_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
+    is_index = symbol.upper() in {"VNINDEX", "HNXINDEX", "UPCOMINDEX", "VN30", "HNX30", "VN100"}
+    segment = "index" if is_index else "stocks"
+    url = f"https://kbbuddywts.kbsec.com.vn/iis-server/investment/{segment}/{symbol.upper()}/data_day"
+    params = {"sdate": _kbs_date(start), "edate": _kbs_date(end)}
+    with httpx.Client(timeout=20) as client:
+        response = client.get(url, headers=KBS_HEADERS, params=params)
+        response.raise_for_status()
+        data = response.json()
+    rows = data.get("data_day") if isinstance(data, dict) else data
+    df = normalize_ohlcv(rows)
+    if df is None or df.empty:
+        raise ValueError(f"KBS direct returned no OHLCV for {symbol}")
+    return _scale_vnd_ohlc_to_quote_units(df, symbol)
+
+
 def fetch_source_history(source: str, symbol: str, start: str, end: str) -> pd.DataFrame:
     normalized = normalize_source(source)
     if normalized == "DNSE":
@@ -177,8 +284,18 @@ def fetch_source_history(source: str, symbol: str, start: str, end: str) -> pd.D
         except Exception as exc:
             logger.warning("[DNSE] vietfin failed for %s, trying direct HTTP: %s", symbol, exc)
             return fetch_dnse_direct(symbol, start, end)
-    if normalized in {"VCI", "KBS"}:
-        return fetch_vnstock_quote(normalized, symbol, start, end)
+    if normalized == "VCI":
+        try:
+            return fetch_vnstock_quote(normalized, symbol, start, end)
+        except Exception as exc:
+            logger.warning("[VCI] vnstock failed for %s, trying direct HTTP: %s", symbol, exc)
+            return fetch_vci_direct(symbol, start, end)
+    if normalized == "KBS":
+        try:
+            return fetch_vnstock_quote(normalized, symbol, start, end)
+        except Exception as exc:
+            logger.warning("[KBS] vnstock failed for %s, trying direct HTTP: %s", symbol, exc)
+            return fetch_kbs_direct(symbol, start, end)
     raise ValueError(f"Unsupported OHLCV source: {source}")
 
 

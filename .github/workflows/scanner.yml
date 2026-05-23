@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "test | morning_broad | afternoon_split | eod | auto"
+        description: "test | morning_focus | morning_broad | afternoon_focus | afternoon_split | eod | auto"
         required: false
         default: "test"
 
@@ -193,6 +193,7 @@ jobs:
           SCAN_SOURCE_RECOVER_AFTER_SEC: "300"
           SCAN_RETRY_AFTER_MAX_SEC: "300"
           SCAN_FETCH_MAX_ATTEMPTS: "3"
+          SCAN_STALE_CACHE_MAX_DAYS: "3"
           SCAN_DELAY_MIN_SEC: "1"
           SCAN_DELAY_MAX_SEC: "4"
           SESSION_RANDOM_START_MAX_SEC: "45"
@@ -256,7 +257,16 @@ jobs:
               MODE="$LIVE_MODE"
             fi
           fi
-          python session_gate_near_high.py --mode "$MODE"
+          TIMEOUT_MIN="170"
+          case "$MODE" in
+            "test") TIMEOUT_MIN="20" ;;
+            "morning_focus"|"afternoon_focus") TIMEOUT_MIN="25" ;;
+            "morning_broad") TIMEOUT_MIN="55" ;;
+            "afternoon_split"|"afternoon_broad") TIMEOUT_MIN="50" ;;
+            "eod") TIMEOUT_MIN="160" ;;
+          esac
+          echo "Scanner hard timeout ${TIMEOUT_MIN}m for mode=$MODE"
+          timeout --kill-after=120s "${TIMEOUT_MIN}m" python session_gate_near_high.py --mode "$MODE"
 
       - name: Upload data artifact
         if: always() && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')

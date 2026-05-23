@@ -89,6 +89,7 @@ jobs:
           SCAN_SOURCE_RECOVER_AFTER_SEC: "300"
           SCAN_RETRY_AFTER_MAX_SEC: "300"
           SCAN_FETCH_MAX_ATTEMPTS: "3"
+          SCAN_STALE_CACHE_MAX_DAYS: "7"
           DRY_RUN: "0"
         run: |
           python weekend_plus_safe.py --mode "$WEEKEND_MODE"

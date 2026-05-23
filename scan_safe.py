@@ -433,6 +433,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, FETCH_MAX_ATTEMPTS, wait)
             time.sleep(wait)
+    cached = scan.read_stale_cache(path)
+    if cached is not None:
+        return cached.tail(bars).reset_index(drop=True)
     return None
 
 

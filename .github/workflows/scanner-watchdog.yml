@@ -13,13 +13,17 @@ concurrency:
 
 on:
   schedule:
+    - cron: "39 3 * * 1-5" # 10:39 VN: quick fallback if morning scheduler did not start
     - cron: "50 3 * * 1-5" # 10:50 VN: morning fallback if scanner/report missing
+    - cron: "12 4 * * 1-5" # 11:12 VN: final quick morning fallback before target report window
+    - cron: "39 6 * * 1-5" # 13:39 VN: quick afternoon fallback if scheduler did not start
+    - cron: "12 7 * * 1-5" # 14:12 VN: final quick afternoon fallback before buy/sell window
     - cron: "18 7 * * 1-5" # 14:18 VN: afternoon focus-only fallback if scanner/report missing
     - cron: "40 8 * * 1-5" # 15:40 VN: eod fallback if scanner/report missing
   workflow_dispatch:
     inputs:
       mode:
-        description: "morning_broad | afternoon_focus | eod"
+        description: "morning_focus | morning_broad | afternoon_focus | eod"
         required: false
         default: "morning_broad"
 
@@ -45,7 +49,11 @@ jobs:
           MAX_DISPATCHES="2"
           if [ "$EVENT_NAME" = "schedule" ]; then
             case "$SCAN_SCHEDULE" in
+              "39 3 * * 1-5") MODE="morning_focus"; LOOKBACK="15"; ACTIVE="12"; MAX_DISPATCHES="1" ;;
               "50 3 * * 1-5") MODE="morning_broad"; LOOKBACK="55"; ACTIVE="40"; MAX_DISPATCHES="2" ;;
+              "12 4 * * 1-5") MODE="morning_focus"; LOOKBACK="60"; ACTIVE="40"; MAX_DISPATCHES="2" ;;
+              "39 6 * * 1-5") MODE="afternoon_focus"; LOOKBACK="15"; ACTIVE="12"; MAX_DISPATCHES="1" ;;
+              "12 7 * * 1-5") MODE="afternoon_focus"; LOOKBACK="50"; ACTIVE="35"; MAX_DISPATCHES="2" ;;
               "18 7 * * 1-5") MODE="afternoon_focus"; LOOKBACK="75"; ACTIVE="60"; MAX_DISPATCHES="1" ;;
               "40 8 * * 1-5") MODE="eod"; LOOKBACK="70"; ACTIVE="45"; MAX_DISPATCHES="2" ;;
             esac

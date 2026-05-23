@@ -46,6 +46,7 @@ DELAY_MAX = max(DELAY_MIN, env_int("SCAN_DELAY_MAX_SEC", 25, min_value=0))
 RANDOM_START_MAX = env_int("SCAN_RANDOM_START_MAX_SEC", 300, min_value=0)
 REQUESTS_PER_MINUTE = env_int("SCAN_REQUESTS_PER_MINUTE", 10, min_value=1)
 MAX_WORKERS = env_int("SCAN_MAX_WORKERS", 3, min_value=1)
+STALE_CACHE_MAX_DAYS = env_int("SCAN_STALE_CACHE_MAX_DAYS", 3, min_value=0)
 
 
 SECTORS: dict[str, list[str]] = {
@@ -203,6 +204,27 @@ def is_cache_fresh(path: Path, ttl_minutes: int) -> bool:
     return (time.time() - path.stat().st_mtime) <= ttl_minutes * 60
 
 
+def read_stale_cache(path: Path, max_days: int | None = None) -> pd.DataFrame | None:
+    if not path.exists():
+        return None
+    max_age_days = STALE_CACHE_MAX_DAYS if max_days is None else max_days
+    if max_age_days <= 0:
+        return None
+    mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=VN_TZ)
+    age_days = (datetime.now(VN_TZ) - mtime).total_seconds() / 86400
+    if age_days > max_age_days:
+        return None
+    try:
+        df = normalize_ohlcv(pd.read_parquet(path))
+    except Exception as exc:
+        logger.debug("Cannot read stale cache %s: %s", path, exc)
+        return None
+    if df is not None and len(df) >= 80:
+        logger.warning("Using stale cache %s age %.1fd after live fetch failed", path.name, age_days)
+        return df
+    return None
+
+
 def normalize_ohlcv(raw: pd.DataFrame) -> pd.DataFrame | None:
     if raw is None or raw.empty:
         return None
@@ -224,10 +246,16 @@ def normalize_ohlcv(raw: pd.DataFrame) -> pd.DataFrame | None:
     if not required.issubset(df.columns):
         return None
     df = df[["time", "open", "high", "low", "close", "volume"]].copy()
-    df["time"] = pd.to_datetime(df["time"])
+    time_as_text = df["time"].astype(str).str.strip()
+    if pd.api.types.is_numeric_dtype(df["time"]) or time_as_text.str.fullmatch(r"\d{9,13}").all():
+        numeric_time = pd.to_numeric(df["time"], errors="coerce")
+        unit = "ms" if numeric_time.dropna().median() > 10_000_000_000 else "s"
+        df["time"] = pd.to_datetime(numeric_time, unit=unit, utc=True).dt.tz_convert(VN_TZ).dt.tz_localize(None)
+    else:
+        df["time"] = pd.to_datetime(df["time"], errors="coerce")
     for col in ["open", "high", "low", "close", "volume"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
-    df = df.dropna(subset=["close", "volume"]).sort_values("time").reset_index(drop=True)
+    df = df.dropna(subset=["time", "close", "volume"]).sort_values("time").reset_index(drop=True)
     return df
 
 
@@ -252,6 +280,9 @@ def fetch_ohlcv(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd
         except Exception:
             pass
         return df
+    cached = read_stale_cache(path)
+    if cached is not None:
+        return cached.tail(bars).reset_index(drop=True)
     return None
 
 
