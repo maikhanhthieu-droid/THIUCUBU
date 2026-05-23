@@ -529,6 +529,8 @@ def build_session_report(
     results: dict[str, scan.ScanResult],
     focus_symbols: list[str],
     watch_items: dict[str, dict[str, Any]],
+    activity_probe: market_probe.MarketProbeResult | None = None,
+    market_day: market_calendar.MarketDayStatus | None = None,
 ) -> str:
     window = SESSION_WINDOWS[mode]
     ordered = sorted(results.values(), key=lambda item: item.win_score, reverse=True)
@@ -546,9 +548,16 @@ def build_session_report(
         f"*THIEUCUTOO {window['title']}* `{now}`",
         f"{window['description']} Score 0-100, khong phai cam ket loi nhuan.",
         market_status(market),
-        "",
-        "*PORTFOLIO / NOTE BAT BUOC*",
     ]
+    if market_day and market_day.closed:
+        lines += [
+            "",
+            f"*CALENDAR*: {market_day.reason} `{market_day.date}` | van quet data moi nhat theo policy `{market_day.policy}`.",
+        ]
+    probe_note = market_probe.report_note(activity_probe)
+    if probe_note:
+        lines += ["", probe_note]
+    lines += ["", "*PORTFOLIO / NOTE BAT BUOC*"]
     lines += portfolio_alert_lines(results, watch_items)
     lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
     lines += [projection_line(r, mode) for r in (focus_results or strong)[:12]] or ["Chua co co manh du nguong."]
@@ -571,6 +580,8 @@ def save_session_outputs(
     peak_store: dict[str, Any],
     focus_symbols: list[str],
     watch_items: dict[str, dict[str, Any]],
+    activity_probe: market_probe.MarketProbeResult | None = None,
+    market_day: market_calendar.MarketDayStatus | None = None,
 ) -> list[dict[str, Any]]:
     ordered = sorted(results.values(), key=lambda item: item.win_score, reverse=True)
     failed_breaks = scan.update_failed_breaks([r for r in ordered if r.symbol != "VNINDEX"])
@@ -584,6 +595,8 @@ def save_session_outputs(
         "focus_symbols": focus_symbols,
         "portfolio_symbols": list(watch_items.keys()),
         "market": asdict(results["VNINDEX"]) if "VNINDEX" in results else None,
+        "market_day": asdict(market_day) if market_day else None,
+        "market_activity": asdict(activity_probe) if activity_probe else None,
         "top": [asdict(r) for r in ordered[:20]],
     }
     scan.json_save(DATA_DIR / "session_alerts_latest.json", alerts, pretty=False)
@@ -627,6 +640,7 @@ async def main() -> None:
     peak_store: dict[str, Any] = scan.json_load(DATA_DIR / "historical_peaks.json", {})
     results: dict[str, scan.ScanResult] = {}
     hard_stop = session_deadline(mode)
+    activity_probe: market_probe.MarketProbeResult | None = None
 
     if mode != "test" and market_probe.enabled():
         probe_symbols = market_probe.choose_probe_symbols(universe, watch_symbols)
@@ -643,24 +657,25 @@ async def main() -> None:
         probe_snapshots = market_probe.snapshots_from_history(
             {symbol: history_store.get(symbol) for symbol in probe_symbols if symbol in history_store}
         )
-        probe_result = market_probe.evaluate_activity(
+        activity_probe = market_probe.evaluate_activity(
             probe_snapshots,
             market_probe.previous_snapshots(),
             no_data_count=max(0, len(probe_symbols) - len(probe_snapshots)),
             policy=market_calendar.market_closed_policy(),
+            action=market_probe.action(),
         )
-        market_probe.save_state(probe_snapshots, probe_result, mode)
+        market_probe.save_state(probe_snapshots, activity_probe, mode)
         logger.info(
             "%s market activity probe: inactive=%s reason=%s checked=%s no_data=%s",
             mode,
-            probe_result.inactive,
-            probe_result.reason,
-            probe_result.checked,
-            probe_result.no_data,
+            activity_probe.inactive,
+            activity_probe.reason,
+            activity_probe.checked,
+            activity_probe.no_data,
         )
-        if market_probe.should_stop_for_inactive(probe_result):
-            scan.json_save(DATA_DIR / "session_alerts_latest.json", market_probe.inactive_alert_payload(mode, probe_result), pretty=False)
-            await scan.send_chunks("*THIEUCUTOO SESSION*", market_probe.inactive_notice(mode, probe_result))
+        if market_probe.should_stop_for_inactive(activity_probe):
+            scan.json_save(DATA_DIR / "session_alerts_latest.json", market_probe.inactive_alert_payload(mode, activity_probe), pretty=False)
+            await scan.send_chunks("*THIEUCUTOO SESSION*", market_probe.inactive_notice(mode, activity_probe))
             return
 
     if "VNINDEX" not in results:
@@ -740,8 +755,24 @@ async def main() -> None:
         results.update(focus_results)
 
     await wait_until(window["report_after"], "report")
-    failed_breaks = save_session_outputs(mode, results, history_store, peak_store, focus_symbols, watch_items)
-    report = build_session_report(mode, results, focus_symbols, watch_items)
+    failed_breaks = save_session_outputs(
+        mode,
+        results,
+        history_store,
+        peak_store,
+        focus_symbols,
+        watch_items,
+        activity_probe=activity_probe,
+        market_day=market_status,
+    )
+    report = build_session_report(
+        mode,
+        results,
+        focus_symbols,
+        watch_items,
+        activity_probe=activity_probe,
+        market_day=market_status,
+    )
     await scan.send_chunks("*THIEUCUTOO SESSION*", report)
 
     today = datetime.now(VN_TZ).date().isoformat()

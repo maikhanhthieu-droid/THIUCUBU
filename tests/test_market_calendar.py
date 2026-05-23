@@ -38,3 +38,13 @@ def test_market_calendar_weekend_is_closed(monkeypatch):
     assert status.closed is True
     assert status.reason == "Weekend"
     assert status.policy == "skip"
+
+
+def test_market_calendar_default_scans_old_data(monkeypatch):
+    monkeypatch.delenv("MARKET_CLOSED_POLICY", raising=False)
+
+    status = market_calendar.get_market_day_status(date(2026, 5, 23))
+
+    assert status.closed is True
+    assert status.policy == "scan_old"
+    assert market_calendar.should_scan_old_data(status) is True

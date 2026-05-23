@@ -76,6 +76,7 @@ class MarketProbeResult:
     inactive: bool
     reason: str
     policy: str
+    action: str
 
 
 def _env_bool(name: str, default: bool = True) -> bool:
@@ -108,6 +109,15 @@ def _env_float(name: str, default: float, min_value: float = 0.0, max_value: flo
 
 def enabled() -> bool:
     return _env_bool("MARKET_ACTIVITY_PROBE_ENABLED", True)
+
+
+def action() -> str:
+    raw = os.getenv("MARKET_ACTIVITY_PROBE_ACTION", "warn").strip().lower()
+    if raw in {"warn", "report", "continue", "scan"}:
+        return "warn"
+    if raw in {"skip", "stop", "halt"}:
+        return "skip"
+    return "warn"
 
 
 def sample_size() -> int:
@@ -241,6 +251,7 @@ def evaluate_activity(
     today: date | None = None,
     no_data_count: int = 0,
     policy: str = "skip",
+    action: str | None = None,
 ) -> MarketProbeResult:
     previous = previous or {}
     current_day = today or today_vn()
@@ -302,11 +313,33 @@ def evaluate_activity(
         inactive=inactive,
         reason="; ".join(reasons),
         policy=policy,
+        action=action or globals()["action"](),
     )
 
 
 def should_stop_for_inactive(result: MarketProbeResult) -> bool:
-    return bool(result.inactive and result.policy == "skip")
+    return bool(result.inactive and result.action == "skip" and result.policy == "skip")
+
+
+def report_note(result: MarketProbeResult | None) -> str:
+    if result is None:
+        return ""
+    dates = ", ".join(f"{day}:{count}" for day, count in result.latest_dates.items()) or "unknown"
+    if result.inactive:
+        return (
+            "*DATA STATUS*: DATA CU / THI TRUONG CO THE NGHI / API CHUA CAP NHAT\n"
+            f"Probe {result.checked} OK, {result.no_data} no-data | "
+            f"khong doi {result.unchanged}/{result.with_previous} | "
+            f"date cu {result.old_date}/{result.checked} | vol=0 {result.zero_volume}/{result.checked}\n"
+            f"Ngay data: {dates}\n"
+            "Xu ly: van quet tiep de he thong ben; tin hieu intraday chi xem tham khao."
+        )
+    if result.no_data:
+        return (
+            "*DATA STATUS*: MARKET ACTIVE NHUNG CO MA NO-DATA\n"
+            f"Probe {result.checked} OK, {result.no_data} no-data | {result.reason}"
+        )
+    return ""
 
 
 def inactive_notice(mode: str, result: MarketProbeResult) -> str:
@@ -320,7 +353,7 @@ def inactive_notice(mode: str, result: MarketProbeResult) -> str:
             f"Khong doi: {result.unchanged}/{result.with_previous} | Date cu: {result.old_date}/{result.checked} | Vol=0: {result.zero_volume}/{result.checked}",
             f"Ngay data: {dates}",
             f"Ly do: {result.reason}",
-            "Xu ly: bo quet rong de tranh tin hieu gia; watchdog se coi day la report hop le cua phien.",
+            "Xu ly: dung theo MARKET_ACTIVITY_PROBE_ACTION=skip; watchdog se coi day la report hop le cua phien.",
         ]
     )
 

@@ -32,13 +32,13 @@ def today_vn() -> date:
 
 
 def market_closed_policy() -> str:
-    raw = os.getenv("MARKET_CLOSED_POLICY", "skip").strip().lower()
+    raw = os.getenv("MARKET_CLOSED_POLICY", "scan_old").strip().lower()
     if raw in SCAN_OLD_POLICIES:
         return "scan_old"
     if raw in SKIP_POLICIES:
         return "skip"
-    logger.warning("Invalid MARKET_CLOSED_POLICY=%r, using skip", raw)
-    return "skip"
+    logger.warning("Invalid MARKET_CLOSED_POLICY=%r, using scan_old", raw)
+    return "scan_old"
 
 
 def holidays_path() -> Path:

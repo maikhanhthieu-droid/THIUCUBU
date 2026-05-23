@@ -20,8 +20,23 @@ def test_probe_marks_old_dates_inactive(monkeypatch):
     result = market_probe.evaluate_activity(snapshots, today=date(2026, 5, 22), policy="skip")
 
     assert result.inactive is True
-    assert market_probe.should_stop_for_inactive(result) is True
+    assert market_probe.should_stop_for_inactive(result) is False
     assert "data_date_cu" in result.reason
+
+
+def test_probe_can_be_configured_to_stop(monkeypatch):
+    monkeypatch.setenv("MARKET_PROBE_MIN_CHECKED", "10")
+    snapshots = many_snapshots("A", 12, "2026-05-21")
+
+    result = market_probe.evaluate_activity(
+        snapshots,
+        today=date(2026, 5, 22),
+        policy="skip",
+        action="skip",
+    )
+
+    assert result.inactive is True
+    assert market_probe.should_stop_for_inactive(result) is True
 
 
 def test_probe_marks_unchanged_sample_inactive(monkeypatch):
