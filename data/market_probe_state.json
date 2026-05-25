@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-05-25T15:20:09+07:00",
+  "updated_at": "2026-05-25T16:28:10+07:00",
   "mode": "eod",
   "result": {
     "checked": 38,
-    "with_previous": 0,
+    "with_previous": 38,
     "changed": 0,
-    "unchanged": 0,
+    "unchanged": 38,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -13,8 +13,8 @@
       "2026-05-25": 28,
       "2026-05-22": 10
     },
-    "inactive": false,
-    "reason": "lan_dau_chua_co_moc_so_sanh",
+    "inactive": true,
+    "reason": "khong_doi 38/38",
     "policy": "scan_old",
     "action": "warn"
   },
