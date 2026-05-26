@@ -200,7 +200,27 @@
       "elapsed_sec": 494.9,
       "telegram_sent": true,
       "updated_at": "2026-05-26T15:58:03+07:00"
+    },
+    {
+      "run_id": "20260526211424-c25d3d6d",
+      "mode": "morning_focus",
+      "trigger": "workflow_dispatch",
+      "status": "started",
+      "started_at": "2026-05-26T21:14:24+07:00",
+      "updated_at": "2026-05-26T21:14:24+07:00"
+    },
+    {
+      "run_id": "20260526211424-c25d3d6d",
+      "mode": "morning_focus",
+      "status": "success",
+      "finished_at": "2026-05-26T21:17:37+07:00",
+      "success_count": 65,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 192.6,
+      "telegram_sent": true,
+      "updated_at": "2026-05-26T21:17:37+07:00"
     }
   ],
-  "last_updated": "2026-05-26T15:58:03+07:00"
+  "last_updated": "2026-05-26T21:17:37+07:00"
 }
