@@ -94,5 +94,11 @@
     "date": "2026-05-26",
     "score": 17,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "EVF",
+    "date": "2026-05-27",
+    "score": 52,
+    "reason": "nen chat; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]

@@ -288,7 +288,27 @@
       "elapsed_sec": 147.4,
       "telegram_sent": true,
       "updated_at": "2026-05-27T14:55:32+07:00"
+    },
+    {
+      "run_id": "20260527173336-1326a26a",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-05-27T17:33:36+07:00",
+      "updated_at": "2026-05-27T17:33:36+07:00"
+    },
+    {
+      "run_id": "20260527173336-1326a26a",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-05-27T17:41:44+07:00",
+      "success_count": 176,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 487.3,
+      "telegram_sent": true,
+      "updated_at": "2026-05-27T17:41:44+07:00"
     }
   ],
-  "last_updated": "2026-05-27T14:55:32+07:00"
+  "last_updated": "2026-05-27T17:41:44+07:00"
 }

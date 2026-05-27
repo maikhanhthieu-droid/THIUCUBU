@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-05-27T14:55:23+07:00",
-  "mode": "morning_broad",
+  "updated_at": "2026-05-27T17:35:53+07:00",
+  "mode": "eod",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 0,
-    "unchanged": 38,
+    "changed": 1,
+    "unchanged": 37,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -14,7 +14,7 @@
       "2026-05-26": 10
     },
     "inactive": true,
-    "reason": "khong_doi 38/38",
+    "reason": "khong_doi 37/38",
     "policy": "scan_old",
     "action": "warn"
   },
@@ -227,7 +227,7 @@
       "symbol": "VNINDEX",
       "latest_date": "2026-05-27",
       "close": 1874.43,
-      "volume": 812452043.0
+      "volume": 830501943.0
     },
     "VNM": {
       "symbol": "VNM",
