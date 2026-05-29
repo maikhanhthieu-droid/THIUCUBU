@@ -100,5 +100,11 @@
     "date": "2026-05-27",
     "score": 52,
     "reason": "nen chat; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "DRC",
+    "date": "2026-05-29",
+    "score": 58,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
   }
 ]
