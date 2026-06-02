@@ -4,14 +4,6 @@
     {
       "run_id": "20260523165424-a64859b3",
       "mode": "weekend_full",
-      "trigger": "workflow_dispatch",
-      "status": "started",
-      "started_at": "2026-05-23T16:54:24+07:00",
-      "updated_at": "2026-05-23T16:54:24+07:00"
-    },
-    {
-      "run_id": "20260523165424-a64859b3",
-      "mode": "weekend_full",
       "status": "success",
       "finished_at": "2026-05-23T17:03:17+07:00",
       "success_count": 175,
@@ -788,7 +780,27 @@
       "elapsed_sec": 501.7,
       "telegram_sent": true,
       "updated_at": "2026-06-02T15:20:12+07:00"
+    },
+    {
+      "run_id": "20260602154652-f85f46c3",
+      "mode": "morning_focus",
+      "trigger": "workflow_dispatch",
+      "status": "started",
+      "started_at": "2026-06-02T15:46:52+07:00",
+      "updated_at": "2026-06-02T15:46:52+07:00"
+    },
+    {
+      "run_id": "20260602154652-f85f46c3",
+      "mode": "morning_focus",
+      "status": "success",
+      "finished_at": "2026-06-02T15:50:27+07:00",
+      "success_count": 71,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 215.2,
+      "telegram_sent": true,
+      "updated_at": "2026-06-02T15:50:27+07:00"
     }
   ],
-  "last_updated": "2026-06-02T15:20:12+07:00"
+  "last_updated": "2026-06-02T15:50:27+07:00"
 }
