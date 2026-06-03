@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-06-03T15:34:12+07:00",
-  "mode": "eod",
+  "updated_at": "2026-06-03T15:46:39+07:00",
+  "mode": "morning_broad",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 38,
-    "unchanged": 0,
+    "changed": 0,
+    "unchanged": 38,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -13,8 +13,8 @@
       "2026-06-03": 28,
       "2026-06-02": 10
     },
-    "inactive": false,
-    "reason": "market_active changed 38/38",
+    "inactive": true,
+    "reason": "khong_doi 38/38",
     "policy": "scan_old",
     "action": "warn"
   },
