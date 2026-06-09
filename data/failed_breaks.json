@@ -1,41 +1,5 @@
 [
   {
-    "symbol": "PVS",
-    "date": "2026-05-14",
-    "score": 68,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
-  },
-  {
-    "symbol": "PHR",
-    "date": "2026-05-14",
-    "score": 22,
-    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
-  },
-  {
-    "symbol": "GVR",
-    "date": "2026-05-14",
-    "score": 28,
-    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
-    "symbol": "DPR",
-    "date": "2026-05-14",
-    "score": 56,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
-    "symbol": "HNG",
-    "date": "2026-05-14",
-    "score": 16,
-    "reason": "MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
-    "symbol": "FOX",
-    "date": "2026-05-14",
-    "score": 44,
-    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
     "symbol": "BID",
     "date": "2026-05-19",
     "score": 47,
