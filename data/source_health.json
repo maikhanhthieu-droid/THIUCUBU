@@ -1,47 +1,47 @@
 {
-  "updated_at": "2026-06-11T18:10:34+07:00",
+  "updated_at": "2026-06-11T18:22:44+07:00",
   "sources": {
     "VCI": {
       "source": "VCI",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 54,
-      "successes": 54,
+      "attempts": 55,
+      "successes": 53,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 0,
+      "transient_failures": 2,
       "parked_count": 0,
       "disabled": false,
-      "last_error": "",
-      "health_score": 100
+      "last_error": "transient",
+      "health_score": 80
     },
     "KBS": {
       "source": "KBS",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 64,
+      "attempts": 66,
       "successes": 63,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 1,
+      "transient_failures": 2,
       "parked_count": 0,
       "disabled": false,
       "last_error": "transient",
-      "health_score": 90
+      "health_score": 79
     },
     "DNSE": {
       "source": "DNSE",
       "rpm_limit": 15,
       "effective_rpm": 11.7,
-      "attempts": 61,
-      "successes": 59,
+      "attempts": 63,
+      "successes": 60,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 1,
       "parked_count": 0,
       "disabled": false,
       "last_error": "transient",
-      "health_score": 88
+      "health_score": 87
     }
   }
 }
