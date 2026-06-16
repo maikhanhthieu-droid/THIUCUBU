@@ -28,5 +28,11 @@
     "date": "2026-06-15",
     "score": 26,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "SAB",
+    "date": "2026-06-16",
+    "score": 80,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
   }
 ]
