@@ -34,5 +34,11 @@
     "date": "2026-06-16",
     "score": 80,
     "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "HDC",
+    "date": "2026-06-17",
+    "score": 39,
+    "reason": "discount 50.5% >= target 43%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
