@@ -40,5 +40,11 @@
     "date": "2026-06-17",
     "score": 39,
     "reason": "discount 50.5% >= target 43%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "FTS",
+    "date": "2026-06-19",
+    "score": 15,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
