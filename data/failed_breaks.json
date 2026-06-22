@@ -1,17 +1,5 @@
 [
   {
-    "symbol": "VEA",
-    "date": "2026-05-26",
-    "score": 17,
-    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
-  },
-  {
-    "symbol": "EVF",
-    "date": "2026-05-27",
-    "score": 52,
-    "reason": "nen chat; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
     "symbol": "DRC",
     "date": "2026-05-29",
     "score": 58,
@@ -46,5 +34,17 @@
     "date": "2026-06-19",
     "score": 15,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "PVS",
+    "date": "2026-06-22",
+    "score": 69,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "AGR",
+    "date": "2026-06-22",
+    "score": 25,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
