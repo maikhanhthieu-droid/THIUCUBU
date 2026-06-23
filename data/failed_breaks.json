@@ -46,5 +46,23 @@
     "date": "2026-06-22",
     "score": 25,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "ORS",
+    "date": "2026-06-23",
+    "score": 43,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "CMX",
+    "date": "2026-06-23",
+    "score": 24,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "CTS",
+    "date": "2026-06-23",
+    "score": 0,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI,DISTRIBUTION"
   }
 ]
