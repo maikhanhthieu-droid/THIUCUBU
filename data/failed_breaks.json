@@ -1,11 +1,5 @@
 [
   {
-    "symbol": "DRC",
-    "date": "2026-05-29",
-    "score": 58,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
-  },
-  {
     "symbol": "TPB",
     "date": "2026-06-15",
     "score": 79,
@@ -64,5 +58,17 @@
     "date": "2026-06-23",
     "score": 0,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI,DISTRIBUTION"
+  },
+  {
+    "symbol": "STB",
+    "date": "2026-06-24",
+    "score": 58,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "PET",
+    "date": "2026-06-24",
+    "score": 10,
+    "reason": "MFI tot; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
