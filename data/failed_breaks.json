@@ -70,5 +70,11 @@
     "date": "2026-06-24",
     "score": 10,
     "reason": "MFI tot; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "LPB",
+    "date": "2026-06-25",
+    "score": 14,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI"
   }
 ]
