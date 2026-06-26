@@ -76,5 +76,11 @@
     "date": "2026-06-25",
     "score": 14,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI"
+  },
+  {
+    "symbol": "TNG",
+    "date": "2026-06-26",
+    "score": 44,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
