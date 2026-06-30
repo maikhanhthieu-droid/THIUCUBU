@@ -94,5 +94,17 @@
     "date": "2026-06-29",
     "score": 26,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "IJC",
+    "date": "2026-06-30",
+    "score": 49,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "BSI",
+    "date": "2026-06-30",
+    "score": 0,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,HOT_RSI,DISTRIBUTION"
   }
 ]
