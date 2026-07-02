@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-07-02T14:46:39+07:00",
-  "mode": "morning_focus",
+  "updated_at": "2026-07-02T16:40:56+07:00",
+  "mode": "eod",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 28,
-    "unchanged": 10,
+    "changed": 4,
+    "unchanged": 34,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -13,8 +13,8 @@
       "2026-07-02": 28,
       "2026-07-01": 10
     },
-    "inactive": false,
-    "reason": "market_active changed 28/38",
+    "inactive": true,
+    "reason": "khong_doi 34/38",
     "policy": "scan_old",
     "action": "warn"
   },
@@ -185,13 +185,13 @@
       "symbol": "TCB",
       "latest_date": "2026-07-02",
       "close": 33.85,
-      "volume": 11833100.0
+      "volume": 12377100.0
     },
     "VCB": {
       "symbol": "VCB",
       "latest_date": "2026-07-02",
-      "close": 62.3,
-      "volume": 2463700.0
+      "close": 62.1,
+      "volume": 2744500.0
     },
     "VCI": {
       "symbol": "VCI",
@@ -227,7 +227,7 @@
       "symbol": "VNINDEX",
       "latest_date": "2026-07-02",
       "close": 1866.35,
-      "volume": 520414678.0
+      "volume": 565120875.0
     },
     "VNM": {
       "symbol": "VNM",
@@ -239,7 +239,7 @@
       "symbol": "VPB",
       "latest_date": "2026-07-02",
       "close": 27.7,
-      "volume": 10993900.0
+      "volume": 12453200.0
     },
     "VRE": {
       "symbol": "VRE",
