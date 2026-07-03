@@ -118,5 +118,17 @@
     "date": "2026-07-01",
     "score": 10,
     "reason": "vol kiet; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "VCG",
+    "date": "2026-07-03",
+    "score": 15,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "ORS",
+    "date": "2026-07-03",
+    "score": 7,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
