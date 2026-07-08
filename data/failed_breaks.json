@@ -142,5 +142,29 @@
     "date": "2026-07-07",
     "score": 99,
     "reason": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "VND",
+    "date": "2026-07-08",
+    "score": 68,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "SHS",
+    "date": "2026-07-08",
+    "score": 68,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "ORS",
+    "date": "2026-07-08",
+    "score": 34,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "MBS",
+    "date": "2026-07-08",
+    "score": 33,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
