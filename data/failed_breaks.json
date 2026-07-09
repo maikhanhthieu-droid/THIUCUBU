@@ -166,5 +166,11 @@
     "date": "2026-07-08",
     "score": 33,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "PLC",
+    "date": "2026-07-09",
+    "score": 45,
+    "reason": "discount 48.0% >= target 35%; nen chat; OBV up; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
