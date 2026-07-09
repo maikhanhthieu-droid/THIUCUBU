@@ -774,25 +774,25 @@
       "updated_at": "2026-07-09T14:56:01+07:00"
     },
     {
-      "run_id": "20260709170047-9a86c109",
+      "run_id": "20260709171147-93faa03a",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-07-09T17:00:47+07:00",
-      "updated_at": "2026-07-09T17:00:47+07:00"
+      "started_at": "2026-07-09T17:11:47+07:00",
+      "updated_at": "2026-07-09T17:11:47+07:00"
     },
     {
-      "run_id": "20260709170047-9a86c109",
+      "run_id": "20260709171147-93faa03a",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-07-09T17:09:34+07:00",
+      "finished_at": "2026-07-09T17:20:05+07:00",
       "success_count": 176,
       "failed_count": 0,
       "failed_symbols": [],
-      "elapsed_sec": 526.9,
+      "elapsed_sec": 497.8,
       "telegram_sent": true,
-      "updated_at": "2026-07-09T17:09:34+07:00"
+      "updated_at": "2026-07-09T17:20:05+07:00"
     }
   ],
-  "last_updated": "2026-07-09T17:09:34+07:00"
+  "last_updated": "2026-07-09T17:20:05+07:00"
 }
