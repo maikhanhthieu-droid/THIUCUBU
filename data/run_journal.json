@@ -2,26 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260701152148-92833ca0",
-      "mode": "morning_focus",
-      "trigger": "workflow_dispatch",
-      "status": "started",
-      "started_at": "2026-07-01T15:21:48+07:00",
-      "updated_at": "2026-07-01T15:21:48+07:00"
-    },
-    {
-      "run_id": "20260701152148-92833ca0",
-      "mode": "morning_focus",
-      "status": "success",
-      "finished_at": "2026-07-01T15:25:07+07:00",
-      "success_count": 57,
-      "failed_count": 0,
-      "failed_symbols": [],
-      "elapsed_sec": 199.4,
-      "telegram_sent": true,
-      "updated_at": "2026-07-01T15:25:07+07:00"
-    },
-    {
       "run_id": "20260701172631-ba6c3fd0",
       "mode": "auto",
       "trigger": "schedule",
@@ -809,7 +789,27 @@
       "elapsed_sec": 1806.6,
       "telegram_sent": true,
       "updated_at": "2026-07-10T17:26:10+07:00"
+    },
+    {
+      "run_id": "20260711114132-9cdcb75b",
+      "mode": "weekend_full",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-07-11T11:41:32+07:00",
+      "updated_at": "2026-07-11T11:41:32+07:00"
+    },
+    {
+      "run_id": "20260711114132-9cdcb75b",
+      "mode": "weekend_full",
+      "status": "success",
+      "finished_at": "2026-07-11T12:00:29+07:00",
+      "success_count": 175,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 1136.6,
+      "telegram_sent": true,
+      "updated_at": "2026-07-11T12:00:29+07:00"
     }
   ],
-  "last_updated": "2026-07-10T17:26:10+07:00"
+  "last_updated": "2026-07-11T12:00:29+07:00"
 }

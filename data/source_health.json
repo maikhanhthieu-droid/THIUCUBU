@@ -1,47 +1,47 @@
 {
-  "updated_at": "2026-07-10T17:26:10+07:00",
+  "updated_at": "2026-07-11T12:00:29+07:00",
   "sources": {
     "VCI": {
       "source": "VCI",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 76,
-      "successes": 37,
-      "failures": 3,
-      "rate_limit_failures": 30,
-      "transient_failures": 2,
-      "parked_count": 1,
+      "attempts": 4,
+      "successes": 4,
+      "failures": 0,
+      "rate_limit_failures": 0,
+      "transient_failures": 0,
+      "parked_count": 0,
       "disabled": false,
-      "last_error": "rate-limit",
-      "health_score": 0
+      "last_error": "",
+      "health_score": 100
     },
     "KBS": {
       "source": "KBS",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 96,
-      "successes": 83,
+      "attempts": 116,
+      "successes": 112,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 4,
+      "transient_failures": 1,
       "parked_count": 0,
       "disabled": false,
       "last_error": "transient",
-      "health_score": 54
+      "health_score": 88
     },
     "DNSE": {
       "source": "DNSE",
       "rpm_limit": 15,
       "effective_rpm": 11.7,
-      "attempts": 72,
-      "successes": 58,
-      "failures": 2,
+      "attempts": 63,
+      "successes": 59,
+      "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 4,
+      "transient_failures": 1,
       "parked_count": 0,
       "disabled": false,
       "last_error": "transient",
-      "health_score": 48
+      "health_score": 85
     }
   }
 }
