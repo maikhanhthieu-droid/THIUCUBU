@@ -1,16 +1,16 @@
 {
-  "updated_at": "2026-07-13T17:41:30+07:00",
-  "mode": "afternoon_focus",
+  "updated_at": "2026-07-13T18:00:42+07:00",
+  "mode": "eod",
   "result": {
-    "checked": 31,
+    "checked": 38,
     "with_previous": 31,
     "changed": 0,
     "unchanged": 31,
     "old_date": 10,
     "zero_volume": 0,
-    "no_data": 7,
+    "no_data": 0,
     "latest_dates": {
-      "2026-07-13": 21,
+      "2026-07-13": 28,
       "2026-07-10": 10
     },
     "inactive": true,
@@ -19,6 +19,12 @@
     "action": "warn"
   },
   "symbols": {
+    "ACB": {
+      "symbol": "ACB",
+      "latest_date": "2026-07-13",
+      "close": 22.45,
+      "volume": 15406600.0
+    },
     "BID": {
       "symbol": "BID",
       "latest_date": "2026-07-13",
@@ -61,17 +67,35 @@
       "close": 23.4,
       "volume": 3551200.0
     },
+    "FPT": {
+      "symbol": "FPT",
+      "latest_date": "2026-07-13",
+      "close": 70.5,
+      "volume": 7738400.0
+    },
     "FRT": {
       "symbol": "FRT",
       "latest_date": "2026-07-10",
       "close": 113900.0,
       "volume": 166800.0
     },
+    "GAS": {
+      "symbol": "GAS",
+      "latest_date": "2026-07-13",
+      "close": 75.4,
+      "volume": 909400.0
+    },
     "GMD": {
       "symbol": "GMD",
       "latest_date": "2026-07-13",
       "close": 75.3,
       "volume": 1519700.0
+    },
+    "HCM": {
+      "symbol": "HCM",
+      "latest_date": "2026-07-13",
+      "close": 27.6,
+      "volume": 8621200.0
     },
     "HDB": {
       "symbol": "HDB",
@@ -132,6 +156,18 @@
       "latest_date": "2026-07-13",
       "close": 43.85,
       "volume": 6681400.0
+    },
+    "PVD": {
+      "symbol": "PVD",
+      "latest_date": "2026-07-13",
+      "close": 31.05,
+      "volume": 4260000.0
+    },
+    "PVS": {
+      "symbol": "PVS",
+      "latest_date": "2026-07-13",
+      "close": 37.0,
+      "volume": 3181200.0
     },
     "SSI": {
       "symbol": "SSI",
@@ -204,6 +240,12 @@
       "latest_date": "2026-07-13",
       "close": 26.4,
       "volume": 21924200.0
+    },
+    "VRE": {
+      "symbol": "VRE",
+      "latest_date": "2026-07-13",
+      "close": 25.9,
+      "volume": 5706000.0
     }
   }
 }
