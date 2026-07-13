@@ -1,29 +1,5 @@
 [
   {
-    "symbol": "TPB",
-    "date": "2026-06-15",
-    "score": 79,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
-  },
-  {
-    "symbol": "OCB",
-    "date": "2026-06-15",
-    "score": 26,
-    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
-    "symbol": "SAB",
-    "date": "2026-06-16",
-    "score": 80,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
-  },
-  {
-    "symbol": "HDC",
-    "date": "2026-06-17",
-    "score": 39,
-    "reason": "discount 50.5% >= target 43%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
-  },
-  {
     "symbol": "FTS",
     "date": "2026-06-19",
     "score": 15,
@@ -172,5 +148,11 @@
     "date": "2026-07-09",
     "score": 45,
     "reason": "discount 48.0% >= target 35%; nen chat; OBV up; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "KHG",
+    "date": "2026-07-13",
+    "score": 51,
+    "reason": "nen chat; gan nen break; ? FAILED_BREAK"
   }
 ]
