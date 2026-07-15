@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-07-15T15:40:31+07:00",
+  "updated_at": "2026-07-15T15:58:52+07:00",
   "mode": "eod",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 28,
-    "unchanged": 10,
+    "changed": 0,
+    "unchanged": 38,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -13,8 +13,8 @@
       "2026-07-15": 28,
       "2026-07-14": 10
     },
-    "inactive": false,
-    "reason": "market_active changed 28/38",
+    "inactive": true,
+    "reason": "khong_doi 38/38",
     "policy": "scan_old",
     "action": "warn"
   },
