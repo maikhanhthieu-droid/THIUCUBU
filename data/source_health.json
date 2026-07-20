@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-07-20T14:04:47+07:00",
+  "updated_at": "2026-07-20T14:32:12+07:00",
   "sources": {
     "VCI": {
       "source": "VCI",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 61,
-      "successes": 61,
+      "attempts": 25,
+      "successes": 25,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 0,
@@ -19,29 +19,29 @@
       "source": "KBS",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 68,
-      "successes": 67,
+      "attempts": 25,
+      "successes": 25,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 1,
+      "transient_failures": 0,
       "parked_count": 0,
       "disabled": false,
-      "last_error": "transient",
-      "health_score": 90
+      "last_error": "",
+      "health_score": 100
     },
     "DNSE": {
       "source": "DNSE",
       "rpm_limit": 15,
       "effective_rpm": 11.7,
-      "attempts": 62,
-      "successes": 60,
+      "attempts": 17,
+      "successes": 17,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 1,
+      "transient_failures": 0,
       "parked_count": 0,
       "disabled": false,
-      "last_error": "transient",
-      "health_score": 88
+      "last_error": "",
+      "health_score": 100
     }
   }
 }
