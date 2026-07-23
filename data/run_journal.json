@@ -774,25 +774,25 @@
       "updated_at": "2026-07-23T10:54:22+07:00"
     },
     {
-      "run_id": "20260723151835-81182ce0",
-      "mode": "afternoon_split",
+      "run_id": "20260723151943-b6d510b8",
+      "mode": "eod",
       "trigger": "workflow_dispatch",
       "status": "started",
-      "started_at": "2026-07-23T15:18:35+07:00",
-      "updated_at": "2026-07-23T15:18:35+07:00"
+      "started_at": "2026-07-23T15:19:43+07:00",
+      "updated_at": "2026-07-23T15:19:43+07:00"
     },
     {
-      "run_id": "20260723151835-81182ce0",
-      "mode": "afternoon_split",
+      "run_id": "20260723151943-b6d510b8",
+      "mode": "eod",
       "status": "success",
-      "finished_at": "2026-07-23T15:20:19+07:00",
-      "success_count": 38,
+      "finished_at": "2026-07-23T15:27:23+07:00",
+      "success_count": 176,
       "failed_count": 0,
       "failed_symbols": [],
-      "elapsed_sec": 104.9,
+      "elapsed_sec": 460.5,
       "telegram_sent": true,
-      "updated_at": "2026-07-23T15:20:19+07:00"
+      "updated_at": "2026-07-23T15:27:23+07:00"
     }
   ],
-  "last_updated": "2026-07-23T15:20:19+07:00"
+  "last_updated": "2026-07-23T15:27:23+07:00"
 }
