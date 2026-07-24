@@ -106,5 +106,11 @@
     "date": "2026-07-22",
     "score": 20,
     "reason": "discount 17.1% >= target 15%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "NVL",
+    "date": "2026-07-24",
+    "score": 53,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
   }
 ]
