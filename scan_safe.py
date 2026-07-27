@@ -20,6 +20,7 @@ import scan
 logger = logging.getLogger("thieucutoo.safe")
 DATA_DIR = scan.DATA_DIR
 SOURCE_HEALTH_PATH = DATA_DIR / "source_health.json"
+FETCH_PROVENANCE: dict[str, dict[str, Any]] = {}
 
 
 def env_int(name: str, default: int, min_value: int = 0) -> int:
@@ -378,13 +379,58 @@ def save_source_health(path: Path = SOURCE_HEALTH_PATH) -> dict[str, Any]:
     return payload
 
 
+def cache_metadata_path(path: Path) -> Path:
+    return path.with_suffix(".meta.json")
+
+
+def dataframe_as_of(df: pd.DataFrame) -> str | None:
+    if "time" not in df.columns or df.empty:
+        return None
+    try:
+        value = pd.to_datetime(df["time"], errors="coerce").dropna().max()
+        return value.date().isoformat() if pd.notna(value) else None
+    except Exception:
+        return None
+
+
+def with_provenance(
+    symbol: str,
+    df: pd.DataFrame,
+    *,
+    source: str | None,
+    cache_status: str,
+) -> pd.DataFrame:
+    result = df.copy().reset_index(drop=True)
+    metadata = {
+        "symbol": symbol.upper(),
+        "as_of": dataframe_as_of(result),
+        "data_source": source,
+        "cache_status": cache_status,
+        "observed_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
+    }
+    result.attrs.update(metadata)
+    FETCH_PROVENANCE[symbol.upper()] = metadata
+    return result
+
+
+def load_cache_metadata(path: Path) -> dict[str, Any]:
+    raw = scan.json_load(cache_metadata_path(path), {})
+    return raw if isinstance(raw, dict) else {}
+
+
 def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:
     ttl = 480 if not force_refresh else 0
     path = scan.cache_path(symbol, bars)
     if not force_refresh and intel.is_cache_fresh_today(path, ttl):
         cached = intel.validate_ohlcv(scan.read_cache_frame(path))
         if cached is not None and len(cached) >= 80:
-            return cached.tail(bars).reset_index(drop=True)
+            metadata = load_cache_metadata(path)
+            return with_provenance(
+                symbol,
+                cached.tail(bars),
+                source=metadata.get("data_source"),
+                cache_status="fresh_cache",
+            )
 
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
@@ -404,7 +450,22 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
                         scan.write_cache_frame(path, df)
-                        return df
+                        scan.json_save(
+                            cache_metadata_path(path),
+                            {
+                                "symbol": symbol.upper(),
+                                "data_source": source,
+                                "as_of": dataframe_as_of(df),
+                                "cached_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
+                            },
+                            pretty=True,
+                        )
+                        return with_provenance(
+                            symbol,
+                            df,
+                            source=source,
+                            cache_status="live",
+                        )
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
                 except SystemExit as exc:
                     logger.warning("[%s] %s/%s stopped by vnstock quota: %s", source, symbol, alias, str(exc).splitlines()[0])
@@ -429,7 +490,13 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             time.sleep(wait)
     cached = scan.read_stale_cache(path)
     if cached is not None:
-        return cached.tail(bars).reset_index(drop=True)
+        metadata = load_cache_metadata(path)
+        return with_provenance(
+            symbol,
+            cached.tail(bars),
+            source=metadata.get("data_source"),
+            cache_status="stale_cache",
+        )
     return None
 
 

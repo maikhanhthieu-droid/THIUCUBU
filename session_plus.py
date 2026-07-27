@@ -17,6 +17,7 @@ import scan_safe
 import session_scan as sess
 import state_manager
 import telegram_format as tf
+import filter_feed
 
 logger = logging.getLogger("thieucutoo.session_plus")
 _STATE: dict[str, Any] = {"started_at": time.time(), "results": {}, "metrics": {}, "regime": {}, "rotation": []}
@@ -210,6 +211,19 @@ def save_session_outputs(
         "top": [asdict(x) for x in ordered[:20]],
     }
     scan.json_save(sess.DATA_DIR / "session_alerts_latest.json", latest, pretty=False)
+    scan.json_save(
+        sess.DATA_DIR / "filter_feed_latest.json",
+        filter_feed.build_filter_feed(
+            mode=mode,
+            updated_at=latest["updated_at"],
+            results=results,
+            metrics=metrics,
+            regime=regime,
+            source_health=scan_safe.source_health_payload(),
+            market_activity=asdict(activity_probe) if activity_probe else None,
+        ),
+        pretty=False,
+    )
     return failed_breaks
 
 

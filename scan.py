@@ -151,6 +151,9 @@ class ScanResult:
     failed_break: bool
     warning: str
     reason: str
+    as_of: str | None = None
+    data_source: str | None = None
+    cache_status: str = "unknown"
 
 
 def json_load(path: Path, default: Any) -> Any:
@@ -803,8 +806,14 @@ def process_symbol(symbol: str, force_refresh: bool) -> tuple[str, pd.DataFrame 
         if df is None:
             return symbol, None, None
         if symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30"}:
-            return symbol, df, analyze_index(symbol, df)
-        return symbol, df, analyze_symbol(symbol, df)
+            result = analyze_index(symbol, df)
+        else:
+            result = analyze_symbol(symbol, df)
+        if result is not None:
+            result.as_of = str(df.attrs.get("as_of") or "") or None
+            result.data_source = str(df.attrs.get("data_source") or "") or None
+            result.cache_status = str(df.attrs.get("cache_status") or "unknown")
+        return symbol, df, result
     except Exception as exc:
         logger.exception("[%s] scan failed: %s", symbol, exc)
         return symbol, None, None

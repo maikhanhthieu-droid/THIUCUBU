@@ -106,6 +106,7 @@ jobs:
           name: thieucutoo-weekend-${{ github.run_number }}
           path: |
             data/weekend_opportunities_latest.json
+            data/filter_feed_latest.json
             data/weekend_opportunities_history.json
             data/signal_tracker.json
             data/near_high_skiplist.json
@@ -120,6 +121,7 @@ jobs:
             --message "chore: update weekend opportunities [skip ci]" \
             --paths \
             data/weekend_opportunities_latest.json \
+            data/filter_feed_latest.json \
             data/weekend_opportunities_history.json \
             data/signal_tracker.json \
             data/near_high_skiplist.json \

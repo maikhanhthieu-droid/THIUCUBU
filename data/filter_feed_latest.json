@@ -1,0 +1,25 @@
+{
+  "schema_version": "thieucubu.raw_filter.v1",
+  "producer": "maikhanhthieu-droid/THIUCUBU",
+  "kind": "raw_filter_feed",
+  "generated_at": null,
+  "updated_at": null,
+  "as_of": null,
+  "status": "missing",
+  "mode": null,
+  "market": {
+    "regime": "UNKNOWN",
+    "risk_multiplier": null,
+    "above_ema50": null,
+    "above_ema200": null,
+    "ema50_slope_pct": null
+  },
+  "quality": {
+    "source_health": {},
+    "market_activity": {},
+    "facts_with_provenance": 0,
+    "stale_facts": 0,
+    "warning": "Placeholder only; no facts are available before a verified scan."
+  },
+  "facts": []
+}

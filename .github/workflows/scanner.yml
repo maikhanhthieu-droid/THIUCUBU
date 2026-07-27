@@ -286,6 +286,7 @@ jobs:
             data/historical_peaks.json
             data/failed_breaks.json
             data/session_alerts_latest.json
+            data/filter_feed_latest.json
             data/run_journal.json
             data/source_health.json
             data/memory_state.json
@@ -305,6 +306,7 @@ jobs:
             --paths \
             data/results_latest.json \
             data/session_alerts_latest.json \
+            data/filter_feed_latest.json \
             data/run_journal.json \
             data/source_health.json \
             data/memory_state.json \
