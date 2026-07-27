@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-07-27T17:15:09+07:00",
+  "updated_at": "2026-07-27T17:29:34+07:00",
   "mode": "eod",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 1,
-    "unchanged": 37,
+    "changed": 0,
+    "unchanged": 38,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -14,7 +14,7 @@
       "2026-07-24": 10
     },
     "inactive": true,
-    "reason": "khong_doi 37/38",
+    "reason": "khong_doi 38/38",
     "policy": "scan_old",
     "action": "warn"
   },
