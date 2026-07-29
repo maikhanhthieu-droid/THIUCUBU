@@ -1,251 +1,251 @@
 {
-  "updated_at": "2026-07-28T17:33:54+07:00",
-  "mode": "eod",
+  "updated_at": "2026-07-29T13:19:56+07:00",
+  "mode": "morning_focus",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 0,
-    "unchanged": 38,
+    "changed": 38,
+    "unchanged": 0,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
     "latest_dates": {
-      "2026-07-28": 28,
-      "2026-07-27": 10
+      "2026-07-29": 28,
+      "2026-07-28": 10
     },
-    "inactive": true,
-    "reason": "khong_doi 38/38",
+    "inactive": false,
+    "reason": "market_active changed 38/38",
     "policy": "scan_old",
     "action": "warn"
   },
   "symbols": {
     "ACB": {
       "symbol": "ACB",
-      "latest_date": "2026-07-28",
-      "close": 22.5,
-      "volume": 15653800.0
+      "latest_date": "2026-07-29",
+      "close": 22.25,
+      "volume": 6832500.0
     },
     "BID": {
       "symbol": "BID",
-      "latest_date": "2026-07-28",
-      "close": 35.1,
-      "volume": 2774700.0
+      "latest_date": "2026-07-29",
+      "close": 35.3,
+      "volume": 1096400.0
     },
     "BSR": {
       "symbol": "BSR",
-      "latest_date": "2026-07-28",
-      "close": 24.25,
-      "volume": 7215200.0
+      "latest_date": "2026-07-29",
+      "close": 24.8,
+      "volume": 4608100.0
     },
     "CTG": {
       "symbol": "CTG",
-      "latest_date": "2026-07-28",
-      "close": 29.0,
-      "volume": 4953400.0
+      "latest_date": "2026-07-29",
+      "close": 29.15,
+      "volume": 5611300.0
     },
     "DCM": {
       "symbol": "DCM",
-      "latest_date": "2026-07-27",
-      "close": 29000.0,
-      "volume": 1703400.0
+      "latest_date": "2026-07-28",
+      "close": 30300.0,
+      "volume": 2133000.0
     },
     "DGC": {
       "symbol": "DGC",
-      "latest_date": "2026-07-27",
-      "close": 36000.0,
-      "volume": 820700.0
+      "latest_date": "2026-07-28",
+      "close": 36750.0,
+      "volume": 957900.0
     },
     "DIG": {
       "symbol": "DIG",
-      "latest_date": "2026-07-27",
-      "close": 9690.0,
-      "volume": 19130700.0
+      "latest_date": "2026-07-28",
+      "close": 9960.0,
+      "volume": 15320100.0
     },
     "DPM": {
       "symbol": "DPM",
-      "latest_date": "2026-07-28",
-      "close": 22.65,
-      "volume": 2024600.0
+      "latest_date": "2026-07-29",
+      "close": 22.85,
+      "volume": 1840200.0
     },
     "FPT": {
       "symbol": "FPT",
-      "latest_date": "2026-07-28",
-      "close": 63.0,
-      "volume": 5399400.0
+      "latest_date": "2026-07-29",
+      "close": 63.6,
+      "volume": 2402800.0
     },
     "FRT": {
       "symbol": "FRT",
-      "latest_date": "2026-07-27",
-      "close": 107800.0,
-      "volume": 372900.0
+      "latest_date": "2026-07-28",
+      "close": 107700.0,
+      "volume": 364900.0
     },
     "GAS": {
       "symbol": "GAS",
-      "latest_date": "2026-07-28",
-      "close": 67.0,
-      "volume": 619600.0
+      "latest_date": "2026-07-29",
+      "close": 67.6,
+      "volume": 476600.0
     },
     "GMD": {
       "symbol": "GMD",
-      "latest_date": "2026-07-28",
-      "close": 72.9,
-      "volume": 829700.0
+      "latest_date": "2026-07-29",
+      "close": 73.8,
+      "volume": 433400.0
     },
     "HCM": {
       "symbol": "HCM",
-      "latest_date": "2026-07-28",
-      "close": 25.3,
-      "volume": 5334100.0
+      "latest_date": "2026-07-29",
+      "close": 24.9,
+      "volume": 1130600.0
     },
     "HDB": {
       "symbol": "HDB",
-      "latest_date": "2026-07-27",
-      "close": 25300.0,
-      "volume": 8996000.0
+      "latest_date": "2026-07-28",
+      "close": 25100.0,
+      "volume": 11492300.0
     },
     "HPG": {
       "symbol": "HPG",
-      "latest_date": "2026-07-28",
-      "close": 21.0,
-      "volume": 29151700.0
+      "latest_date": "2026-07-29",
+      "close": 21.35,
+      "volume": 20432000.0
     },
     "HSG": {
       "symbol": "HSG",
-      "latest_date": "2026-07-28",
-      "close": 10.45,
-      "volume": 3302200.0
+      "latest_date": "2026-07-29",
+      "close": 10.7,
+      "volume": 1205200.0
     },
     "KDH": {
       "symbol": "KDH",
-      "latest_date": "2026-07-27",
-      "close": 16400.0,
-      "volume": 6404200.0
+      "latest_date": "2026-07-28",
+      "close": 16950.0,
+      "volume": 5514600.0
     },
     "MBB": {
       "symbol": "MBB",
-      "latest_date": "2026-07-27",
-      "close": 21650.0,
-      "volume": 13775200.0
+      "latest_date": "2026-07-28",
+      "close": 22150.0,
+      "volume": 17345000.0
     },
     "MSN": {
       "symbol": "MSN",
-      "latest_date": "2026-07-28",
+      "latest_date": "2026-07-29",
       "close": 65.7,
-      "volume": 5574000.0
+      "volume": 1974800.0
     },
     "MWG": {
       "symbol": "MWG",
-      "latest_date": "2026-07-28",
-      "close": 65.2,
-      "volume": 6958300.0
+      "latest_date": "2026-07-29",
+      "close": 65.6,
+      "volume": 3226300.0
     },
     "NKG": {
       "symbol": "NKG",
-      "latest_date": "2026-07-27",
-      "close": 10400.0,
-      "volume": 1920000.0
+      "latest_date": "2026-07-28",
+      "close": 10650.0,
+      "volume": 1803200.0
     },
     "NLG": {
       "symbol": "NLG",
-      "latest_date": "2026-07-28",
-      "close": 20.6,
-      "volume": 2768600.0
+      "latest_date": "2026-07-29",
+      "close": 20.75,
+      "volume": 1229700.0
     },
     "PNJ": {
       "symbol": "PNJ",
-      "latest_date": "2026-07-28",
-      "close": 32.65,
-      "volume": 20423300.0
+      "latest_date": "2026-07-29",
+      "close": 33.0,
+      "volume": 4074600.0
     },
     "PVD": {
       "symbol": "PVD",
-      "latest_date": "2026-07-28",
+      "latest_date": "2026-07-29",
       "close": 18.35,
-      "volume": 1369800.0
+      "volume": 681000.0
     },
     "PVS": {
       "symbol": "PVS",
-      "latest_date": "2026-07-28",
-      "close": 33.6,
-      "volume": 2351600.0
+      "latest_date": "2026-07-29",
+      "close": 33.7,
+      "volume": 517000.0
     },
     "SSI": {
       "symbol": "SSI",
-      "latest_date": "2026-07-27",
-      "close": 22000.0,
-      "volume": 16500400.0
+      "latest_date": "2026-07-28",
+      "close": 23000.0,
+      "volume": 30411300.0
     },
     "STB": {
       "symbol": "STB",
-      "latest_date": "2026-07-27",
+      "latest_date": "2026-07-28",
       "close": 72500.0,
-      "volume": 2395500.0
+      "volume": 1780100.0
     },
     "TCB": {
       "symbol": "TCB",
-      "latest_date": "2026-07-28",
-      "close": 28.5,
-      "volume": 10441600.0
+      "latest_date": "2026-07-29",
+      "close": 28.3,
+      "volume": 5017100.0
     },
     "VCB": {
       "symbol": "VCB",
-      "latest_date": "2026-07-28",
-      "close": 54.1,
-      "volume": 2607000.0
+      "latest_date": "2026-07-29",
+      "close": 54.2,
+      "volume": 1050900.0
     },
     "VCI": {
       "symbol": "VCI",
-      "latest_date": "2026-07-28",
-      "close": 19.7,
-      "volume": 16485000.0
+      "latest_date": "2026-07-29",
+      "close": 20.25,
+      "volume": 6109000.0
     },
     "VHM": {
       "symbol": "VHM",
-      "latest_date": "2026-07-28",
-      "close": 131.9,
-      "volume": 2674400.0
+      "latest_date": "2026-07-29",
+      "close": 139.6,
+      "volume": 4107600.0
     },
     "VIC": {
       "symbol": "VIC",
-      "latest_date": "2026-07-28",
-      "close": 213.8,
-      "volume": 2751800.0
+      "latest_date": "2026-07-29",
+      "close": 218.5,
+      "volume": 2527600.0
     },
     "VIX": {
       "symbol": "VIX",
-      "latest_date": "2026-07-28",
-      "close": 12.3,
-      "volume": 55966200.0
+      "latest_date": "2026-07-29",
+      "close": 12.25,
+      "volume": 13697500.0
     },
     "VND": {
       "symbol": "VND",
-      "latest_date": "2026-07-28",
+      "latest_date": "2026-07-29",
       "close": 16.4,
-      "volume": 18132300.0
+      "volume": 3772700.0
     },
     "VNINDEX": {
       "symbol": "VNINDEX",
-      "latest_date": "2026-07-28",
-      "close": 1680.62,
-      "volume": 805989839.0
+      "latest_date": "2026-07-29",
+      "close": 1695.33,
+      "volume": 287169409.0
     },
     "VNM": {
       "symbol": "VNM",
-      "latest_date": "2026-07-28",
-      "close": 59.6,
-      "volume": 5256600.0
+      "latest_date": "2026-07-29",
+      "close": 60.1,
+      "volume": 4462800.0
     },
     "VPB": {
       "symbol": "VPB",
-      "latest_date": "2026-07-28",
-      "close": 24.6,
-      "volume": 12046500.0
+      "latest_date": "2026-07-29",
+      "close": 24.35,
+      "volume": 4112500.0
     },
     "VRE": {
       "symbol": "VRE",
-      "latest_date": "2026-07-28",
-      "close": 21.3,
-      "volume": 3761100.0
+      "latest_date": "2026-07-29",
+      "close": 22.3,
+      "volume": 4082100.0
     }
   }
 }
