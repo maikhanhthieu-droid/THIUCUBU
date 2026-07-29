@@ -58,5 +58,11 @@
     "date": "2026-07-24",
     "score": 53,
     "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "VNM",
+    "date": "2026-07-29",
+    "score": 37,
+    "reason": "discount 15.9% >= target 15%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
