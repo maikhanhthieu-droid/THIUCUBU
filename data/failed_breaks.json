@@ -40,5 +40,17 @@
     "date": "2026-08-01",
     "score": 47,
     "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "VHM",
+    "date": "2026-08-05",
+    "score": 40,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "HT1",
+    "date": "2026-08-05",
+    "score": 29,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
