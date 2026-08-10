@@ -1,17 +1,5 @@
 [
   {
-    "symbol": "KHG",
-    "date": "2026-07-13",
-    "score": 51,
-    "reason": "nen chat; gan nen break; ? FAILED_BREAK"
-  },
-  {
-    "symbol": "PVD",
-    "date": "2026-07-15",
-    "score": 64,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
     "symbol": "VNM",
     "date": "2026-07-22",
     "score": 20,
@@ -52,5 +40,11 @@
     "date": "2026-08-05",
     "score": 29,
     "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "STB",
+    "date": "2026-08-10",
+    "score": 86,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
   }
 ]
