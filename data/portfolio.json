@@ -2,8 +2,8 @@
   {
     "symbol": "NVL",
     "note": "Mau: sua thanh ma dang nam giu",
-    "buy_more_score": 83,
-    "sell_score": 50,
+    "buy_more_score": 73,
+    "sell_score": 40,
     "position": "watch",
     "base_buy_more_score": 78,
     "base_sell_score": 45
@@ -11,8 +11,8 @@
   {
     "symbol": "FPT",
     "note": "Mau: sua thanh ma dang nam giu",
-    "buy_more_score": 85,
-    "sell_score": 55,
+    "buy_more_score": 75,
+    "sell_score": 45,
     "position": "watch",
     "base_buy_more_score": 80,
     "base_sell_score": 50
@@ -20,8 +20,8 @@
   {
     "symbol": "HPG",
     "note": "Mau: sua thanh ma dang nam giu",
-    "buy_more_score": 81,
-    "sell_score": 50,
+    "buy_more_score": 71,
+    "sell_score": 40,
     "position": "watch",
     "base_buy_more_score": 76,
     "base_sell_score": 45
@@ -29,8 +29,8 @@
   {
     "symbol": "TCB",
     "note": "Mau: sua thanh ma dang nam giu",
-    "buy_more_score": 83,
-    "sell_score": 50,
+    "buy_more_score": 73,
+    "sell_score": 40,
     "position": "watch",
     "base_buy_more_score": 78,
     "base_sell_score": 45

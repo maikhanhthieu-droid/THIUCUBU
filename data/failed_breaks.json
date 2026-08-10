@@ -46,5 +46,23 @@
     "date": "2026-08-10",
     "score": 86,
     "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "GMD",
+    "date": "2026-08-10",
+    "score": 40,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "DGW",
+    "date": "2026-08-10",
+    "score": 34,
+    "reason": "discount 28.7% >= target 25%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "VGI",
+    "date": "2026-08-10",
+    "score": 31,
+    "reason": "discount 37.3% >= target 25%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
