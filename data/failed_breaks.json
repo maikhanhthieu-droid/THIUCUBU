@@ -64,5 +64,17 @@
     "date": "2026-08-10",
     "score": 31,
     "reason": "discount 37.3% >= target 25%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "ORS",
+    "date": "2026-08-11",
+    "score": 56,
+    "reason": "OBV up; MFI tot; gan nen break; ? FAILED_BREAK"
+  },
+  {
+    "symbol": "VGI",
+    "date": "2026-08-11",
+    "score": 25,
+    "reason": "discount 35.7% >= target 25%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
