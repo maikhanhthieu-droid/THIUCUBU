@@ -2,26 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260801115137-533e8393",
-      "mode": "weekend_full",
-      "status": "success",
-      "finished_at": "2026-08-01T12:05:49+07:00",
-      "success_count": 175,
-      "failed_count": 0,
-      "failed_symbols": [],
-      "elapsed_sec": 851.9,
-      "telegram_sent": true,
-      "updated_at": "2026-08-01T12:05:49+07:00"
-    },
-    {
-      "run_id": "20260801155944-8f1f3216",
-      "mode": "eod",
-      "trigger": "workflow_dispatch",
-      "status": "started",
-      "started_at": "2026-08-01T15:59:44+07:00",
-      "updated_at": "2026-08-01T15:59:44+07:00"
-    },
-    {
       "run_id": "20260801155944-8f1f3216",
       "mode": "eod",
       "status": "success",
@@ -788,7 +768,27 @@
       "elapsed_sec": 498.9,
       "telegram_sent": true,
       "updated_at": "2026-08-12T16:17:20+07:00"
+    },
+    {
+      "run_id": "20260812162602-e43fbf9f",
+      "mode": "morning_broad",
+      "trigger": "workflow_dispatch",
+      "status": "started",
+      "started_at": "2026-08-12T16:26:02+07:00",
+      "updated_at": "2026-08-12T16:26:02+07:00"
+    },
+    {
+      "run_id": "20260812162602-e43fbf9f",
+      "mode": "morning_broad",
+      "status": "success",
+      "finished_at": "2026-08-12T16:28:32+07:00",
+      "success_count": 38,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 149.8,
+      "telegram_sent": true,
+      "updated_at": "2026-08-12T16:28:32+07:00"
     }
   ],
-  "last_updated": "2026-08-12T16:17:20+07:00"
+  "last_updated": "2026-08-12T16:28:32+07:00"
 }

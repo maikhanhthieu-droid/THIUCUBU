@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-08-12T16:11:02+07:00",
-  "mode": "eod",
+  "updated_at": "2026-08-12T16:28:23+07:00",
+  "mode": "morning_broad",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 1,
-    "unchanged": 37,
+    "changed": 0,
+    "unchanged": 38,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -14,7 +14,7 @@
       "2026-08-11": 10
     },
     "inactive": true,
-    "reason": "khong_doi 37/38",
+    "reason": "khong_doi 38/38",
     "policy": "scan_old",
     "action": "warn"
   },
