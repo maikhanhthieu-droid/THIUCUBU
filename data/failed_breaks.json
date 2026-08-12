@@ -76,5 +76,11 @@
     "date": "2026-08-11",
     "score": 25,
     "reason": "discount 35.7% >= target 25%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
+  },
+  {
+    "symbol": "GVR",
+    "date": "2026-08-12",
+    "score": 32,
+    "reason": "discount 32.5% >= target 30%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
   }
 ]
