@@ -1,26 +1,26 @@
 {
-  "updated_at": "2026-08-13T12:16:57+07:00",
+  "updated_at": "2026-08-13T15:01:12+07:00",
   "sources": {
     "VCI": {
       "source": "VCI",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
       "attempts": 15,
-      "successes": 15,
+      "successes": 13,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 0,
+      "transient_failures": 2,
       "parked_count": 0,
       "disabled": false,
-      "last_error": "",
-      "health_score": 100
+      "last_error": "transient",
+      "health_score": 70
     },
     "KBS": {
       "source": "KBS",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 13,
-      "successes": 13,
+      "attempts": 15,
+      "successes": 15,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 0,
