@@ -37,6 +37,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
     rs = intel.get("rs") if isinstance(intel.get("rs"), Mapping) else {}
     trade = intel.get("trade") if isinstance(intel.get("trade"), Mapping) else {}
     gate = intel.get("gate") if isinstance(intel.get("gate"), Mapping) else {}
+    structure = intel.get("market_structure") if isinstance(intel.get("market_structure"), Mapping) else {}
     as_of = raw.get("as_of") or raw.get("date") or raw.get("as_of_date")
     data_source = raw.get("data_source")
     cache_status = str(raw.get("cache_status") or "unknown")
@@ -66,9 +67,24 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         "classification": {
             "action": raw.get("action"),
             "horizon": raw.get("horizon"),
+            "market_state": structure.get("overall_state") or raw.get("market_state"),
+            "market_state_label": structure.get("label"),
         },
         "near_break": bool(raw.get("near_break")),
         "failed_break": bool(raw.get("failed_break")),
+        "market_structure": dict(structure) if structure else {
+            "overall_state": raw.get("market_state"),
+            "timeframes": {
+                "1D": {"state": raw.get("daily_phase")},
+                "1W": {"state": raw.get("weekly_phase")},
+                "1M": {"state": raw.get("monthly_phase")},
+            },
+            "breakout": {
+                "state": raw.get("breakout_state"),
+                "breakout_level": _float(raw.get("breakout_level")),
+                "reaccumulation": bool(raw.get("reaccumulation")),
+            },
+        },
         "weekly": {
             "uptrend": bool(weekly.get("weekly_uptrend")),
             "above_ema13": bool(weekly.get("weekly_above_ema13")),

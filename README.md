@@ -65,6 +65,28 @@ Phiên bản cũ cộng nhiều bonus nhị phân rồi cắt tại 100, khiến
 
 Trường `win_score` vẫn được giữ để tương thích với dự án cũ. Dự án mới nên đọc `scores.trade`, `scores.position`, `scores.advanced`, `grade`, `confidence` và `score_version` trong feed v2.
 
+## Trạng thái đa khung và bộ lọc break xịt
+
+`market_phase.py` đọc cấu trúc độc lập trên `1D`, `1W` và `1M`, sau đó tạo một trạng thái chung. Scanner lấy mặc định 520 phiên để khung tháng có đủ lịch sử thay vì suy luận từ vài tháng gần nhất.
+
+| Trạng thái chung | Ý nghĩa hành động |
+|---|---|
+| `CƠ HỘI` | Khung tuần/tháng đồng thuận; vẫn phải chờ đúng trigger và vùng rủi ro |
+| `TÍCH LŨY` | Nền đang hình thành hoặc nghi tái tích lũy; theo dõi, chưa xem là breakout hoàn tất |
+| `CẨN THẬN` | Đa khung xung đột, break chưa giữ nền hoặc đang chờ reclaim |
+| `PHÂN PHỐI` | Có áp lực cung trên nhiều khung; chặn mua mới và ưu tiên quản trị rủi ro |
+
+Breakout không còn được kết luận chỉ từ một cây nến. Bộ chẩn đoán theo dõi tối đa 25 phiên sau sự kiện và phân loại:
+
+- `BREAKOUT_CONFIRMED`: có ít nhất hai lần đóng cửa giữ trên nền.
+- `HEALTHY_RETEST`: retest gần mốc breakout với volume co lại.
+- `RECLAIMED_BREAK`: từng mất nền nhưng đã lấy lại mốc breakout.
+- `REACCUMULATION`: nằm sát dưới mốc, biên độ và volume cùng co; chỉ theo dõi tới khi reclaim.
+- `FAILED_BREAK_WATCH`: có dấu hiệu break xịt nhưng chưa đủ xác nhận; chặn mua đuổi.
+- `FAILED_BREAK_CONFIRMED`: mất nền đủ sâu hoặc nhiều phiên kèm cung lớn; chặn tín hiệu mua.
+
+Mỗi stock card hiển thị dòng `TT ... | D ... | W ... | M ...`. Báo cáo phiên có thêm `BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M` và nhóm riêng `BREAK XỊT / RETEST / TÁI TÍCH LŨY` để không đánh đồng retest lành mạnh với phân phối.
+
 ## Năm cửa của bộ lọc cuối tuần
 
 Một mã chỉ có thể vào nhóm `ƯU TIÊN GOM` khi đồng thời vượt qua:
@@ -104,6 +126,8 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 
 `filter_feed_latest.json` sử dụng schema `thieucubu.raw_filter.v2`. Các trường v1 quan trọng vẫn được giữ tại root để tránh làm hỏng consumer cũ.
 
+Trong mỗi phần tử `facts`, trường `market_structure` chứa `overall_state`, `timeframes.1D/1W/1M`, chẩn đoán `breakout`, tuổi sự kiện, khoảng cách tới nền và mức vô hiệu. Đây là lớp trạng thái dùng chung để dự án sau không phải tự phân loại lại.
+
 ## Universe động
 
 Danh sách cốt lõi được quét thường xuyên. Ngoài ra hệ thống tải danh sách mã niêm yết, lọc mã cổ phiếu ba ký tự và lấy một lát xoay vòng mỗi phiên. Cursor được lưu trong `data/universe_state.json`, nhờ đó scanner phủ dần thị trường thay vì luôn bắt đầu lại từ chữ A.
@@ -112,6 +136,7 @@ Danh sách cốt lõi được quét thường xuyên. Ngoài ra hệ thống t�
 - Lát discovery mặc định: 36 mã mỗi broad scan.
 - Các mã discovery đạt điểm đáng chú ý được đưa vào memory và sang vòng cuối tuần.
 - Cấu hình bằng `SCAN_ROTATING_UNIVERSE_SIZE`.
+- Số phiên dùng cho đa khung mặc định là `SCAN_HISTORY_BARS=520`.
 
 ## Lịch chạy mặc định
 

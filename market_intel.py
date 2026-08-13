@@ -12,6 +12,7 @@ from typing import Any
 
 import pandas as pd
 
+import market_phase
 import scan
 import scoring
 
@@ -316,6 +317,7 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
     vcp = vcp_quality(df)
     rs = relative_strength(df, df_index)
     trade = compute_trade_levels(result, levels)
+    structure = market_phase.analyze_market_structure(df)
     rr = trade.get("risk_reward")
     name = str(regime.get("regime", "UNKNOWN"))
     weekly_score = (
@@ -343,6 +345,12 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
     )
     if result.failed_break:
         adv = min(adv, 38)
+    elif structure.breakout.state == "FAILED_BREAK_WATCH":
+        adv = min(adv, 58)
+    if structure.overall_state == "DISTRIBUTION":
+        adv = min(adv, 48)
+    elif structure.timeframes["1W"].state in market_phase.RISK_PHASES:
+        adv = min(adv, 62)
     trade["position_size"] = position_size(trade.get("risk_reward"), adv, name)
     return {
         "symbol": symbol,
@@ -356,6 +364,7 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         "rs": rs,
         "trade": trade,
         "regime": regime,
+        "market_structure": structure.to_dict(),
     }
 
 
@@ -400,6 +409,7 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     vcp = metrics.get("vcp", {})
     regime = metrics.get("regime", {})
     gate = metrics.get("gate", {})
+    structure = metrics.get("market_structure", {})
     rr_text = f"{fmt_num(trade.get('risk_reward'))}x" if trade.get("risk_reward") is not None else "n/a"
     adv = int(metrics.get("advanced_score", 0))
     grade = str(metrics.get("grade") or scoring.grade(adv))
@@ -423,7 +433,68 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     line2 = f"HT {fmt_price(levels.get('support'))} | KC {fmt_price(levels.get('resistance'))} | Size: {size_text}"
     if flags:
         line2 += " | " + ", ".join(flags[:4])
-    return [line1, line2]
+    phase_line = (
+        f"Cấu trúc đa khung {structure.get('label', 'N/A')} "
+        f"{int(structure.get('score') or 0)}/100 | "
+        f"Tin cậy {int(structure.get('confidence') or 0)}%"
+    )
+    breakout = structure.get("breakout", {}) if isinstance(structure, dict) else {}
+    break_label = breakout.get("label")
+    if break_label:
+        phase_line += f" | {break_label}"
+        if breakout.get("event_age_bars") is not None:
+            phase_line += f" ({int(breakout['event_age_bars'])} phiên)"
+    return [line1, phase_line, line2]
+
+
+def structure_map_lines(
+    results: list[scan.ScanResult],
+    metrics_by_symbol: dict[str, dict[str, Any]],
+    *,
+    per_group: int = 6,
+) -> list[str]:
+    """Return a compact 1D/1W/1M map for the full scanned universe."""
+
+    groups = {"OPPORTUNITY": [], "ACCUMULATION": [], "CAUTION": [], "DISTRIBUTION": []}
+    for result in results:
+        structure = metrics_by_symbol.get(result.symbol, {}).get("market_structure", {})
+        state = str(structure.get("overall_state") or "CAUTION")
+        if state not in groups:
+            state = "CAUTION"
+        groups[state].append((int(structure.get("score") or 0), result.symbol))
+    labels = {
+        "OPPORTUNITY": "CƠ HỘI",
+        "ACCUMULATION": "TÍCH LŨY",
+        "CAUTION": "CẨN THẬN",
+        "DISTRIBUTION": "PHÂN PHỐI",
+    }
+    lines: list[str] = []
+    for state in ("OPPORTUNITY", "ACCUMULATION", "CAUTION", "DISTRIBUTION"):
+        ranked = sorted(groups[state], reverse=True)
+        symbols = ", ".join(f"{symbol} {score}" for score, symbol in ranked[:per_group]) or "không có"
+        lines.append(f"{labels[state]} {len(ranked)}: {symbols}")
+    return lines
+
+
+def format_breakout_watch(result: scan.ScanResult, metrics: dict[str, Any] | None) -> str:
+    structure = (metrics or {}).get("market_structure", {})
+    breakout = structure.get("breakout", {})
+    frames = structure.get("timeframes", {})
+    state = str(breakout.get("state") or getattr(result, "breakout_state", "NO_DATA"))
+    level = breakout.get("breakout_level")
+    age = breakout.get("event_age_bars")
+    distance = breakout.get("distance_to_level_pct")
+    invalidation = breakout.get("invalidation_price")
+    level_text = fmt_price(level)
+    age_text = "n/a" if age is None else f"{int(age)} phiên"
+    distance_text = "n/a" if distance is None else f"{safe_float(distance):+.1f}%"
+    return (
+        f"`{result.symbol}` {market_phase.BREAKOUT_LABELS.get(state, state)} | "
+        f"D {frames.get('1D', {}).get('label', 'N/A')} · "
+        f"W {frames.get('1W', {}).get('label', 'N/A')} · "
+        f"M {frames.get('1M', {}).get('label', 'N/A')} | "
+        f"mốc {level_text} · {distance_text} · tuổi {age_text} · vô hiệu {fmt_price(invalidation)}"
+    )
 
 
 def update_signal_tracker(results: dict[str, scan.ScanResult], metrics_by_symbol: dict[str, dict[str, Any]], mode: str, min_score: int = 72) -> list[dict[str, Any]]:

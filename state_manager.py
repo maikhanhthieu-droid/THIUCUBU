@@ -298,6 +298,12 @@ def _entry_from_result(
         flags.append("mfi_ok")
     if bool(_get(result, "failed_break", False)):
         flags.append("failed_break")
+    market_state = str(_get(result, "market_state", "NO_DATA") or "NO_DATA")
+    breakout_state = str(_get(result, "breakout_state", "NO_DATA") or "NO_DATA")
+    if market_state != "NO_DATA":
+        flags.append(f"market_{market_state.lower()}")
+    if breakout_state not in {"NO_DATA", "NO_BREAKOUT"}:
+        flags.append(breakout_state.lower())
 
     item = {
         "symbol": symbol,
@@ -314,6 +320,13 @@ def _entry_from_result(
         "near_break": bool(_get(result, "near_break", False)),
         "obv_up": bool(_get(result, "obv_up", False)),
         "failed_break": bool(_get(result, "failed_break", False)),
+        "market_state": market_state,
+        "daily_phase": str(_get(result, "daily_phase", "NO_DATA") or "NO_DATA"),
+        "weekly_phase": str(_get(result, "weekly_phase", "NO_DATA") or "NO_DATA"),
+        "monthly_phase": str(_get(result, "monthly_phase", "NO_DATA") or "NO_DATA"),
+        "breakout_state": breakout_state,
+        "breakout_level": _float(_get(result, "breakout_level"), 0.0) or None,
+        "reaccumulation": bool(_get(result, "reaccumulation", False)),
         "rsi": round(_float(_get(result, "rsi")), 1),
         "mfi": round(_float(_get(result, "mfi")), 1),
         "vol_ratio": round(_float(_get(result, "vol_ratio")), 2),
@@ -389,14 +402,18 @@ def _update_memory_state_impl(
         near_break = bool(_get(result, "near_break", False))
         obv_up = bool(_get(result, "obv_up", False))
         failed_break = bool(_get(result, "failed_break", False))
+        market_state = str(_get(result, "market_state", "NO_DATA") or "NO_DATA")
+        breakout_state = str(_get(result, "breakout_state", "NO_DATA") or "NO_DATA")
         existing = old_entries.get(symbol)
-        if failed_break or score < 45:
+        if failed_break or breakout_state == "FAILED_BREAK_CONFIRMED" or score < 45:
             if existing:
                 item = _entry_from_result(result, existing, metrics, mode, "retired", updated_at)
-                item["retired_reason"] = "failed_break" if failed_break else "weak_score"
+                item["retired_reason"] = "failed_break" if failed_break or breakout_state == "FAILED_BREAK_CONFIRMED" else "weak_score"
                 retired.append(item)
             continue
-        if score >= 82 or (score >= 74 and near_break and obv_up):
+        if breakout_state in {"FAILED_BREAK_WATCH", "BREAKOUT_UNCONFIRMED", "REACCUMULATION"} or market_state == "DISTRIBUTION":
+            watch_entries.append(_entry_from_result(result, existing, metrics, mode, "watchlist", updated_at))
+        elif score >= 82 or (score >= 74 and near_break and obv_up):
             strong_entries.append(_entry_from_result(result, existing, metrics, mode, "strong", updated_at))
         elif score >= 68 or (score >= 62 and near_break):
             watch_entries.append(_entry_from_result(result, existing, metrics, mode, "watchlist", updated_at))

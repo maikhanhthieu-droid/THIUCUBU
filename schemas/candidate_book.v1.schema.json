@@ -30,6 +30,9 @@
         "opportunity_score": {"type": "integer", "minimum": 0, "maximum": 97},
         "grade": {"enum": ["S", "A+", "A", "B+", "B", "C", "D"]},
         "confidence": {"type": "integer", "minimum": 0, "maximum": 96},
+        "market_state": {"enum": ["OPPORTUNITY", "ACCUMULATION", "CAUTION", "DISTRIBUTION", "NO_DATA"]},
+        "breakout_state": {"type": "string"},
+        "market_structure": {"type": ["object", "null"]},
         "selected": {"type": "boolean"},
         "score_version": {"const": "thieucubu.score.v2"}
       },

@@ -18,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 import fetcher
+import market_phase
 import scoring
 from config import env_csv, env_int, get_settings
 
@@ -63,6 +64,7 @@ RANDOM_START_MAX = env_int("SCAN_RANDOM_START_MAX_SEC", 300, min_value=0)
 REQUESTS_PER_MINUTE = env_int("SCAN_REQUESTS_PER_MINUTE", 10, min_value=1)
 MAX_WORKERS = env_int("SCAN_MAX_WORKERS", 3, min_value=1)
 STALE_CACHE_MAX_DAYS = env_int("SCAN_STALE_CACHE_MAX_DAYS", 3, min_value=0)
+SCAN_HISTORY_BARS = env_int("SCAN_HISTORY_BARS", 520, min_value=260)
 
 
 SECTORS: dict[str, list[str]] = {
@@ -201,6 +203,13 @@ class ScanResult:
     horizon: str = "WATCH"
     action: str = "CHUA_DAT"
     score_version: str = scoring.SCORE_VERSION
+    market_state: str = "NO_DATA"
+    daily_phase: str = "NO_DATA"
+    weekly_phase: str = "NO_DATA"
+    monthly_phase: str = "NO_DATA"
+    breakout_state: str = "NO_DATA"
+    breakout_level: float | None = None
+    reaccumulation: bool = False
 
 
 def json_load(path: Path, default: Any) -> Any:
@@ -490,6 +499,7 @@ def analyze_index(symbol: str, df: pd.DataFrame) -> ScanResult | None:
     if near_break:
         reason_parts.append("gan nen break")
 
+    structure = market_phase.analyze_market_structure(df)
     return ScanResult(
         symbol=symbol.upper(),
         sector="Index",
@@ -512,6 +522,13 @@ def analyze_index(symbol: str, df: pd.DataFrame) -> ScanResult | None:
         failed_break=False,
         warning="",
         reason="; ".join(reason_parts),
+        market_state=structure.overall_state,
+        daily_phase=structure.timeframes["1D"].state,
+        weekly_phase=structure.timeframes["1W"].state,
+        monthly_phase=structure.timeframes["1M"].state,
+        breakout_state=structure.breakout.state,
+        breakout_level=structure.breakout.breakout_level,
+        reaccumulation=structure.breakout.reaccumulation,
     )
 
 
@@ -565,7 +582,10 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
     candle_range = max(last["high"] - last["low"], 1e-9)
     upper_wick = last["high"] - max(last["open"], last["close"])
     close_position = (last["close"] - last["low"]) / candle_range
-    failed_break = bool(last["high"] > high20_prev * 1.01 and last["close"] < high20_prev and upper_wick / candle_range > 0.35 and vol_ratio > 1.25)
+    structure = market_phase.analyze_market_structure(df)
+    breakout = structure.breakout
+    one_bar_failed_break = bool(last["high"] > high20_prev * 1.01 and last["close"] < high20_prev and upper_wick / candle_range > 0.35 and vol_ratio > 1.25)
+    failed_break = bool(one_bar_failed_break or breakout.failed_confirmed)
     weak_close = close_position < 0.45 and vol_ratio > 1.2
 
     trend_score = 0
@@ -615,8 +635,14 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
     risk_penalty = 0
     warnings = []
     if failed_break:
-        risk_penalty += 28
-        warnings.append("FAILED_BREAK")
+        risk_penalty += 32
+        warnings.append("FAILED_BREAK_CONFIRMED")
+    elif breakout.state == "FAILED_BREAK_WATCH":
+        risk_penalty += 16
+        warnings.append("FAILED_BREAK_WATCH")
+    elif breakout.state == "REACCUMULATION":
+        risk_penalty += 4
+        warnings.append("REACCUMULATION_WATCH")
     if weak_close:
         risk_penalty += 12
         warnings.append("WEAK_CLOSE")
@@ -626,6 +652,9 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
     if vol_ratio > 2.5 and close_position < 0.55:
         risk_penalty += 12
         warnings.append("DISTRIBUTION")
+    if structure.overall_state == "DISTRIBUTION":
+        risk_penalty += 18
+        warnings.append("MTF_DISTRIBUTION")
 
     score_v2 = scoring.daily_scores(
         trend=trend_score,
@@ -637,10 +666,29 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
         near_break=near_break,
         failed_break=failed_break,
     )
+    if structure.overall_state == "DISTRIBUTION":
+        score_v2["trade_score"] = min(int(score_v2["trade_score"]), 48)
+        score_v2["position_score"] = min(int(score_v2["position_score"]), 54)
+        score_v2["score"] = max(score_v2["trade_score"], score_v2["position_score"])
+        score_v2["grade"] = scoring.grade(int(score_v2["score"]))
+        score_v2["action"] = "AVOID"
+        score_v2["horizon"] = "WATCH"
+    elif breakout.state == "FAILED_BREAK_WATCH":
+        score_v2["trade_score"] = min(int(score_v2["trade_score"]), 58)
+        score_v2["score"] = max(score_v2["trade_score"], score_v2["position_score"])
+        score_v2["grade"] = scoring.grade(int(score_v2["score"]))
+        score_v2["action"] = "CHO_RECLAIM"
+    elif breakout.state == "REACCUMULATION":
+        score_v2["trade_score"] = min(int(score_v2["trade_score"]), 69)
+        score_v2["score"] = max(score_v2["trade_score"], score_v2["position_score"])
+        score_v2["grade"] = scoring.grade(int(score_v2["score"]))
+        score_v2["action"] = "THEO_DOI_TAI_TICH_LUY"
     win_score = int(score_v2["score"])
     setup = "DISCOUNT_BASE" if score_v2["position_score"] >= score_v2["trade_score"] else "VCP_BREAK"
     if failed_break:
         setup = "AVOID_FAILED_BREAK"
+    elif breakout.state == "REACCUMULATION":
+        setup = "REACCUMULATION_WATCH"
 
     reason_parts = []
     if discount >= target_drop:
@@ -655,6 +703,10 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
         reason_parts.append("MFI tot")
     if near_break:
         reason_parts.append("gan nen break")
+    if structure.overall_state != "NO_DATA":
+        reason_parts.append(f"MTF {structure.label}")
+    if breakout.state not in {"NO_DATA", "NO_BREAKOUT"}:
+        reason_parts.append(breakout.label)
     if warnings:
         reason_parts.append("? " + ",".join(warnings))
 
@@ -687,6 +739,13 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
         horizon=str(score_v2["horizon"]),
         action=str(score_v2["action"]),
         score_version=str(score_v2["score_version"]),
+        market_state=structure.overall_state,
+        daily_phase=structure.timeframes["1D"].state,
+        weekly_phase=structure.timeframes["1W"].state,
+        monthly_phase=structure.timeframes["1M"].state,
+        breakout_state=breakout.state,
+        breakout_level=breakout.breakout_level,
+        reaccumulation=breakout.reaccumulation,
     )
 
 
@@ -846,7 +905,7 @@ def update_failed_breaks(results: list[ScanResult]) -> list[dict[str, Any]]:
 
 
 def save_history(symbol: str, df: pd.DataFrame, history_store: dict[str, Any], peak_store: dict[str, Any]) -> None:
-    tail = df.tail(240).copy()
+    tail = df.tail(SCAN_HISTORY_BARS).copy()
     tail["time"] = tail["time"].dt.strftime("%Y-%m-%d")
     for col in ["open", "high", "low", "close"]:
         tail[col] = tail[col].round(2)
@@ -863,7 +922,7 @@ def save_history(symbol: str, df: pd.DataFrame, history_store: dict[str, Any], p
 
 def process_symbol(symbol: str, force_refresh: bool) -> tuple[str, pd.DataFrame | None, ScanResult | None]:
     try:
-        df = fetch_ohlcv(symbol, bars=260, force_refresh=force_refresh)
+        df = fetch_ohlcv(symbol, bars=SCAN_HISTORY_BARS, force_refresh=force_refresh)
         if df is None:
             return symbol, None, None
         if symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30"}:

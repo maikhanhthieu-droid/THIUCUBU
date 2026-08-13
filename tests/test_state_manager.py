@@ -65,3 +65,17 @@ def test_state_manager_class_updates_and_prunes(tmp_path):
     assert state["last_mode"] == "unit"
     assert [item["symbol"] for item in state["strong_stocks"]] == ["TCB"]
     assert "OLD" not in state["session_focus"]
+
+
+def test_reaccumulation_is_kept_in_watchlist_not_promoted(tmp_path):
+    path = tmp_path / "memory_state.json"
+    result = make_result("AAA", 90)
+    result.market_state = "ACCUMULATION"
+    result.breakout_state = "REACCUMULATION"
+    result.reaccumulation = True
+
+    state = state_manager.update_memory_state({"AAA": result}, "eod", path=path)
+
+    assert not state["strong_stocks"]
+    assert state["watchlist"][0]["symbol"] == "AAA"
+    assert state["watchlist"][0]["breakout_state"] == "REACCUMULATION"

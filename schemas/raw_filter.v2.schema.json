@@ -29,6 +29,7 @@
             "required": ["overall", "trade", "position", "grade", "version"]
           },
           "classification": {"type": "object"},
+          "market_structure": {"type": "object"},
           "weekly": {"type": "object"},
           "volume": {"type": "object"},
           "relative_strength": {"type": "object"},

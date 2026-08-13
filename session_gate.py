@@ -144,7 +144,23 @@ def build_session_report(
     strong = regime_gate.filter_results(stocks, metrics, min_score=72)[:10]
     break_watch = regime_gate.filter_results(stocks, metrics, min_score=62, require_near_break=True)[:14]
     suppressed = regime_gate.suppressed_lines(stocks, metrics, min_score=72)
-    failed = [x for x in stocks if x.failed_break][:10]
+    failed = [
+        x for x in stocks
+        if x.failed_break
+        or metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") == "FAILED_BREAK_CONFIRMED"
+    ][:10]
+    structure_watch_states = {
+        "FAILED_BREAK_CONFIRMED",
+        "FAILED_BREAK_WATCH",
+        "REACCUMULATION",
+        "HEALTHY_RETEST",
+        "RECLAIMED_BREAK",
+        "BREAKOUT_UNCONFIRMED",
+    }
+    structure_watch = [
+        x for x in stocks
+        if metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") in structure_watch_states
+    ][:12]
     sectors = scan.summarize_sector(stocks)[:8]
     now = datetime.now(plus.sess.VN_TZ).strftime("%d/%m %H:%M")
 
@@ -153,6 +169,8 @@ def build_session_report(
         f"{window['description']} Score v2 tối đa 97, không phải cam kết lợi nhuận.",
         plus.market_status(market, regime),
         intel.format_regime(regime),
+        "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
+        *intel.structure_map_lines(stocks, metrics),
     ]
     if market_day and getattr(market_day, "closed", False):
         lines += [
@@ -170,6 +188,8 @@ def build_session_report(
     lines += [plus.with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Market regime dang chan bot signal mua."]
     lines += ["", "*GAN BREAK / CO THE MUA TUNG PHAN*"]
     lines += [plus.with_intel(tf.format_stock_card(x, action="CANH BREAK / MUA TUNG PHAN"), metrics.get(x.symbol)) for x in break_watch] or ["Khong co ma dat nguong sau khi loc regime."]
+    lines += ["", "*BREAK XỊT / RETEST / TÁI TÍCH LŨY*"]
+    lines += [intel.format_breakout_watch(x, metrics.get(x.symbol)) for x in structure_watch] or ["Không có cấu trúc break cần chú ý."]
     if suppressed:
         lines += ["", "*BI MARKET REGIME LOC BOT*"]
         lines += suppressed

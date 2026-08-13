@@ -15,6 +15,7 @@ from typing import Any
 
 import pandas as pd
 
+import market_phase
 import scan
 import scan_safe
 import scoring
@@ -171,6 +172,9 @@ class Opportunity:
     weekly: dict[str, Any] | None = None
     as_of: str | None = None
     cache_status: str = "unknown"
+    market_state: str = "NO_DATA"
+    breakout_state: str = "NO_DATA"
+    market_structure: dict[str, Any] | None = None
 
 
 def clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -445,6 +449,7 @@ def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
     sector = scan.TICKER_TO_SECTOR.get(symbol, "Other")
     df = scan_safe.fetch_ohlcv_safe(symbol, bars=HISTORY_BARS, force_refresh=force_refresh)
     tech = scan.analyze_symbol(symbol, df) if df is not None else None
+    market_structure = market_phase.analyze_market_structure(df)
     weekly = weekly_sniper.analyze_weekly_structure(df, WEEKLY_INDEX_DF)
     time.sleep(random.uniform(FUNDAMENTAL_DELAY_MIN, FUNDAMENTAL_DELAY_MAX))
     fundamental = fetch_fundamental(symbol)
@@ -462,6 +467,7 @@ def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
         "historical_pe": historical_multiple(symbol, "pe"),
         "historical_pb": historical_multiple(symbol, "pb"),
         "weekly": weekly,
+        "market_structure": market_structure,
         "as_of": as_of,
         "cache_status": cache_status,
         "close": close,
@@ -612,6 +618,14 @@ def technical_score(packet: dict[str, Any]) -> int:
         score += 5
     if tech.failed_break:
         score -= 28
+    structure = packet.get("market_structure")
+    if isinstance(structure, market_phase.MarketStructure):
+        if structure.overall_state == "DISTRIBUTION":
+            score = min(score, 42)
+        elif structure.breakout.state == "FAILED_BREAK_WATCH":
+            score = min(score, 56)
+        elif structure.breakout.state == "REACCUMULATION":
+            score = min(score, 70)
     return int(clamp(score))
 
 
@@ -643,6 +657,20 @@ def risk_score(packet: dict[str, Any], quality: int, sector: SectorSnapshot, pe_
     elif tech.failed_break:
         risk += 34
         flags.append("failed break")
+    structure = packet.get("market_structure")
+    if isinstance(structure, market_phase.MarketStructure):
+        if structure.overall_state == "DISTRIBUTION":
+            risk += 30
+            flags.append("phan phoi da khung")
+        if structure.breakout.state == "FAILED_BREAK_WATCH":
+            risk += 18
+            flags.append("break xit cho xac nhan")
+        elif structure.breakout.state == "REACCUMULATION":
+            risk += 7
+            flags.append("nghi tai tich luy, cho reclaim")
+        if structure.timeframes["1M"].state in market_phase.RISK_PHASES:
+            risk += 14
+            flags.append("khung thang yeu")
     if quality < 45:
         risk += 10
         flags.append("chat luong thap")
@@ -686,6 +714,11 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
         qual_score = quality_score(packet)
         tech_score = technical_score(packet)
         weekly = packet.get("weekly") or weekly_sniper.empty_structure()
+        structure = packet.get("market_structure")
+        if not isinstance(structure, market_phase.MarketStructure):
+            structure = None
+        market_state = structure.overall_state if structure else "OPPORTUNITY"
+        breakout_state = structure.breakout.state if structure else "NO_BREAKOUT"
         risk, risk_flags = risk_score(packet, qual_score, sector, pe_disc, pb_disc)
         risk += 18 if weekly.state in {"NO_DATA", "NO_SETUP"} else 0
         risk += 14 if "BROKEN_STRUCTURE" in weekly.flags else 0
@@ -736,6 +769,13 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
             and data_current
             and tech is not None
             and not tech.failed_break
+            and market_state == "OPPORTUNITY"
+            and breakout_state not in {
+                "FAILED_BREAK_CONFIRMED",
+                "FAILED_BREAK_WATCH",
+                "BREAKOUT_UNCONFIRMED",
+                "REACCUMULATION",
+            }
         )
         if strict_candidate:
             action = "UNG_VIEN_GOM"
@@ -792,6 +832,9 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
                 weekly=weekly.to_dict(),
                 as_of=packet.get("as_of"),
                 cache_status=str(packet.get("cache_status") or "unknown"),
+                market_state=market_state,
+                breakout_state=breakout_state,
+                market_structure=structure.to_dict() if structure else None,
             )
         )
     ranked = sorted(

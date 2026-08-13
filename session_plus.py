@@ -69,8 +69,15 @@ def portfolio_lines(results: dict[str, scan.ScanResult], watch_items: dict[str, 
         buy_more = int(item.get("buy_more_score", 78))
         sell = int(item.get("sell_score", 45))
         score = adv_score(result, metrics)
-        if result.failed_break or result.win_score < sell:
+        structure = metrics.get(symbol, {}).get("market_structure", {})
+        break_state = structure.get("breakout", {}).get("state")
+        market_state = structure.get("overall_state")
+        if result.failed_break or break_state == "FAILED_BREAK_CONFIRMED" or market_state == "DISTRIBUTION" or result.win_score < sell:
             action = "BAT LOI / GIAM RUI RO"
+        elif break_state == "FAILED_BREAK_WATCH":
+            action = "BREAK XIT / CHO XAC NHAN"
+        elif break_state == "REACCUMULATION":
+            action = "NGHI TAI TICH LUY / CHO RECLAIM"
         elif score >= buy_more and result.near_break and not result.failed_break:
             action = "TIN HIEU DEP / CANH MUA THEM"
         elif score >= buy_more:
@@ -120,6 +127,14 @@ def build_session_report(
     strong = [x for x in stocks if adv_score(x, metrics) >= 72 and not x.failed_break][:10]
     break_watch = [x for x in stocks if adv_score(x, metrics) >= 62 and x.near_break and not x.failed_break][:14]
     failed = [x for x in stocks if x.failed_break][:10]
+    structure_watch_states = {
+        "FAILED_BREAK_CONFIRMED", "FAILED_BREAK_WATCH", "REACCUMULATION",
+        "HEALTHY_RETEST", "RECLAIMED_BREAK", "BREAKOUT_UNCONFIRMED",
+    }
+    structure_watch = [
+        x for x in stocks
+        if metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") in structure_watch_states
+    ][:12]
     sectors = scan.summarize_sector(stocks)[:8]
     now = datetime.now(sess.VN_TZ).strftime("%d/%m %H:%M")
 
@@ -128,6 +143,8 @@ def build_session_report(
         f"{window['description']} Score v2 tối đa 97; báo lại đầy đủ mỗi phiên, không chỉ mã mới. Không phải cam kết lợi nhuận.",
         market_status(market, regime),
         intel.format_regime(regime),
+        "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
+        *intel.structure_map_lines(stocks, metrics),
     ]
     if market_day and getattr(market_day, "closed", False):
         lines += [
@@ -145,6 +162,8 @@ def build_session_report(
     lines += [with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Khong co ma dat nguong."]
     lines += ["", "*GẦN BREAK / CÓ THỂ MUA TỪNG PHẦN*"]
     lines += [with_intel(tf.format_stock_card(x, action="CANH BREAK / MUA TUNG PHAN"), metrics.get(x.symbol)) for x in break_watch] or ["Khong co ma dat nguong."]
+    lines += ["", "*BREAK XỊT / RETEST / TÁI TÍCH LŨY*"]
+    lines += [intel.format_breakout_watch(x, metrics.get(x.symbol)) for x in structure_watch] or ["Không có cấu trúc break cần chú ý."]
     lines += ["", "*NGÀNH DẪN DẮT / RỦI RO*"]
     lines += [tf.format_sector_line(x) for x in sectors] or ["Chua du du lieu nganh."]
     if rotation_alerts:
@@ -207,6 +226,11 @@ def save_session_outputs(
         "market_regime": regime,
         "new_signals": new_signals,
         "memory": memory_summary,
+        "market_structure_map": {
+            x.symbol: metrics.get(x.symbol, {}).get("market_structure", {})
+            for x in ordered
+            if x.symbol != "VNINDEX"
+        },
         "advanced_top": {x.symbol: metrics.get(x.symbol, {}) for x in ordered[:20]},
         "top": [asdict(x) for x in ordered[:20]],
     }

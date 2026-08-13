@@ -48,3 +48,32 @@ def test_failed_break_is_blocked():
     gate = regime_gate.signal_gate(result, {"regime": {"regime": "BULL"}})
 
     assert gate == {"allowed": False, "reason": "FAILED_BREAK"}
+
+
+def test_unconfirmed_failed_break_and_distribution_are_blocked():
+    result = make_result()
+    failed_watch = regime_gate.signal_gate(
+        result,
+        {
+            "market_structure": {
+                "overall_state": "CAUTION",
+                "breakout": {"state": "FAILED_BREAK_WATCH"},
+                "timeframes": {"1W": {"state": "MARKUP"}, "1M": {"state": "MARKUP"}},
+            }
+        },
+    )
+    distribution = regime_gate.signal_gate(
+        result,
+        {
+            "market_structure": {
+                "overall_state": "DISTRIBUTION",
+                "breakout": {"state": "NO_BREAKOUT"},
+                "timeframes": {"1W": {"state": "DISTRIBUTION"}, "1M": {"state": "TRANSITION"}},
+            }
+        },
+    )
+
+    assert failed_watch["allowed"] is False
+    assert failed_watch["reason"] == "BREAK_XIT_CHO_XAC_NHAN"
+    assert distribution["allowed"] is False
+    assert distribution["reason"] == "MTF_PHAN_PHOI"

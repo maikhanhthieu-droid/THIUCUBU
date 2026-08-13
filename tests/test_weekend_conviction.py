@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from datetime import datetime
 
+import market_phase
 import weekend_opportunities as weekend
 from weekly_sniper import WeeklyStructure
 
@@ -93,3 +94,33 @@ def test_stale_price_data_cannot_be_selected(monkeypatch) -> None:
     results = weekend.build_opportunities([item], {"Test": sector})
 
     assert not any(result.selected for result in results)
+
+
+def test_multi_timeframe_distribution_cannot_be_weekend_conviction(monkeypatch) -> None:
+    monkeypatch.setattr(weekend, "valuation_score", lambda packet, sector: (95, 35.0, 35.0))
+    monkeypatch.setattr(weekend, "quality_score", lambda packet: 95)
+    monkeypatch.setattr(weekend, "technical_score", lambda packet: 95)
+    monkeypatch.setattr(weekend, "risk_score", lambda *args: (0, []))
+    monkeypatch.setattr(weekend, "build_bull_case", lambda *args: "great")
+    item = packet("AAA")
+    phase = market_phase.TimeframePhase("1W", "DISTRIBUTION", "PHÂN PHỐI", 30, 90, 20, 3, 0, "DOWN", "NEGATIVE", [])
+    breakout = market_phase.BreakoutDiagnosis(
+        "NO_BREAKOUT", "CHƯA CÓ BREAK", "LOW", 20, None, -5, 19, False, False, []
+    )
+    item["market_structure"] = market_phase.MarketStructure(
+        "DISTRIBUTION",
+        "PHÂN PHỐI",
+        35,
+        90,
+        "KHONG_MUA_MOI",
+        {"1D": phase, "1W": phase, "1M": phase},
+        breakout,
+        ["WEEKLY_STRUCTURE_RISK"],
+    )
+    sector = weekend.SectorSnapshot("Test", 90, 90, 10, 1.5, 15, 0, 4)
+
+    results = weekend.build_opportunities([item], {"Test": sector})
+
+    assert results
+    assert not any(result.selected for result in results)
+    assert results[0].market_state == "DISTRIBUTION"

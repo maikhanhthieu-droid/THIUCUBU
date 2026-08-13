@@ -1,5 +1,6 @@
 from typing import Any
 
+import market_phase
 import scoring
 
 
@@ -74,6 +75,20 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
             f"MFI {float(getattr(r, 'mfi', 0.0)):.0f} | {obv}"
         ),
     ]
+    market_state = str(getattr(r, "market_state", "NO_DATA"))
+    if market_state != "NO_DATA":
+        daily_phase = str(getattr(r, "daily_phase", "NO_DATA"))
+        weekly_phase = str(getattr(r, "weekly_phase", "NO_DATA"))
+        monthly_phase = str(getattr(r, "monthly_phase", "NO_DATA"))
+        breakout_state = str(getattr(r, "breakout_state", "NO_DATA"))
+        lines.insert(
+            1,
+            f"TT {market_phase.OVERALL_LABELS.get(market_state, market_state)} | "
+            f"D {market_phase.PHASE_LABELS.get(daily_phase, daily_phase)} · "
+            f"W {market_phase.PHASE_LABELS.get(weekly_phase, weekly_phase)} · "
+            f"M {market_phase.PHASE_LABELS.get(monthly_phase, monthly_phase)} | "
+            f"{market_phase.BREAKOUT_LABELS.get(breakout_state, breakout_state)}",
+        )
     if timing:
         lines.append(f"Thời điểm: {timing}")
     if reason:
@@ -166,6 +181,14 @@ def format_opportunity_card(item: Any) -> str:
             f"Case: {clean_text(getattr(item, 'bull_case', ''))}",
             f"Risk: {clean_text(getattr(item, 'bear_case', ''))}",
     ]
+    market_state = str(getattr(item, "market_state", "NO_DATA"))
+    breakout_state = str(getattr(item, "breakout_state", "NO_DATA"))
+    if market_state != "NO_DATA":
+        lines.insert(
+            1,
+            f"TT {market_phase.OVERALL_LABELS.get(market_state, clean_text(market_state))} | "
+            f"{market_phase.BREAKOUT_LABELS.get(breakout_state, clean_text(breakout_state))}",
+        )
     as_of = getattr(item, "as_of", None)
     cache_status = clean_text(getattr(item, "cache_status", "unknown")).upper()
     if as_of:

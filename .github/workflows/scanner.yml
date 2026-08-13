@@ -191,6 +191,7 @@ jobs:
           SCAN_RETRY_AFTER_MAX_SEC: "300"
           SCAN_FETCH_MAX_ATTEMPTS: "3"
           SCAN_STALE_CACHE_MAX_DAYS: "3"
+          SCAN_HISTORY_BARS: "520"
           SCAN_DELAY_MIN_SEC: "1"
           SCAN_DELAY_MAX_SEC: "4"
           SESSION_RANDOM_START_MAX_SEC: "45"
