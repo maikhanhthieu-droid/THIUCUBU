@@ -1,10 +1,7 @@
-name: Thieucutoo Weekend Opportunities
+name: THIEUCUBU Weekend Opportunities
 
 permissions:
   contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
   group: thieucutoo-weekend-${{ github.ref }}
@@ -28,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: "pip"
@@ -47,7 +44,7 @@ jobs:
         run: echo "date=$(TZ=Asia/Ho_Chi_Minh date +%Y%m%d)" >> "$GITHUB_OUTPUT"
 
       - name: Restore cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: data/cache
           key: weekend-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ github.run_id }}
@@ -102,7 +99,7 @@ jobs:
 
       - name: Upload weekend data artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: thieucutoo-weekend-${{ github.run_number }}
           path: |
@@ -145,7 +142,7 @@ jobs:
             echo "Telegram secrets not configured; cannot send failure notice."
             exit 0
           fi
-          TEXT="THIEUCUTOO weekend workflow failed: ${GITHUB_WORKFLOW} run ${GITHUB_RUN_ID} - ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          TEXT="THIEUCUBU weekend workflow failed: ${GITHUB_WORKFLOW} run ${GITHUB_RUN_ID} - ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${TEXT}" || true
