@@ -205,7 +205,7 @@ jobs:
           SCAN_RETRY_FAILED_DELAY_MIN_SEC: "20"
           SCAN_RETRY_FAILED_DELAY_MAX_SEC: "60"
           SCAN_RETRY_FAILED_MAX_SYMBOLS: "24"
-          SCAN_SKIP_NEAR_HIGH_WEEKDAY: "1"
+          SCAN_SKIP_NEAR_HIGH_WEEKDAY: "0" # deprecated: near-high is now a soft warning tag
           MARKET_CLOSED_POLICY: "scan_old"
           MARKET_ACTIVITY_PROBE_ENABLED: "1"
           MARKET_ACTIVITY_PROBE_ACTION: "warn"
@@ -297,6 +297,7 @@ jobs:
             data/sector_rotation_history.json
             data/portfolio_threshold_state.json
             data/near_high_skiplist.json
+            data/market_state_history.json
           retention-days: 30
 
       - name: Commit scanner data
@@ -321,6 +322,7 @@ jobs:
             data/sector_rotation_history.json \
             data/portfolio_threshold_state.json \
             data/near_high_skiplist.json \
+            data/market_state_history.json \
             data/notes.json \
             data/portfolio.json
 

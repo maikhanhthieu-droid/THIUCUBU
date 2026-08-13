@@ -133,9 +133,13 @@ def suppressed_lines(
     metrics: dict[str, dict[str, Any]],
     min_score: int = 72,
     limit: int = 8,
+    exclude_symbols: set[str] | None = None,
 ) -> list[str]:
     lines: list[str] = []
+    excluded = exclude_symbols or set()
     for result in results:
+        if result.symbol in excluded:
+            continue
         item = metrics.get(result.symbol, {})
         if adv_score(result, item) < min_score:
             continue

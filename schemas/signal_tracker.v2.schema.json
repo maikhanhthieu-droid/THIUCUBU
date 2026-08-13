@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/signal_tracker.v2.schema.json",
+  "title": "THIEUCUBU Signal Tracker v2",
+  "type": "object",
+  "required": ["schema_version", "updated_at", "episodes"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.signal_tracker.v2"},
+    "updated_at": {"type": "string"},
+    "legacy_summary": {"type": "object"},
+    "measurement": {"type": "object"},
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["episode_id", "symbol", "date_signal", "episode_status"],
+        "properties": {
+          "episode_id": {"type": "string"},
+          "symbol": {"type": "string", "pattern": "^[A-Z0-9^.-]+$"},
+          "date_signal": {"type": "string", "format": "date"},
+          "episode_status": {"enum": ["ACTIVE", "COMPLETED_T20"]},
+          "price_unit": {"type": "string"},
+          "eligible_for_metrics": {"type": "boolean"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

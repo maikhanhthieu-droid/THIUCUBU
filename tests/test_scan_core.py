@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 
 import pandas as pd
+import pytest
 
 import scan
 import fetcher
@@ -121,6 +122,39 @@ def test_vci_direct_payload_matches_quote_price_units():
 
     assert df is not None
     assert df.loc[0, "close"] == 59.5
+
+
+def test_price_units_are_canonical_across_dnse_and_quote_sources():
+    dates = pd.date_range("2026-01-01", periods=5, freq="B")
+    raw_vnd = pd.DataFrame(
+        {"time": dates, "open": [74_000] * 5, "high": [75_000] * 5, "low": [73_000] * 5, "close": [74_100] * 5, "volume": [1_000_000] * 5}
+    )
+    quote_units = raw_vnd.copy()
+    quote_units[["open", "high", "low", "close"]] /= 1000
+
+    dnse = fetcher.canonicalize_price_units(raw_vnd, "STB", "DNSE")
+    vci = fetcher.canonicalize_price_units(quote_units, "STB", "VCI")
+    index = fetcher.canonicalize_price_units(raw_vnd, "VNINDEX", "VCI")
+
+    assert dnse is not None and dnse["close"].iloc[-1] == pytest.approx(74.1)
+    assert vci is not None and vci["close"].iloc[-1] == pytest.approx(74.1)
+    assert dnse.attrs["price_unit"] == "thousand_vnd"
+    assert index is not None and index["close"].iloc[-1] == 74_100
+    assert index.attrs["price_unit"] == "index_points"
+
+
+def test_cross_source_reference_repairs_residual_1000x_flip():
+    dates = pd.date_range("2026-01-01", periods=5, freq="B")
+    reference = pd.DataFrame(
+        {"time": dates, "open": [74.0] * 5, "high": [75.0] * 5, "low": [73.0] * 5, "close": [74.1] * 5, "volume": [1_000_000] * 5}
+    )
+    candidate = reference.copy()
+    candidate[["open", "high", "low", "close"]] *= 1000
+
+    repaired, changed = fetcher.harmonize_with_reference(candidate, reference, "STB")
+
+    assert changed is True
+    assert repaired["close"].iloc[-1] == pytest.approx(74.1)
 
 
 def test_analyze_index_does_not_apply_stock_discount_rules():

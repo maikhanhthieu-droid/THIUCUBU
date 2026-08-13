@@ -103,12 +103,24 @@ ECOSYSTEMS: dict[str, list[str]] = {
 SECTOR_LEADERS: dict[str, list[str]] = {
     "Bank": ["VCB", "BID", "CTG", "TCB", "MBB"],
     "Chung khoan": ["SSI", "VND", "VCI", "HCM", "VIX"],
-    "BDS": ["VIC", "VHM", "KDH", "DIG", "NVL"],
+    "Bao hiem": ["BVH", "BMI", "PVI", "MIG", "EVF"],
+    "BDS dan cu": ["VIC", "VHM", "KDH", "DIG", "NVL"],
+    "BDS KCN": ["BCM", "KBC", "IDC", "VGC", "SZC"],
+    "Xay dung dau tu cong": ["VCG", "LCG", "HHV", "CII", "FCN"],
     "Thep": ["HPG", "HSG", "NKG", "VGS", "SMC"],
+    "Da xi mang nhua duong": ["KSB", "DHA", "HT1", "BCC", "PLC"],
+    "Go cao su": ["PTB", "DPR", "DRI", "TTF"],
+    "Hoa chat phan bon": ["DGC", "DPM", "DCM", "CSV", "LAS"],
+    "Cao su nhua": ["BMP", "DRC", "AAA", "CSM"],
     "Dau khi": ["GAS", "PVD", "PVS", "BSR", "PVT"],
+    "Dien tien ich": ["POW", "REE", "PC1", "HDG", "NT2"],
     "Ban le": ["MWG", "FRT", "PNJ", "DGW", "PET"],
-    "Cong nghe": ["FPT", "CMG", "ELC", "VGI", "CTR"],
-    "Thuy san nong nghiep": ["VHC", "ANV", "DBC", "HAG", "BAF"],
+    "Thuc pham do uong": ["VNM", "MSN", "SAB", "MCH", "QNS"],
+    "Det may san xuat": ["TNG", "MSH", "TCM", "GIL", "VEA"],
+    "Thuy san": ["VHC", "ANV", "FMC", "IDI", "ASM"],
+    "Nong nghiep chan nuoi": ["DBC", "HAG", "PAN", "BAF", "LTG"],
+    "Cong nghe vien thong": ["FPT", "CMG", "ELC", "VGI", "CTR"],
+    "Logistics cang bien": ["GMD", "HAH", "VOS", "VTO", "SGP"],
 }
 
 TICKER_TO_SECTOR: dict[str, str] = {}
@@ -196,6 +208,9 @@ class ScanResult:
     as_of: str | None = None
     data_source: str | None = None
     cache_status: str = "unknown"
+    price_unit: str = "unknown"
+    unit_scale_applied: float = 1.0
+    unit_repaired_from_cache: bool = False
     trade_score: int = 0
     position_score: int = 0
     grade: str = "D"
@@ -210,6 +225,9 @@ class ScanResult:
     breakout_state: str = "NO_DATA"
     breakout_level: float | None = None
     reaccumulation: bool = False
+    near_6y_high: bool = False
+    distance_to_6y_high_pct: float | None = None
+    over_6y_high: bool = False
 
 
 def json_load(path: Path, default: Any) -> Any:
@@ -788,7 +806,7 @@ async def send_telegram(text: str) -> bool:
         return False
 
 
-async def send_chunks(title: str, text: str) -> None:
+async def send_chunks(title: str, text: str) -> bool:
     chunks = []
     current = title + "\n"
     for line in text.splitlines():
@@ -798,9 +816,11 @@ async def send_chunks(title: str, text: str) -> None:
         current += line + "\n"
     if current.strip():
         chunks.append(current)
+    delivered = True
     for chunk in chunks:
-        await send_telegram(chunk)
+        delivered = await send_telegram(chunk) and delivered
         await asyncio.sleep(1)
+    return delivered
 
 
 def result_line(r: ScanResult) -> str:
@@ -933,6 +953,9 @@ def process_symbol(symbol: str, force_refresh: bool) -> tuple[str, pd.DataFrame 
             result.as_of = str(df.attrs.get("as_of") or "") or None
             result.data_source = str(df.attrs.get("data_source") or "") or None
             result.cache_status = str(df.attrs.get("cache_status") or "unknown")
+            result.price_unit = str(df.attrs.get("price_unit") or ("index_points" if result.sector == "Index" else "thousand_vnd"))
+            result.unit_scale_applied = float(df.attrs.get("unit_scale_applied", 1.0))
+            result.unit_repaired_from_cache = bool(df.attrs.get("unit_repaired_from_cache", False))
         return symbol, df, result
     except Exception as exc:
         logger.exception("[%s] scan failed: %s", symbol, exc)

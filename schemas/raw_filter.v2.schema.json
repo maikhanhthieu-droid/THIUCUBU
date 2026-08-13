@@ -24,6 +24,7 @@
           "data_source": {"type": ["string", "null"]},
           "cache_status": {"type": "string"},
           "close": {"type": ["number", "null"]},
+          "price_unit": {"type": ["string", "null"]},
           "scores": {
             "type": "object",
             "required": ["overall", "trade", "position", "grade", "version"]

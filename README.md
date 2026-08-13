@@ -12,14 +12,16 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 - Luôn ưu tiên danh mục và mã đã ghi chú.
 - Tách riêng điểm `Lướt` và điểm `Gom`.
 - Vẫn gửi lại báo cáo đầy đủ mỗi phiên để người dùng không bỏ trôi tín hiệu.
+- Mỗi mã chỉ xuất hiện một lần trong một báo cáo, ở nhóm ưu tiên cao nhất.
 - Nhận diện nền giá, volume co hẹp, OBV/MFI, relative strength, near-break và failed-break.
+- Mã gần/vượt đỉnh 6 năm được gắn cảnh báo nhưng không bị loại khỏi lượt quét.
 - Điều chỉnh hành động theo trạng thái VNINDEX và R/R.
 - Khám phá universe động và quét xoay vòng các mã ngoài danh sách cốt lõi.
 
 ### Cuối tuần
 
 - Kết hợp định giá, chất lượng doanh nghiệp, cấu trúc tuần, thời điểm, ngành và rủi ro.
-- Dùng cấu trúc từ Pine Weekly Accumulation Sniper v3 làm lớp price/volume, không dùng Pine thay cho định giá.
+- Dùng cấu trúc từ Pine Weekly Accumulation Sniper v3.1 làm lớp price/volume, không dùng Pine thay cho định giá.
 - Chỉ chọn tối đa 2 mã `ƯU TIÊN GOM`; hệ thống được phép chọn 0 mã nếu thị trường không có cơ hội đủ tốt.
 - Lưu vùng gom, vùng breakout, mức vô hiệu luận điểm, bull case và rủi ro.
 - Ghi nhớ luận điểm qua nhiều tuần để một cổ phiếu tốt không biến mất chỉ vì nhiễu một phiên.
@@ -30,7 +32,7 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 VCI / KBS / DNSE
         │
         ▼
-Safe fetch + provenance + cache + source health
+Safe fetch + chuẩn hóa nghìn VND + provenance + cache + source health
         │
         ├── Daily scanner ──► Telegram mua/bán, lướt/gom
         │
@@ -87,6 +89,8 @@ Breakout không còn được kết luận chỉ từ một cây nến. Bộ ch�
 
 Mỗi stock card hiển thị dòng `TT ... | D ... | W ... | M ...`. Báo cáo phiên có thêm `BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M` và nhóm riêng `BREAK XỊT / RETEST / TÁI TÍCH LŨY` để không đánh đồng retest lành mạnh với phân phối.
 
+`data/market_state_history.json` giữ snapshot trước đó. Mục `CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý` chỉ xuất hiện khi cấu trúc đổi trạng thái hoặc điểm thay đổi ít nhất 8 điểm và vượt một mốc quan trọng; lần chạy đầu chỉ gieo trạng thái, không phát cảnh báo hàng loạt.
+
 ## Năm cửa của bộ lọc cuối tuần
 
 Một mã chỉ có thể vào nhóm `ƯU TIÊN GOM` khi đồng thời vượt qua:
@@ -101,13 +105,14 @@ Chiết khấu sâu so với đỉnh 104 tuần chỉ là một dữ kiện giá
 
 ## Pine đi kèm
 
-File [`pine/THIEUCUBU_WEEKLY_ACCUMULATION_SNIPER_v3.pine`](pine/THIEUCUBU_WEEKLY_ACCUMULATION_SNIPER_v3.pine) dùng để kiểm tra trực quan trên TradingView khung `1W`.
+File [`pine/THIEUCUBU_WEEKLY_ACCUMULATION_SNIPER_v3.pine`](pine/THIEUCUBU_WEEKLY_ACCUMULATION_SNIPER_v3.pine) hiện là Pine v3.1, dùng để kiểm tra trực quan trên TradingView khung `1W`.
 
 Pine hiển thị:
 
 - `EARLY MARKUP`: dấu hiệu đầu pha tăng đã có trigger và momentum.
 - `PREP BASE`: cấu trúc gom đang chuẩn bị nhưng chưa đủ xác nhận.
 - Vùng gom, breakout, mức vô hiệu, R/R, RS 13 tuần và thanh khoản.
+- Tự nhận chart đang dùng VND hay nghìn VND để không làm sai thanh khoản 1.000 lần; tín hiệu alert chỉ xác nhận khi nến tuần đóng.
 
 Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine không tự động trở thành mã ưu tiên; `weekly_sniper.py` tái hiện lớp cấu trúc trong Python rồi weekend engine mới ghép các lớp còn lại.
 
@@ -121,6 +126,8 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 | `data/investment_theses.json` | Sổ luận điểm bền vững qua nhiều tuần |
 | `data/fundamental_history.json` | Snapshot PE/PB/chất lượng để xây lịch sử riêng |
 | `data/session_alerts_latest.json` | Snapshot báo cáo phiên gần nhất |
+| `data/market_state_history.json` | Bộ nhớ chuyển pha và thay đổi điểm đáng kể |
+| `data/signal_tracker.json` | Episode tín hiệu v2 đo đúng T+5/T+10/T+20 phiên, MFE/MAE và excess so với VNINDEX |
 | `data/source_health.json` | Sức khỏe từng nguồn dữ liệu |
 | `data/universe_state.json` | Universe động, cursor và lát quét gần nhất |
 
@@ -153,6 +160,7 @@ GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard t
 - Mỗi mã có nguồn ưu tiên và fallback riêng.
 - Có jitter, rate limiter, `Retry-After`, cooldown và phục hồi nguồn trong cùng run.
 - Cache parquet được dùng khi phù hợp; stale cache luôn được gắn provenance.
+- Giá cổ phiếu từ mọi nguồn được chuẩn hóa về `thousand_vnd`; cache và nguồn mới còn được đối chiếu ngày trùng nhau để tự sửa sai lệch 1.000 lần.
 - Dữ liệu stale có thể xuất hiện trong báo cáo tham khảo nhưng không được chọn làm conviction cuối tuần.
 - Source health được lưu để lần chạy sau ưu tiên nguồn khỏe hơn.
 
@@ -188,7 +196,9 @@ python session_plus.py --mode test
 python weekend_plus_safe.py --mode test
 ```
 
-## Portfolio và ghi chú bắt buộc
+## Portfolio và ghi chú cá nhân
+
+Hai file chạy thật được để trống mặc định để scanner không nhầm dữ liệu mẫu là danh mục của bạn. Sao chép cấu trúc từ `examples/portfolio.example.json` và `examples/notes.example.json` khi cần cấu hình.
 
 `data/portfolio.json` phải là một JSON array:
 
@@ -227,8 +237,11 @@ Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể c�
 - `WEEKEND_CONVICTION_LIMIT=2`
 - `WEEKEND_MIN_SCORE=60`
 - `WEEKEND_MIN_SECTOR_SCORE=52`
+- `WEEKEND_MIN_OWN_HISTORY_OBSERVATIONS=4`
 
 `WEEKEND_CONVICTION_LIMIT` được chặn cứng tối đa 2 trong code. Hạ threshold có thể làm watchlist nhạy hơn nhưng không làm tăng số conviction.
+
+Tracker v2 chỉ mở một episode cho mỗi mã cho tới khi đủ T+20 phiên. Dữ liệu tracker v1 bị loại khỏi thống kê vì dùng ngày lịch, lặp cùng mã trong ngày và từng chứa giá từ nhiều đơn vị không đồng nhất.
 
 ## Kiểm thử và an toàn vận hành
 

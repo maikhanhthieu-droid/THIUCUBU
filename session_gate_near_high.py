@@ -137,6 +137,8 @@ _old_save_session_outputs = gate.plus.sess.save_session_outputs
 
 
 def patch_scan_metadata() -> None:
+    for legacy_sector in ("BDS", "Cong nghe", "Thuy san nong nghiep"):
+        scan.SECTOR_LEADERS.pop(legacy_sector, None)
     sector_default_group = getattr(
         scan,
         "SECTOR_DEFAULT_GROUP",
@@ -196,10 +198,10 @@ def all_universe_symbols_with_near_high_filter(mode: str, watch_items: dict[str,
     symbols = valid_symbols
     if mode in {"test", "eod"}:
         return symbols
-    filtered, skipped = near_high_filter.filter_symbols(symbols, protected=set(watch_items))
-    if skipped:
-        gate.plus.sess.logger.info("Near-high weekday filter removed %s symbols", len(skipped))
-    return filtered
+    kept, tagged = near_high_filter.filter_symbols(symbols, protected=set(watch_items))
+    if tagged:
+        gate.plus.sess.logger.info("Near-high context tagged %s symbols; none removed", len(tagged))
+    return kept
 
 
 def build_session_report_compat(
@@ -215,6 +217,7 @@ def build_session_report_compat(
     market_day: Any | None = None,
     **kwargs: Any,
 ) -> str:
+    near_high_filter.annotate_results(results)
     try:
         return _old_build_session_report(
             mode,
@@ -242,6 +245,7 @@ def save_session_outputs_compat(
     market_day: Any | None = None,
     **kwargs: Any,
 ) -> list[dict[str, Any]]:
+    near_high_filter.annotate_results(results)
     try:
         failed_breaks = _old_save_session_outputs(
             mode,

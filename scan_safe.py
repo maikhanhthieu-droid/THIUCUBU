@@ -407,6 +407,9 @@ def with_provenance(
         "data_source": source,
         "cache_status": cache_status,
         "observed_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
+        "price_unit": df.attrs.get("price_unit", "index_points" if symbol.upper() in fetcher.INDEX_SYMBOLS else "thousand_vnd"),
+        "unit_scale_applied": float(df.attrs.get("unit_scale_applied", 1.0)),
+        "unit_repaired_from_cache": bool(df.attrs.get("unit_repaired_from_cache", False)),
     }
     result.attrs.update(metadata)
     FETCH_PROVENANCE[symbol.upper()] = metadata
@@ -425,6 +428,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
         cached = intel.validate_ohlcv(scan.read_cache_frame(path))
         if cached is not None and len(cached) >= 80:
             metadata = load_cache_metadata(path)
+            cached = fetcher.canonicalize_price_units(cached, symbol, metadata.get("data_source"))
+            if cached is None:
+                return None
             return with_provenance(
                 symbol,
                 cached.tail(bars),
@@ -435,6 +441,12 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     days_back = max(300, int(bars * 1.7))
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+    reference = None
+    if path.exists():
+        reference = intel.validate_ohlcv(scan.read_cache_frame(path))
+        if reference is not None:
+            old_metadata = load_cache_metadata(path)
+            reference = fetcher.canonicalize_price_units(reference, symbol, old_metadata.get("data_source"))
 
     for attempt in range(FETCH_MAX_ATTEMPTS):
         for alias in symbol_aliases(symbol):
@@ -445,8 +457,14 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                 limiter.wait_turn(alias)
                 try:
                     raw = fetch_source_history(source, alias, start, end)
+                    raw_attrs = dict(getattr(raw, "attrs", {}))
                     df = intel.validate_ohlcv(scan.normalize_ohlcv(raw))
                     if df is not None and len(df) >= 80:
+                        df.attrs.update(raw_attrs)
+                        df = fetcher.canonicalize_price_units(df, symbol, source)
+                        if df is None:
+                            continue
+                        df, repaired = fetcher.harmonize_with_reference(df, reference, symbol)
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
                         scan.write_cache_frame(path, df)
@@ -457,6 +475,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                                 "data_source": source,
                                 "as_of": dataframe_as_of(df),
                                 "cached_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
+                                "price_unit": df.attrs.get("price_unit"),
+                                "unit_scale_applied": df.attrs.get("unit_scale_applied", 1.0),
+                                "unit_repaired_from_cache": repaired,
                             },
                             pretty=True,
                         )
@@ -491,6 +512,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     cached = scan.read_stale_cache(path)
     if cached is not None:
         metadata = load_cache_metadata(path)
+        cached = fetcher.canonicalize_price_units(cached, symbol, metadata.get("data_source"))
+        if cached is None:
+            return None
         return with_provenance(
             symbol,
             cached.tail(bars),

@@ -78,6 +78,7 @@ TOP_N = env_int("WEEKEND_TOP_N", 20, min_value=5)
 CONVICTION_LIMIT = env_int("WEEKEND_CONVICTION_LIMIT", 2, min_value=1)
 MIN_SCORE = env_int("WEEKEND_MIN_SCORE", 58, min_value=0)
 MIN_SECTOR_SCORE = env_int("WEEKEND_MIN_SECTOR_SCORE", 50, min_value=0)
+MIN_OWN_HISTORY_OBSERVATIONS = env_int("WEEKEND_MIN_OWN_HISTORY_OBSERVATIONS", 4, min_value=2)
 HISTORY_BARS = env_int("WEEKEND_HISTORY_BARS", 780, min_value=520)
 FUNDAMENTAL_DELAY_MIN = env_float("WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC", 0.7, min_value=0.0)
 FUNDAMENTAL_DELAY_MAX = max(
@@ -175,6 +176,7 @@ class Opportunity:
     market_state: str = "NO_DATA"
     breakout_state: str = "NO_DATA"
     market_structure: dict[str, Any] | None = None
+    fundamental_history_samples: int = 0
 
 
 def clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -239,7 +241,19 @@ def load_fundamental_history() -> dict[str, list[dict[str, Any]]]:
 def historical_multiple(symbol: str, field: str) -> float | None:
     rows = load_fundamental_history().get(symbol.upper(), [])
     values = [safe_float(row.get(field)) for row in rows]
-    return median([value for value in values if value is not None and value > 0])
+    valid = [value for value in values if value is not None and value > 0]
+    if len(valid) < MIN_OWN_HISTORY_OBSERVATIONS:
+        return None
+    return median(valid)
+
+
+def fundamental_history_sample_count(symbol: str) -> int:
+    rows = load_fundamental_history().get(symbol.upper(), [])
+    return sum(
+        1
+        for row in rows
+        if any((safe_float(row.get(field)) or 0) > 0 for field in ("pe", "pb"))
+    )
 
 
 def save_fundamental_history(packets: list[dict[str, Any]]) -> None:
@@ -466,6 +480,7 @@ def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
         "fundamental": fundamental,
         "historical_pe": historical_multiple(symbol, "pe"),
         "historical_pb": historical_multiple(symbol, "pb"),
+        "fundamental_history_samples": fundamental_history_sample_count(symbol),
         "weekly": weekly,
         "market_structure": market_structure,
         "as_of": as_of,
@@ -776,6 +791,16 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
                 "BREAKOUT_UNCONFIRMED",
                 "REACCUMULATION",
             }
+            and (
+                int(packet.get("fundamental_history_samples") or 0) >= MIN_OWN_HISTORY_OBSERVATIONS
+                or (
+                    sector.count >= 4
+                    and (
+                        (pe_disc is not None and pe_disc >= 12)
+                        or (pb_disc is not None and pb_disc >= 12)
+                    )
+                )
+            )
         )
         if strict_candidate:
             action = "UNG_VIEN_GOM"
@@ -835,6 +860,7 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
                 market_state=market_state,
                 breakout_state=breakout_state,
                 market_structure=structure.to_dict() if structure else None,
+                fundamental_history_samples=int(packet.get("fundamental_history_samples") or 0),
             )
         )
     ranked = sorted(

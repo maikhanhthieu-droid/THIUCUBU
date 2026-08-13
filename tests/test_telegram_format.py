@@ -27,6 +27,9 @@ def test_format_stock_card_formats_vietnamese_prices():
 
     assert "Giá 14,950" in text
     assert "14950.00" not in text
+    assert "100/97" not in text
+    assert "97/97" in text
+    assert "💎" in text
 
 
 def test_format_sector_line_preserves_markdown_backticks():

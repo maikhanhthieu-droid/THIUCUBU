@@ -1,5 +1,5 @@
 //@version=6
-indicator("THIEUCUBU WEEKLY ACCUMULATION SNIPER v3", shorttitle="W ACCUM v3", overlay=true, max_bars_back=500)
+indicator("THIEUCUBU WEEKLY ACCUMULATION SNIPER v3.1", shorttitle="W ACCUM v3.1", overlay=true, max_bars_back=500)
 
 // Companion visual indicator for weekly_sniper.py.
 // Use on 1W. This script recognises price/volume structure only; PE/PB, quality
@@ -15,7 +15,7 @@ minRR        = input.float(1.5, "Minimum R/R proxy", minval=1, maxval=5, step=0.
 
 G2 = "2. CKVN LIQUIDITY"
 useLiquidity = input.bool(true, "Enable liquidity gate", group=G2)
-priceUnit    = input.float(1000.0, "Price unit", minval=1, maxval=1000, group=G2)
+priceMode    = input.string("AUTO", "Chart price unit", options=["AUTO", "VND", "THOUSAND_VND"], group=G2)
 minTurnBn    = input.float(50.0, "Minimum average weekly turnover (bn VND)", minval=0, group=G2)
 
 G3 = "3. DISPLAY"
@@ -36,8 +36,10 @@ rsi14 = ta.rsi(close, 14)
 [macdLine, macdSignal, macdHist] = ta.macd(close, 12, 26, 9)
 vol13 = ta.sma(volume, 13)
 vol26 = ta.sma(volume, 26)
-turnover13 = ta.sma(close * priceUnit * volume / 1000000000.0, 13)
-liquidOK = not useLiquidity or (turnover13 >= minTurnBn and close >= 5 and vol13 > 0)
+unitMultiplier = priceMode == "VND" ? 1.0 : priceMode == "THOUSAND_VND" ? 1000.0 : close < 1000 ? 1000.0 : 1.0
+priceThousandVnd = close * unitMultiplier / 1000.0
+turnover13 = ta.sma(close * unitMultiplier * volume / 1000000000.0, 13)
+liquidOK = not useLiquidity or (turnover13 >= minTurnBn and priceThousandVnd >= 5 and vol13 > 0)
 
 barRange = math.max(high - low, syminfo.mintick)
 closePos = (close - low) / barRange
@@ -114,9 +116,11 @@ score := na(riskPct) or riskPct > maxRiskPct ? math.min(score, 64) : score
 score := na(rr) or rr < minRR ? math.min(score, 69) : score
 score := rsEdge < -6 or not rsRising ? math.min(score, 72) : score
 
-qualified = tfOK and bar_index >= 104 and discountOK and liquidOK and earlyTransition and ema8Rising and ema21Flat and notBroken and baseContracting
+qualified = tfOK and bar_index >= 103 and discountOK and liquidOK and earlyTransition and ema8Rising and ema21Flat and notBroken and baseContracting
 earlyMarkup = qualified and flowOK and triggerOK and momentumKick and score >= earlyMin
 prep = qualified and flowOK and score >= prepMin and not earlyMarkup
+earlyMarkupConfirmed = earlyMarkup and barstate.isconfirmed
+prepConfirmed = prep and not prep[1] and barstate.isconfirmed
 buyLow = math.max(protectKey * 1.03, ema8 * 0.98)
 buyHigh = math.min(close * 1.03, ema21 * 1.06)
 
@@ -135,17 +139,17 @@ plot(showEMA ? ema21 : na, "EMA 21W", color=color.orange, linewidth=2)
 plot(showEMA ? ema40 : na, "EMA 40W", color=color.fuchsia)
 plot(showZones and (earlyMarkup or prep) ? protectKey : na, "INVALIDATION", color=color.red, style=plot.style_stepline)
 plot(showZones and (earlyMarkup or prep) ? high4Prev : na, "BREAKOUT", color=color.lime, style=plot.style_stepline)
-plotshape(earlyMarkup and barstate.isconfirmed, title="EARLY MARKUP", style=shape.labelup, location=location.belowbar, color=color.lime, text="EARLY\nMARKUP", textcolor=color.black)
-plotshape(prep and not prep[1], title="PREP", style=shape.diamond, location=location.belowbar, color=color.aqua, text="PREP", textcolor=color.black)
+plotshape(earlyMarkupConfirmed, title="EARLY MARKUP", style=shape.labelup, location=location.belowbar, color=color.lime, text="EARLY\nMARKUP", textcolor=color.black)
+plotshape(prepConfirmed, title="PREP", style=shape.diamond, location=location.belowbar, color=color.aqua, text="PREP", textcolor=color.black)
 bgcolor(earlyMarkup ? color.new(color.lime, 87) : prep ? color.new(color.aqua, 92) : discountOK ? color.new(color.orange, 96) : na)
 
-alertcondition(earlyMarkup and barstate.isconfirmed, "W ACCUM EARLY MARKUP", "W ACCUM EARLY MARKUP | {{ticker}} | {{interval}} | {{close}}")
-alertcondition(prep and not prep[1], "W ACCUM PREP", "W ACCUM PREP | {{ticker}} | {{interval}} | {{close}}")
+alertcondition(earlyMarkupConfirmed, "W ACCUM EARLY MARKUP", "W ACCUM EARLY MARKUP | {{ticker}} | {{interval}} | {{close}}")
+alertcondition(prepConfirmed, "W ACCUM PREP", "W ACCUM PREP | {{ticker}} | {{interval}} | {{close}}")
 
 var table dash = table.new(position.top_right, 2, 10, border_width=1)
 status = not tfOK ? "USE 1W" : earlyMarkup ? "EARLY MARKUP" : prep ? "PREP BASE" : discountOK ? "DISCOUNT WATCH" : "NO SETUP"
 if barstate.islast and showTable
-    table.cell(dash, 0, 0, "W ACCUM v3", text_color=color.white, bgcolor=color.rgb(20, 30, 45))
+    table.cell(dash, 0, 0, "W ACCUM v3.1", text_color=color.white, bgcolor=color.rgb(20, 30, 45))
     table.cell(dash, 1, 0, status, text_color=earlyMarkup ? color.lime : prep ? color.aqua : color.orange, bgcolor=color.rgb(20, 30, 45))
     table.cell(dash, 0, 1, "SCORE")
     table.cell(dash, 1, 1, str.tostring(score, "#") + "/97")

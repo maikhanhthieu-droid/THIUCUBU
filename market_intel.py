@@ -12,9 +12,11 @@ from typing import Any
 
 import pandas as pd
 
+import fetcher
 import market_phase
 import scan
 import scoring
+import signal_tracker
 
 logger = logging.getLogger("thieucutoo.intel")
 DATA_DIR = scan.DATA_DIR
@@ -96,7 +98,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     if not force_refresh and is_cache_fresh_today(path, ttl):
         cached = validate_ohlcv(scan.read_cache_frame(path))
         if cached is not None and len(cached) >= 80:
-            return cached.tail(bars).reset_index(drop=True)
+            return fetcher.canonicalize_price_units(cached.tail(bars).reset_index(drop=True), symbol)
 
     attempts = env_int("SCAN_FETCH_MAX_ATTEMPTS", 3, min_value=1)
     days_back = max(300, int(bars * 1.7))
@@ -111,8 +113,13 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                 limiter.wait_turn(alias)
                 try:
                     raw = scan_safe.fetch_source_history(source, alias, start, end)
+                    raw_attrs = dict(getattr(raw, "attrs", {}))
                     df = validate_ohlcv(scan.normalize_ohlcv(raw))
                     if df is not None and len(df) >= 80:
+                        df.attrs.update(raw_attrs)
+                        df = fetcher.canonicalize_price_units(df, symbol, source)
+                        if df is None:
+                            continue
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
                         scan.write_cache_frame(path, df)
@@ -144,7 +151,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             time.sleep(wait)
     cached = scan.read_stale_cache(path)
     if cached is not None:
-        return cached.tail(bars).reset_index(drop=True)
+        return fetcher.canonicalize_price_units(cached.tail(bars).reset_index(drop=True), symbol)
     return None
 
 
@@ -497,65 +504,25 @@ def format_breakout_watch(result: scan.ScanResult, metrics: dict[str, Any] | Non
     )
 
 
-def update_signal_tracker(results: dict[str, scan.ScanResult], metrics_by_symbol: dict[str, dict[str, Any]], mode: str, min_score: int = 72) -> list[dict[str, Any]]:
-    tracker = scan.json_load(TRACKER_PATH, [])
-    if not isinstance(tracker, list):
-        tracker = []
-    today = datetime.now(VN_TZ).date()
-    for record in tracker:
-        symbol = str(record.get("symbol", "")).upper()
-        result = results.get(symbol)
-        entry = safe_float(record.get("price_at_signal"))
-        if result is None or entry <= 0:
-            continue
-        try:
-            signal_date = date.fromisoformat(str(record.get("date_signal")))
-        except Exception:
-            continue
-        days = (today - signal_date).days
-        ret = (safe_float(result.close) - entry) / entry * 100
-        if days >= 5 and record.get("return_t5") is None:
-            record["price_t5"] = result.close
-            record["return_t5"] = round(ret, 2)
-        if days >= 10 and record.get("return_t10") is None:
-            record["price_t10"] = result.close
-            record["return_t10"] = round(ret, 2)
-        if days >= 20 and record.get("return_t20") is None:
-            record["price_t20"] = result.close
-            record["return_t20"] = round(ret, 2)
-        if safe_float(record.get("stop_loss")) > 0 and safe_float(result.close) <= safe_float(record.get("stop_loss")):
-            record["hit_stop"] = True
-    existing = {(x.get("symbol"), x.get("date_signal"), x.get("mode")) for x in tracker}
-    added: list[dict[str, Any]] = []
-    for symbol, result in results.items():
-        if symbol == "VNINDEX" or result.failed_break:
-            continue
-        metrics = metrics_by_symbol.get(symbol, {})
-        score = int(metrics.get("advanced_score", result.win_score))
-        ok = score >= min_score or (result.win_score >= 78 and result.near_break) or (result.discount_pct >= result.target_discount_pct and result.win_score >= 65)
-        key = (symbol, today.isoformat(), mode)
-        if not ok or key in existing:
-            continue
-        trade = metrics.get("trade", {})
-        record = {"symbol": symbol, "date_signal": today.isoformat(), "mode": mode, "score_at_signal": result.win_score, "advanced_score": score, "price_at_signal": result.close, "setup": result.setup, "regime": metrics.get("regime", {}).get("regime", "UNKNOWN"), "stop_loss": trade.get("stop_loss"), "take_profit": trade.get("take_profit"), "risk_reward": trade.get("risk_reward"), "hit_stop": False}
-        tracker.append(record)
-        added.append(record)
-    scan.json_save(TRACKER_PATH, tracker[-1000:], pretty=False)
-    return added
+def update_signal_tracker(
+    results: dict[str, scan.ScanResult],
+    metrics_by_symbol: dict[str, dict[str, Any]],
+    mode: str,
+    min_score: int = 72,
+    history_store: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    return signal_tracker.update_tracker(
+        path=TRACKER_PATH,
+        results=results,
+        metrics_by_symbol=metrics_by_symbol,
+        history_store=history_store or {},
+        mode=mode,
+        min_score=min_score,
+    )
 
 
 def build_performance_report() -> str:
-    tracker = scan.json_load(TRACKER_PATH, [])
-    if not isinstance(tracker, list):
-        return "Chua co du lieu track record."
-    completed = [x for x in tracker if x.get("return_t10") is not None]
-    if not completed:
-        return "Chua du du lieu track record T+10."
-    wins = [x for x in completed if safe_float(x.get("return_t10")) > 3]
-    avg = sum(safe_float(x.get("return_t10")) for x in completed) / max(len(completed), 1)
-    high = [x for x in completed if int(x.get("advanced_score") or x.get("score_at_signal") or 0) >= 75]
-    mid = [x for x in completed if 60 <= int(x.get("advanced_score") or x.get("score_at_signal") or 0) < 75]
-    return "\n".join([f"*TRACK RECORD* ({len(completed)} signals)", f"Win rate T+10 (>3%): {len(wins) / max(len(completed), 1) * 100:.0f}% | Avg return: {avg:+.1f}%", f"Score >=75: {len([x for x in high if safe_float(x.get('return_t10')) > 3])}/{len(high)} win", f"Score 60-74: {len([x for x in mid if safe_float(x.get('return_t10')) > 3])}/{len(mid)} win"])
+    return signal_tracker.build_performance_report(TRACKER_PATH)
 
 
 def sector_scores(results: list[scan.ScanResult]) -> dict[str, dict[str, Any]]:

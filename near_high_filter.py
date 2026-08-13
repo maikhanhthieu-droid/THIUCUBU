@@ -120,38 +120,56 @@ def near_high_item(symbol: str, df: pd.DataFrame | None) -> NearHighItem | None:
     )
 
 
-def read_skip_symbols(max_age_days: int = MAX_AGE_DAYS) -> set[str]:
+def read_context_items(max_age_days: int = MAX_AGE_DAYS) -> dict[str, dict[str, Any]]:
     data = scan.json_load(SKIPLIST_PATH, {})
     if not isinstance(data, dict):
-        return set()
+        return {}
     try:
         updated = datetime.fromisoformat(str(data.get("updated_at"))).astimezone(VN_TZ).date()
     except Exception:
-        return set()
+        return {}
     if (datetime.now(VN_TZ).date() - updated).days > max_age_days:
-        return set()
-    symbols = data.get("symbols", [])
-    if not isinstance(symbols, list):
-        return set()
-    return {str(symbol).upper().strip() for symbol in symbols if str(symbol).strip()}
+        return {}
+    items = data.get("items", [])
+    if not isinstance(items, list):
+        return {}
+    context: dict[str, dict[str, Any]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        symbol = str(item.get("symbol", "")).upper().strip()
+        if symbol:
+            context[symbol] = item
+    return context
+
+
+def read_skip_symbols(max_age_days: int = MAX_AGE_DAYS) -> set[str]:
+    """Backward-compatible name: these symbols are tagged, never hard-skipped."""
+    return set(read_context_items(max_age_days))
+
+
+def annotate_results(results: Any, max_age_days: int = MAX_AGE_DAYS) -> None:
+    context = read_context_items(max_age_days)
+    rows = results.values() if isinstance(results, dict) else results
+    for result in rows or []:
+        symbol = str(getattr(result, "symbol", "")).upper().strip()
+        item = context.get(symbol)
+        if item is None:
+            continue
+        setattr(result, "near_6y_high", True)
+        try:
+            setattr(result, "distance_to_6y_high_pct", float(item.get("distance_pct")))
+        except (TypeError, ValueError):
+            setattr(result, "distance_to_6y_high_pct", None)
+        setattr(result, "over_6y_high", bool(item.get("over_high")))
 
 
 def filter_symbols(symbols: list[str], protected: set[str] | None = None) -> tuple[list[str], list[str]]:
-    if os.getenv("SCAN_SKIP_NEAR_HIGH_WEEKDAY", "1").strip().lower() in {"0", "false", "no"}:
-        return symbols, []
-    skip = read_skip_symbols()
-    protected_symbols = {str(symbol).upper().strip() for symbol in (protected or set())}
-    kept: list[str] = []
-    removed: list[str] = []
-    for symbol in symbols:
-        normalized = str(symbol).upper().strip()
-        if normalized in skip and normalized not in protected_symbols:
-            removed.append(normalized)
-        else:
-            kept.append(symbol)
-    if removed:
-        logger.info("Skip near/vuot dinh 6 nam weekday: %s", ",".join(removed[:40]))
-    return kept, removed
+    del protected  # Retained in the API for old callers.
+    tagged = sorted({str(symbol).upper().strip() for symbol in symbols} & read_skip_symbols())
+    if tagged:
+        logger.info("Tag near/vuot dinh 6 nam (khong loai): %s", ",".join(tagged[:40]))
+    return symbols, tagged
 
 
 async def update_skiplist(mode: str) -> list[NearHighItem]:
@@ -187,7 +205,7 @@ def build_report(items: list[NearHighItem]) -> str:
     now = datetime.now(VN_TZ).strftime("%d/%m %H:%M")
     lines = [
         f"*THIEUCUBU NEAR HIGH 6Y* `{now}`",
-        f"Gan/vuot dinh 6 nam <= {THRESHOLD_PCT:.0f}% se duoc bo qua trong broad scan ngay thuong, tru ma trong portfolio/note.",
+        f"Gan/vuot dinh 6 nam <= {THRESHOLD_PCT:.0f}% duoc gan co canh bao, van quet va cham diem binh thuong.",
     ]
     if not items:
         lines.append("Chua co ma nao gan/vuot dinh 6 nam.")
@@ -207,7 +225,7 @@ async def main() -> None:
         mode = "full"
     items = await update_skiplist(mode)
     await scan.send_chunks("*THIEUCUBU NEAR HIGH*", build_report(items))
-    logger.info("Near-high skiplist updated: %s symbols", len(items))
+    logger.info("Near-high context updated: %s symbols", len(items))
 
 
 if __name__ == "__main__":

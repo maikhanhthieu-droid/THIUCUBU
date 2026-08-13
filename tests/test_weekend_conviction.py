@@ -124,3 +124,23 @@ def test_multi_timeframe_distribution_cannot_be_weekend_conviction(monkeypatch) 
     assert results
     assert not any(result.selected for result in results)
     assert results[0].market_state == "DISTRIBUTION"
+
+
+def test_own_valuation_history_requires_enough_independent_snapshots(monkeypatch) -> None:
+    monkeypatch.setattr(
+        weekend,
+        "_FUNDAMENTAL_HISTORY_CACHE",
+        {
+            "AAA": [
+                {"captured_at": "2026-01-03", "pe": 8.0},
+                {"captured_at": "2026-01-10", "pe": 10.0},
+                {"captured_at": "2026-01-17", "pe": 12.0},
+            ]
+        },
+    )
+    assert weekend.historical_multiple("AAA", "pe") is None
+
+    weekend._FUNDAMENTAL_HISTORY_CACHE["AAA"].append(
+        {"captured_at": "2026-01-24", "pe": 14.0}
+    )
+    assert weekend.historical_multiple("AAA", "pe") == 11.0

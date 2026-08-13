@@ -156,7 +156,8 @@ async def main() -> None:
                 ",".join(missing_fundamental[:30]),
             )
 
-        plus.weekend.save_fundamental_history(packets)
+        if mode != "test":
+            plus.weekend.save_fundamental_history(packets)
         sectors = plus.weekend.build_sector_snapshots(packets)
         opportunities = plus.weekend.build_opportunities(packets, sectors)
         near_high = []
@@ -166,7 +167,7 @@ async def main() -> None:
         plus.weekend.save_outputs(opportunities, sectors)
 
         report = plus.weekend.build_report(opportunities, sectors, mode, near_high, missing_fundamental)
-        await scan.send_chunks("*THIEUCUBU WEEKEND*", report)
+        telegram_sent = bool(await scan.send_chunks("*THIEUCUBU WEEKEND*", report)) and not scan.DRY_RUN
         scan_safe.save_source_health()
         run_journal.finish_run(
             run_id,
@@ -175,7 +176,7 @@ async def main() -> None:
             success_count=len(packets),
             failed_symbols=[],
             elapsed_sec=time.time() - started,
-            telegram_sent=True,
+            telegram_sent=telegram_sent,
         )
         plus.weekend.logger.info("Weekend opportunities found: %s near_high_skip=%s", len(opportunities), len(near_high))
     except Exception as exc:

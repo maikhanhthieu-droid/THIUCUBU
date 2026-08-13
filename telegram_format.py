@@ -54,17 +54,26 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
         flags.append("gần break")
     if getattr(r, "failed_break", False):
         flags.append("failed-break")
+    if getattr(r, "near_6y_high", False):
+        distance = getattr(r, "distance_to_6y_high_pct", None)
+        if getattr(r, "over_6y_high", False):
+            flags.append("vượt đỉnh 6Y")
+        elif distance is not None:
+            flags.append(f"cách đỉnh 6Y {float(distance):.1f}%")
+        else:
+            flags.append("gần đỉnh 6Y")
     flag_text = f" | {', '.join(flags)}" if flags else ""
 
-    score = int(getattr(r, "win_score", 0))
+    score = max(0, min(int(getattr(r, "win_score", 0)), scoring.MAX_SCORE))
     grade = str(getattr(r, "grade", "") or scoring.grade(score))
-    trade_score = int(getattr(r, "trade_score", score))
-    position_score = int(getattr(r, "position_score", score))
+    trade_score = max(0, min(int(getattr(r, "trade_score", score)), scoring.MAX_SCORE))
+    position_score = max(0, min(int(getattr(r, "position_score", score)), scoring.MAX_SCORE))
     confidence = int(getattr(r, "confidence", 0))
     horizon = clean_text(getattr(r, "horizon", "WATCH"))
     confidence_text = f" | Tin cậy {confidence}%" if confidence else ""
+    marker = "💎 " if grade in {"S", "A+"} and not getattr(r, "failed_break", False) else ""
     lines = [
-        f"`{getattr(r, 'symbol', '')}`  *{grade} · {score}/97*  {status}",
+        f"{marker}`{getattr(r, 'symbol', '')}`  *{grade} · {score}/97*  {status}",
         f"Lướt {trade_score} | Gom {position_score} | {horizon}{confidence_text}",
         f"Giá {close_text} | Setup {setup} | Ngành {clean_text(getattr(r, 'sector', ''))}{flag_text}",
         (
@@ -165,12 +174,14 @@ def format_opportunity_card(item: Any) -> str:
     buy_high = getattr(item, "buy_zone_high", None)
     invalidation = getattr(item, "invalidation_price", None)
     selected = bool(getattr(item, "selected", False))
+    history_samples = int(getattr(item, "fundamental_history_samples", 0) or 0)
     marker = "💎 " if selected else ""
     lines = [
             f"{marker}`{symbol}`  *{grade} · {score}/97*  {action}",
             f"Cấu trúc tuần {structure_score} | {structure_state} | Trigger {trigger} | Tin cậy {confidence}%",
             f"Ngành {sector} | PE {pe_text} vs {sector_pe_text} ({pe_disc_text})",
             f"PB {pb_text} vs {sector_pb_text} ({pb_disc_text}) | DD {float(getattr(item, 'discount_pct', 0.0)):.0f}/{float(getattr(item, 'target_discount_pct', 0.0)):.0f}%",
+            f"Lịch sử định giá riêng: {history_samples} snapshot",
             (
                 f"Điểm ĐG/CL/KT/Ngành "
                 f"{int(getattr(item, 'valuation_score', 0))}/"

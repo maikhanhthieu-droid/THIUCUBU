@@ -49,6 +49,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         "data_source": data_source,
         "cache_status": cache_status,
         "close": _float(raw.get("close")),
+        "price_unit": raw.get("price_unit"),
         "setup": raw.get("setup"),
         "base_score": _float(raw.get("base_score")),
         "flow_score": _float(raw.get("flow_score")),
@@ -72,6 +73,11 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         },
         "near_break": bool(raw.get("near_break")),
         "failed_break": bool(raw.get("failed_break")),
+        "near_high_context": {
+            "near_6y_high": bool(raw.get("near_6y_high")),
+            "distance_to_6y_high_pct": _float(raw.get("distance_to_6y_high_pct")),
+            "over_6y_high": bool(raw.get("over_6y_high")),
+        },
         "market_structure": dict(structure) if structure else {
             "overall_state": raw.get("market_state"),
             "timeframes": {
@@ -122,6 +128,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
                 else "unattributed"
             ),
             "failed_break_excluded": bool(raw.get("failed_break")),
+            "unit_scale_applied": _float(raw.get("unit_scale_applied")),
+            "unit_repaired_from_cache": bool(raw.get("unit_repaired_from_cache")),
         },
     }
 

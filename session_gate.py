@@ -13,6 +13,7 @@ import regime_gate
 import market_probe
 import scan
 import session_plus as plus
+import state_transition
 import telegram_format as tf
 
 _old_update_signal_tracker = intel.update_signal_tracker
@@ -113,6 +114,7 @@ def update_signal_tracker_gated(
     metrics_by_symbol: dict[str, dict[str, Any]],
     mode: str,
     min_score: int = 72,
+    history_store: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     allowed = {
         symbol: result
@@ -120,7 +122,13 @@ def update_signal_tracker_gated(
         if symbol == "VNINDEX"
         or regime_gate.signal_allowed(result, metrics_by_symbol.get(symbol), min_score=min_score)
     }
-    return _old_update_signal_tracker(allowed, metrics_by_symbol, mode, min_score=min_score)
+    return _old_update_signal_tracker(
+        allowed,
+        metrics_by_symbol,
+        mode,
+        min_score=min_score,
+        history_store=history_store,
+    )
 
 
 def build_session_report(
@@ -136,19 +144,19 @@ def build_session_report(
     metrics = plus._STATE.get("metrics", {})
     regime = plus._STATE.get("regime", {})
     rotation_alerts = plus._STATE.get("rotation", [])
+    transitions = plus._STATE.get("transitions", [])
     ordered = sorted(results.values(), key=lambda x: (regime_gate.adv_score(x, metrics.get(x.symbol)), x.win_score, x.flow_score), reverse=True)
     market = results.get("VNINDEX")
     stocks = [x for x in ordered if x.symbol != "VNINDEX"]
     focus_set = set(focus_symbols)
-    focus_results = [x for x in stocks if x.symbol in focus_set and regime_gate.signal_allowed(x, metrics.get(x.symbol), min_score=62)]
-    strong = regime_gate.filter_results(stocks, metrics, min_score=72)[:10]
-    break_watch = regime_gate.filter_results(stocks, metrics, min_score=62, require_near_break=True)[:14]
-    suppressed = regime_gate.suppressed_lines(stocks, metrics, min_score=72)
-    failed = [
+    focus_candidates = [x for x in stocks if x.symbol in focus_set and regime_gate.signal_allowed(x, metrics.get(x.symbol), min_score=62)]
+    strong_candidates = regime_gate.filter_results(stocks, metrics, min_score=72)
+    break_candidates = regime_gate.filter_results(stocks, metrics, min_score=62, require_near_break=True)
+    failed_candidates = [
         x for x in stocks
         if x.failed_break
         or metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") == "FAILED_BREAK_CONFIRMED"
-    ][:10]
+    ]
     structure_watch_states = {
         "FAILED_BREAK_CONFIRMED",
         "FAILED_BREAK_WATCH",
@@ -157,10 +165,23 @@ def build_session_report(
         "RECLAIMED_BREAK",
         "BREAKOUT_UNCONFIRMED",
     }
-    structure_watch = [
+    structure_candidates = [
         x for x in stocks
         if metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") in structure_watch_states
-    ][:12]
+    ]
+    seen_symbols = set(watch_items)
+    show_failed = mode == "eod" or plus.sess.base_mode(mode) == "afternoon"
+    failed = plus.unique_results(failed_candidates, seen_symbols, 10) if show_failed else []
+    structure_watch = plus.unique_results(structure_candidates, seen_symbols, 12)
+    focus_results = plus.unique_results(focus_candidates, seen_symbols, 12)
+    strong = plus.unique_results(strong_candidates, seen_symbols, 10)
+    break_watch = plus.unique_results(break_candidates, seen_symbols, 14)
+    suppressed = regime_gate.suppressed_lines(
+        stocks,
+        metrics,
+        min_score=72,
+        exclude_symbols=seen_symbols,
+    )
     sectors = scan.summarize_sector(stocks)[:8]
     now = datetime.now(plus.sess.VN_TZ).strftime("%d/%m %H:%M")
 
@@ -172,6 +193,9 @@ def build_session_report(
         "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
         *intel.structure_map_lines(stocks, metrics),
     ]
+    if transitions:
+        lines += ["", "*CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý*"]
+        lines += [state_transition.format_transition(item) for item in transitions[:10]]
     if market_day and getattr(market_day, "closed", False):
         lines += [
             "",
@@ -183,7 +207,7 @@ def build_session_report(
     lines += ["", "*PORTFOLIO / NOTE BAT BUOC*"]
     lines += plus.portfolio_lines(results, watch_items, metrics)
     lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
-    lines += [plus.projection_line(x, mode, metrics) for x in (focus_results or strong)[:12]] or ["Chua co co manh du nguong sau khi loc market regime."]
+    lines += [plus.projection_line(x, mode, metrics) for x in focus_results] or ["Không có mã focus riêng ngoài các nhóm bên dưới."]
     lines += ["", "*CO MANH THI TRUONG*"]
     lines += [plus.with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Market regime dang chan bot signal mua."]
     lines += ["", "*GAN BREAK / CO THE MUA TUNG PHAN*"]
@@ -198,7 +222,7 @@ def build_session_report(
     if rotation_alerts:
         lines += ["", "*SECTOR ROTATION*"]
         lines += rotation_alerts[:8]
-    if mode == "eod" or plus.sess.base_mode(mode) == "afternoon":
+    if show_failed:
         lines += ["", "*FAILED BREAK / CAN NE*"]
         lines += [plus.with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
     if mode == "eod":

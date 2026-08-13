@@ -11,11 +11,13 @@ from typing import Any
 
 import market_intel as intel
 import market_probe
+import near_high_filter
 import run_journal
 import scan
 import scan_safe
 import session_scan as sess
 import state_manager
+import state_transition
 import telegram_format as tf
 import filter_feed
 
@@ -30,6 +32,20 @@ scan.fetch_ohlcv = intel.fetch_ohlcv_safe
 
 def adv_score(result: scan.ScanResult, metrics: dict[str, dict[str, Any]]) -> int:
     return int(metrics.get(result.symbol, {}).get("advanced_score", result.win_score))
+
+
+def unique_results(
+    rows: list[scan.ScanResult], seen: set[str], limit: int
+) -> list[scan.ScanResult]:
+    selected: list[scan.ScanResult] = []
+    for row in rows:
+        if row.symbol in seen:
+            continue
+        selected.append(row)
+        seen.add(row.symbol)
+        if len(selected) >= limit:
+            break
+    return selected
 
 
 def with_intel(card: str, metrics: dict[str, Any] | None) -> str:
@@ -115,26 +131,35 @@ def build_session_report(
     market_day: Any | None = None,
     **_: Any,
 ) -> str:
+    near_high_filter.annotate_results(results)
     window = sess.SESSION_WINDOWS[mode]
     metrics = _STATE.get("metrics", {})
     regime = _STATE.get("regime", {})
     rotation_alerts = _STATE.get("rotation", [])
+    transitions = _STATE.get("transitions", [])
     ordered = sorted(results.values(), key=lambda x: (adv_score(x, metrics), x.win_score, x.flow_score), reverse=True)
     market = results.get("VNINDEX")
     stocks = [x for x in ordered if x.symbol != "VNINDEX"]
     focus_set = set(focus_symbols)
-    focus_results = [x for x in stocks if x.symbol in focus_set and not x.failed_break]
-    strong = [x for x in stocks if adv_score(x, metrics) >= 72 and not x.failed_break][:10]
-    break_watch = [x for x in stocks if adv_score(x, metrics) >= 62 and x.near_break and not x.failed_break][:14]
-    failed = [x for x in stocks if x.failed_break][:10]
+    focus_candidates = [x for x in stocks if x.symbol in focus_set and not x.failed_break]
+    strong_candidates = [x for x in stocks if adv_score(x, metrics) >= 72 and not x.failed_break]
+    break_candidates = [x for x in stocks if adv_score(x, metrics) >= 62 and x.near_break and not x.failed_break]
+    failed_candidates = [x for x in stocks if x.failed_break]
     structure_watch_states = {
         "FAILED_BREAK_CONFIRMED", "FAILED_BREAK_WATCH", "REACCUMULATION",
         "HEALTHY_RETEST", "RECLAIMED_BREAK", "BREAKOUT_UNCONFIRMED",
     }
-    structure_watch = [
+    structure_candidates = [
         x for x in stocks
         if metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") in structure_watch_states
-    ][:12]
+    ]
+    seen_symbols = set(watch_items)
+    show_failed = mode == "eod" or sess.base_mode(mode) == "afternoon"
+    failed = unique_results(failed_candidates, seen_symbols, 10) if show_failed else []
+    structure_watch = unique_results(structure_candidates, seen_symbols, 12)
+    focus_results = unique_results(focus_candidates, seen_symbols, 12)
+    strong = unique_results(strong_candidates, seen_symbols, 10)
+    break_watch = unique_results(break_candidates, seen_symbols, 14)
     sectors = scan.summarize_sector(stocks)[:8]
     now = datetime.now(sess.VN_TZ).strftime("%d/%m %H:%M")
 
@@ -146,6 +171,9 @@ def build_session_report(
         "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
         *intel.structure_map_lines(stocks, metrics),
     ]
+    if transitions:
+        lines += ["", "*CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý*"]
+        lines += [state_transition.format_transition(item) for item in transitions[:10]]
     if market_day and getattr(market_day, "closed", False):
         lines += [
             "",
@@ -157,7 +185,7 @@ def build_session_report(
     lines += ["", "*PORTFOLIO / GHI CHÚ BẮT BUỘC*"]
     lines += portfolio_lines(results, watch_items, metrics)
     lines += ["", "*DỰ PHÓNG CỔ MẠNH CẦN CHÚ Ý*"]
-    lines += [projection_line(x, mode, metrics) for x in (focus_results or strong)[:12]] or ["Chua co co manh du nguong."]
+    lines += [projection_line(x, mode, metrics) for x in focus_results] or ["Không có mã focus riêng ngoài các nhóm bên dưới."]
     lines += ["", "*CỔ MẠNH THỊ TRƯỜNG*"]
     lines += [with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Khong co ma dat nguong."]
     lines += ["", "*GẦN BREAK / CÓ THỂ MUA TỪNG PHẦN*"]
@@ -169,7 +197,7 @@ def build_session_report(
     if rotation_alerts:
         lines += ["", "*LUÂN CHUYỂN NGÀNH*"]
         lines += rotation_alerts[:8]
-    if mode == "eod" or sess.base_mode(mode) == "afternoon":
+    if show_failed:
         lines += ["", "*FAILED-BREAK / CẦN TRÁNH*"]
         lines += [with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
     if mode == "eod":
@@ -188,9 +216,29 @@ def save_session_outputs(
     market_day: Any | None = None,
     **_: Any,
 ) -> list[dict[str, Any]]:
+    near_high_filter.annotate_results(results)
     metrics, regime = intel.build_market_metrics(results, history_store)
-    _, rotation_alerts = intel.update_sector_rotation([x for x in results.values() if x.symbol != "VNINDEX"])
-    _STATE.update({"mode": mode, "results": results, "metrics": metrics, "regime": regime, "rotation": rotation_alerts})
+    if mode == "test":
+        rotation_alerts: list[str] = []
+    else:
+        _, rotation_alerts = intel.update_sector_rotation(
+            [x for x in results.values() if x.symbol != "VNINDEX"]
+        )
+    transitions = [] if mode == "test" else state_transition.update_transitions(
+        path=sess.DATA_DIR / "market_state_history.json",
+        results=results,
+        metrics_by_symbol=metrics,
+    )
+    _STATE.update(
+        {
+            "mode": mode,
+            "results": results,
+            "metrics": metrics,
+            "regime": regime,
+            "rotation": rotation_alerts,
+            "transitions": transitions,
+        }
+    )
     failed_breaks = _old_save_session_outputs(
         mode,
         results,
@@ -201,7 +249,7 @@ def save_session_outputs(
         activity_probe=activity_probe,
         market_day=market_day,
     )
-    new_signals = intel.update_signal_tracker(results, metrics, mode)
+    new_signals = intel.update_signal_tracker(results, metrics, mode, history_store=history_store)
     if mode == "eod":
         intel.auto_update_portfolio_thresholds(results)
     memory_summary: dict[str, Any] = {}
@@ -225,6 +273,7 @@ def save_session_outputs(
         "market_activity": asdict(activity_probe) if activity_probe else None,
         "market_regime": regime,
         "new_signals": new_signals,
+        "state_transitions": transitions,
         "memory": memory_summary,
         "market_structure_map": {
             x.symbol: metrics.get(x.symbol, {}).get("market_structure", {})
@@ -303,8 +352,7 @@ async def main() -> None:
         failed_symbols = sorted(getattr(sess, "SCAN_FAILED_SYMBOLS", set()))
         summary = intel.build_scan_completion_summary(len(results), failed_symbols, time.time() - float(_STATE.get("started_at", time.time())))
         try:
-            await scan.send_chunks("*THIEUCUBU SUMMARY*", summary)
-            summary_sent = True
+            summary_sent = bool(await scan.send_chunks("*THIEUCUBU SUMMARY*", summary)) and not scan.DRY_RUN
         except Exception as exc:
             logger.warning("Cannot send completion summary, main report may already be sent: %s", exc)
         scan_safe.save_source_health()
@@ -315,19 +363,20 @@ async def main() -> None:
             success_count=len(results),
             failed_symbols=failed_symbols,
             elapsed_sec=time.time() - float(_STATE.get("started_at", time.time())),
-            telegram_sent=True,
+            telegram_sent=summary_sent,
         )
     except Exception as exc:
         logger.exception("Fatal enhanced session scan error")
         fallback_sent = False
         try:
-            await scan.send_chunks("*THIEUCUBU FALLBACK*", build_fallback_report(mode_hint, exc))
-            fallback_sent = True
+            fallback_sent = bool(
+                await scan.send_chunks("*THIEUCUBU FALLBACK*", build_fallback_report(mode_hint, exc))
+            ) and not scan.DRY_RUN
         except Exception as fallback_exc:
             logger.warning("Cannot send fallback report: %s", fallback_exc)
             try:
                 await scan.send_telegram(f"*THIEUCUBU ALERT* `{mode_hint}` FAILED\n`{str(exc)[:300]}`")
-                fallback_sent = True
+                fallback_sent = not scan.DRY_RUN
             except Exception:
                 logger.exception("Cannot send fatal Telegram alert")
         scan_safe.save_source_health()

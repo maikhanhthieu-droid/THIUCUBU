@@ -1,0 +1,16 @@
+[
+  {
+    "symbol": "FPT",
+    "note": "Ví dụ: thay bằng mã đang nắm giữ",
+    "buy_more_score": 85,
+    "sell_score": 55,
+    "position": "holding"
+  },
+  {
+    "symbol": "HPG",
+    "note": "Ví dụ: mã đang theo dõi để mua gom",
+    "buy_more_score": 81,
+    "sell_score": 50,
+    "position": "watch"
+  }
+]

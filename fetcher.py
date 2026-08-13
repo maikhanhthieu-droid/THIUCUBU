@@ -33,6 +33,7 @@ except ImportError:  # pragma: no cover - optional adapter
 SUPPORTED_SOURCES = {"VCI", "KBS", "DNSE"}
 DEFAULT_SOURCES = ["VCI", "KBS", "DNSE"]
 INDEX_CAPABLE_SOURCES = {"VCI", "KBS"}
+INDEX_SYMBOLS = {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30", "HNXINDEX", "UPCOMINDEX", "VN100"}
 SOURCE_ALIASES = {
     "VIETFIN": "DNSE",
     "VFIN": "DNSE",
@@ -149,6 +150,78 @@ def normalize_ohlcv(raw: Any) -> pd.DataFrame | None:
     return df if not df.empty else None
 
 
+def canonicalize_price_units(
+    df: pd.DataFrame | None,
+    symbol: str,
+    source: str | None = None,
+) -> pd.DataFrame | None:
+    """Return stock OHLC in thousand-VND units, independent of provider.
+
+    VCI/KBS quote endpoints usually expose thousand VND while DNSE exposes
+    VND.  Keeping both representations made cross-run returns jump 1000x when
+    the fallback source changed.  Index series remain in index points.
+    """
+
+    if df is None or df.empty:
+        return df
+    out = df.copy()
+    normalized_symbol = str(symbol or "").upper()
+    if normalized_symbol in INDEX_SYMBOLS:
+        out.attrs.update({"price_unit": "index_points", "unit_scale_applied": 1.0})
+        return out
+    close = pd.to_numeric(out.get("close"), errors="coerce").dropna()
+    if close.empty:
+        return out
+    median_close = float(close.tail(30).median())
+    normalized_source = normalize_source(str(source or ""))
+    # DNSE stock prices are VND. The generic >=1000 check also protects us if
+    # another provider changes representation for a subset of symbols.
+    should_scale = median_close >= 1000.0 or (normalized_source == "DNSE" and median_close >= 100.0)
+    scale = 0.001 if should_scale else 1.0
+    if should_scale:
+        for column in ("open", "high", "low", "close"):
+            out[column] = pd.to_numeric(out[column], errors="coerce") * scale
+    out.attrs.update(
+        {
+            "price_unit": "thousand_vnd",
+            "unit_scale_applied": scale,
+            "raw_median_close": median_close,
+        }
+    )
+    return out
+
+
+def harmonize_with_reference(
+    candidate: pd.DataFrame,
+    reference: pd.DataFrame | None,
+    symbol: str,
+) -> tuple[pd.DataFrame, bool]:
+    """Repair a residual 1000x mismatch using overlapping trading dates."""
+
+    if reference is None or reference.empty or candidate.empty or str(symbol).upper() in INDEX_SYMBOLS:
+        return candidate, False
+    left = candidate[["time", "close"]].copy()
+    right = reference[["time", "close"]].copy()
+    left["time"] = pd.to_datetime(left["time"], errors="coerce")
+    right["time"] = pd.to_datetime(right["time"], errors="coerce")
+    overlap = pd.merge(left, right, on="time", suffixes=("_new", "_old")).dropna().tail(40)
+    overlap = overlap[(overlap["close_new"] > 0) & (overlap["close_old"] > 0)]
+    if len(overlap) < 3:
+        return candidate, False
+    ratio = float((overlap["close_new"] / overlap["close_old"]).median())
+    factor = 0.001 if 500 <= ratio <= 2000 else 1000.0 if 0.0005 <= ratio <= 0.002 else 1.0
+    if factor == 1.0:
+        return candidate, False
+    repaired = candidate.copy()
+    for column in ("open", "high", "low", "close"):
+        repaired[column] = pd.to_numeric(repaired[column], errors="coerce") * factor
+    repaired.attrs.update(candidate.attrs)
+    repaired.attrs["unit_scale_applied"] = float(candidate.attrs.get("unit_scale_applied", 1.0)) * factor
+    repaired.attrs["unit_repaired_from_cache"] = True
+    logger.warning("[%s] repaired cross-source price unit ratio %.1fx", symbol, ratio)
+    return repaired, True
+
+
 def _vn_ts(value: str, end_of_day: bool = False) -> int:
     base = datetime.fromisoformat(value).replace(tzinfo=VN_TZ)
     if end_of_day:
@@ -249,7 +322,7 @@ def _from_vci_payload(data: Any) -> pd.DataFrame | None:
 
 
 def _scale_vnd_ohlc_to_quote_units(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
-    if symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30", "HNXINDEX", "UPCOMINDEX"}:
+    if symbol.upper() in INDEX_SYMBOLS:
         return df
     out = df.copy()
     for col in ["open", "high", "low", "close"]:
@@ -300,23 +373,28 @@ def fetch_source_history(source: str, symbol: str, start: str, end: str) -> pd.D
     normalized = normalize_source(source)
     if normalized == "DNSE":
         try:
-            return fetch_vietfin_dnse(symbol, start, end)
+            frame = fetch_vietfin_dnse(symbol, start, end)
         except Exception as exc:
             logger.warning("[DNSE] vietfin failed for %s, trying direct HTTP: %s", symbol, exc)
-            return fetch_dnse_direct(symbol, start, end)
-    if normalized == "VCI":
+            frame = fetch_dnse_direct(symbol, start, end)
+    elif normalized == "VCI":
         try:
-            return fetch_vnstock_quote(normalized, symbol, start, end)
+            frame = fetch_vnstock_quote(normalized, symbol, start, end)
         except Exception as exc:
             logger.warning("[VCI] vnstock failed for %s, trying direct HTTP: %s", symbol, exc)
-            return fetch_vci_direct(symbol, start, end)
-    if normalized == "KBS":
+            frame = fetch_vci_direct(symbol, start, end)
+    elif normalized == "KBS":
         try:
-            return fetch_vnstock_quote(normalized, symbol, start, end)
+            frame = fetch_vnstock_quote(normalized, symbol, start, end)
         except Exception as exc:
             logger.warning("[KBS] vnstock failed for %s, trying direct HTTP: %s", symbol, exc)
-            return fetch_kbs_direct(symbol, start, end)
-    raise ValueError(f"Unsupported OHLCV source: {source}")
+            frame = fetch_kbs_direct(symbol, start, end)
+    else:
+        raise ValueError(f"Unsupported OHLCV source: {source}")
+    normalized_frame = canonicalize_price_units(frame, symbol, normalized)
+    if normalized_frame is None:
+        raise ValueError(f"{normalized} returned invalid OHLCV for {symbol}")
+    return normalized_frame
 
 
 def fetch_ohlcv(symbol: str, bars: int = 260, sources: list[str] | None = None) -> pd.DataFrame | None:
