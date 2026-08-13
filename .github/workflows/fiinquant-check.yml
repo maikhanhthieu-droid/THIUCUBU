@@ -1,0 +1,52 @@
+name: THIEUCUBU FiinQuant Check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: thieucutoo-fiinquant-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Verify Secrets exist
+        env:
+          FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
+          FIINQUANT_PASSWORD: ${{ secrets.FIINQUANT_PASSWORD }}
+        run: |
+          if [ -z "$FIINQUANT_USERNAME" ] || [ -z "$FIINQUANT_PASSWORD" ]; then
+            echo "Missing FIINQUANT_USERNAME or FIINQUANT_PASSWORD in GitHub Actions Secrets."
+            exit 1
+          fi
+
+      - name: Install FiinQuantX adapter dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --disable-pip-version-check -r requirements.txt -r requirements-fiinquant.txt
+          python -m pip install --disable-pip-version-check --no-deps --extra-index-url https://fiinquant.github.io/fiinquantx/simple fiinquantx==0.1.67
+
+      - name: Login and fetch a safe historical sample
+        env:
+          FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
+          FIINQUANT_PASSWORD: ${{ secrets.FIINQUANT_PASSWORD }}
+          FIINQUANT_REQUESTS_PER_MINUTE: "20"
+          FIINQUANT_USAGE_RATIO: "0.50"
+          FIINQUANT_MAX_CONCURRENCY: "1"
+        run: |
+          python -m scripts.check_fiinquant

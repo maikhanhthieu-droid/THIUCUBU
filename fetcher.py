@@ -14,6 +14,8 @@ from typing import Any
 import httpx
 import pandas as pd
 
+import fiinquant_provider
+
 logger = logging.getLogger("thieucutoo.fetcher")
 VN_TZ = timezone(timedelta(hours=7))
 
@@ -30,11 +32,14 @@ try:
 except ImportError:  # pragma: no cover - optional adapter
     Vietfin = None
 
-SUPPORTED_SOURCES = {"VCI", "KBS", "DNSE"}
-DEFAULT_SOURCES = ["VCI", "KBS", "DNSE"]
-INDEX_CAPABLE_SOURCES = {"VCI", "KBS"}
+SUPPORTED_SOURCES = {"FIINQUANT", "VCI", "KBS", "DNSE"}
+DEFAULT_SOURCES = ["FIINQUANT", "VCI", "KBS", "DNSE"]
+INDEX_CAPABLE_SOURCES = {"FIINQUANT", "VCI", "KBS"}
 INDEX_SYMBOLS = {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30", "HNXINDEX", "UPCOMINDEX", "VN100"}
 SOURCE_ALIASES = {
+    "FIIN": "FIINQUANT",
+    "FIINQUANTX": "FIINQUANT",
+    "FQ": "FIINQUANT",
     "VIETFIN": "DNSE",
     "VFIN": "DNSE",
 }
@@ -75,20 +80,27 @@ def normalize_source(source: str) -> str:
     return SOURCE_ALIASES.get(value, value)
 
 
+def source_is_available(source: str) -> bool:
+    normalized = normalize_source(source)
+    return normalized != "FIINQUANT" or fiinquant_provider.is_configured()
+
+
 def filter_sources(sources: list[str], include_index_sources_only: bool = False) -> list[str]:
     valid: list[str] = []
     ignored: list[str] = []
     allowed = INDEX_CAPABLE_SOURCES if include_index_sources_only else SUPPORTED_SOURCES
     for source in sources:
         normalized = normalize_source(source)
-        if normalized in allowed:
+        if normalized in allowed and source_is_available(normalized):
             if normalized not in valid:
                 valid.append(normalized)
-        elif normalized:
+        elif normalized and normalized not in allowed:
             ignored.append(source)
     if ignored:
         logger.warning("Ignoring unsupported OHLCV source(s): %s", ",".join(ignored))
-    return valid or [source for source in DEFAULT_SOURCES if source in allowed]
+    return valid or [
+        source for source in DEFAULT_SOURCES if source in allowed and source_is_available(source)
+    ]
 
 
 def normalize_ohlcv(raw: Any) -> pd.DataFrame | None:
@@ -113,6 +125,7 @@ def normalize_ohlcv(raw: Any) -> pd.DataFrame | None:
         col_map = {
             "date": "time",
             "datetime": "time",
+            "timestamp": "time",
             "time": "time",
             "tradingdate": "time",
             "t": "time",
@@ -265,6 +278,13 @@ def fetch_dnse_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
     return df
 
 
+def fetch_fiinquant(symbol: str, start: str, end: str) -> pd.DataFrame:
+    df = normalize_ohlcv(fiinquant_provider.fetch_history(symbol, start, end))
+    if df is None or df.empty:
+        raise ValueError(f"FiinQuantX returned no OHLCV for {symbol}")
+    return df
+
+
 def fetch_vietfin_dnse(symbol: str, start: str, end: str) -> pd.DataFrame:
     if Vietfin is None:
         raise RuntimeError("vietfin is not installed")
@@ -371,7 +391,9 @@ def fetch_kbs_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
 
 def fetch_source_history(source: str, symbol: str, start: str, end: str) -> pd.DataFrame:
     normalized = normalize_source(source)
-    if normalized == "DNSE":
+    if normalized == "FIINQUANT":
+        frame = fetch_fiinquant(symbol, start, end)
+    elif normalized == "DNSE":
         try:
             frame = fetch_vietfin_dnse(symbol, start, end)
         except Exception as exc:

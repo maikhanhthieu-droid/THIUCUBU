@@ -65,14 +65,14 @@ def filter_api_sources(sources: list[str]) -> list[str]:
     ignored: list[str] = []
     for source in sources:
         normalized = fetcher.normalize_source(source)
-        if normalized in SUPPORTED_QUOTE_SOURCES:
+        if normalized in SUPPORTED_QUOTE_SOURCES and fetcher.source_is_available(normalized):
             if normalized not in valid:
                 valid.append(normalized)
-        else:
+        elif normalized not in SUPPORTED_QUOTE_SOURCES:
             ignored.append(source)
     if ignored:
         logger.warning("Ignoring unsupported OHLCV source(s): %s", ",".join(ignored))
-    return valid or DEFAULT_API_SOURCES.copy()
+    return valid or fetcher.filter_sources(DEFAULT_API_SOURCES.copy())
 
 
 def quote_source_name(source: str) -> str:
@@ -115,6 +115,22 @@ def is_invalid_symbol_error(exc: BaseException) -> bool:
         or "symbol format" in text
         or "symbol must be between" in text
         or "symbol is not recognized" in text
+    )
+
+
+def is_authentication_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return any(
+        needle in text
+        for needle in (
+            "incorrect password",
+            "user does not exist",
+            "invalid credential",
+            "unauthorized",
+            "authentication",
+            "login failed",
+            "please login before calling data",
+        )
     )
 
 
@@ -351,6 +367,7 @@ def source_order_for_symbol(symbol: str) -> list[str]:
         rotated,
         key=lambda source: (
             int((previous.get(source, {}) or {}).get("health_score", 100)) < 40,
+            source != "FIINQUANT",
         ),
     )
 
@@ -496,7 +513,9 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                         limiter.disable(str(exc)[:180])
                 except Exception as exc:
                     logger.warning("[%s] %s/%s failed: %s", source, symbol, alias, exc)
-                    if is_unsupported_source_error(exc):
+                    if is_authentication_error(exc):
+                        limiter.disable("authentication failed; verify GitHub Secrets")
+                    elif is_unsupported_source_error(exc):
                         limiter.disable(str(exc)[:180])
                     elif is_invalid_symbol_error(exc):
                         logger.warning("[%s] %s/%s invalid symbol, skipping source penalty", source, symbol, alias)

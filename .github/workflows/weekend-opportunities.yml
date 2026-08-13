@@ -34,10 +34,18 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
+        env:
+          FIINQUANT_CONFIGURED: ${{ secrets.FIINQUANT_USERNAME != '' && secrets.FIINQUANT_PASSWORD != '' }}
         run: |
           python -m pip install --upgrade pip
           python -m pip uninstall vnstock3 -y || true
           python -m pip install --disable-pip-version-check -r requirements.txt
+          if [ "$FIINQUANT_CONFIGURED" = "true" ]; then
+            python -m pip install --disable-pip-version-check -r requirements-fiinquant.txt
+            python -m pip install --disable-pip-version-check --no-deps --extra-index-url https://fiinquant.github.io/fiinquantx/simple fiinquantx==0.1.67
+          else
+            echo "FiinQuant Secrets are not configured; weekend scanner will use fallback sources."
+          fi
 
       - name: Resolve cache date
         id: cache-date
@@ -59,6 +67,8 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
+          FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
+          FIINQUANT_PASSWORD: ${{ secrets.FIINQUANT_PASSWORD }}
           WEEKEND_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'full' }}
           WEEKEND_TOP_N: "20"
           WEEKEND_CONVICTION_LIMIT: "2"
@@ -76,9 +86,12 @@ jobs:
           WEEKEND_NEAR_HIGH_LOOKBACK_BARS: "1560"
           WEEKEND_NEAR_HIGH_THRESHOLD_PCT: "7"
           SCAN_MAX_WORKERS: "3"
-          SCAN_API_SOURCES: "VCI,KBS,DNSE"
+          SCAN_API_SOURCES: "FIINQUANT,VCI,KBS,DNSE"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
-          SCAN_SOURCE_LIMITS: "VCI=20,KBS=20,DNSE=15"
+          SCAN_SOURCE_LIMITS: "FIINQUANT=80,VCI=20,KBS=20,DNSE=15"
+          FIINQUANT_REQUESTS_PER_MINUTE: "80"
+          FIINQUANT_USAGE_RATIO: "0.75"
+          FIINQUANT_MAX_CONCURRENCY: "2"
           SCAN_SOURCE_USAGE_RATIO: "0.78"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.4"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.8"

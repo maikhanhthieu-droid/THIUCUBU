@@ -1,0 +1,8 @@
+# Runtime dependencies are resolved from PyPI first. The FiinQuantX wheel is
+# installed separately with --no-deps from FiinQuant's official package index;
+# this avoids querying that small index for every transitive dependency.
+requests>=2.31.0,<3.0.0
+python-dateutil>=2.8.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
+aiohttp>=3.9.0,<4.0.0
+signalrcore>=0.9.0,<1.0.0

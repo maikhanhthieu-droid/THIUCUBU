@@ -147,10 +147,18 @@ jobs:
 
       - name: Install dependencies
         if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
+        env:
+          FIINQUANT_CONFIGURED: ${{ secrets.FIINQUANT_USERNAME != '' && secrets.FIINQUANT_PASSWORD != '' }}
         run: |
           python -m pip install --upgrade pip
           python -m pip uninstall vnstock3 -y || true
           python -m pip install --disable-pip-version-check -r requirements.txt
+          if [ "$FIINQUANT_CONFIGURED" = "true" ]; then
+            python -m pip install --disable-pip-version-check -r requirements-fiinquant.txt
+            python -m pip install --disable-pip-version-check --no-deps --extra-index-url https://fiinquant.github.io/fiinquantx/simple fiinquantx==0.1.67
+          else
+            echo "FiinQuant Secrets are not configured; scanner will use fallback sources."
+          fi
 
       - name: Resolve cache date
         id: cache-date
@@ -173,14 +181,19 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
+          FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
+          FIINQUANT_PASSWORD: ${{ secrets.FIINQUANT_PASSWORD }}
           SCAN_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
           SCAN_EVENT_NAME: ${{ github.event_name }}
           SCAN_SCHEDULE: ${{ github.event.schedule }}
           SCAN_BATCH_SIZE: "12"
           SCAN_MAX_WORKERS: "3"
-          SCAN_API_SOURCES: "VCI,KBS,DNSE"
+          SCAN_API_SOURCES: "FIINQUANT,VCI,KBS,DNSE"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
-          SCAN_SOURCE_LIMITS: "VCI=20,KBS=20,DNSE=15"
+          SCAN_SOURCE_LIMITS: "FIINQUANT=80,VCI=20,KBS=20,DNSE=15"
+          FIINQUANT_REQUESTS_PER_MINUTE: "80"
+          FIINQUANT_USAGE_RATIO: "0.75"
+          FIINQUANT_MAX_CONCURRENCY: "2"
           SCAN_SOURCE_USAGE_RATIO: "0.78"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.3"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.5"

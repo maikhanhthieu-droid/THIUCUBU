@@ -156,7 +156,9 @@ GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard t
 
 ## Nguồn dữ liệu và khả năng tự phục hồi
 
-- Nguồn mặc định: `VCI,KBS,DNSE`.
+- Khi đã cấu hình tài khoản: ưu tiên `FIINQUANT`, sau đó tự fallback `VCI,KBS,DNSE`.
+- Khi chưa có đủ hai FiinQuant Secret, nguồn này tự bị loại khỏi lượt chạy; các luồng cũ vẫn hoạt động bình thường.
+- FiinQuantX chỉ chạy historical request, dùng chung một phiên đăng nhập trong mỗi process và không mở WebSocket realtime.
 - Mỗi mã có nguồn ưu tiên và fallback riêng.
 - Có jitter, rate limiter, `Retry-After`, cooldown và phục hồi nguồn trong cùng run.
 - Cache parquet được dùng khi phù hợp; stale cache luôn được gắn provenance.
@@ -171,14 +173,25 @@ Tạo GitHub Actions Secrets:
 - `TELEGRAM_TOKEN`
 - `TELEGRAM_CHAT_ID`
 - `VNSTOCK_API_KEY`
+- `FIINQUANT_USERNAME`
+- `FIINQUANT_PASSWORD`
 
-Không đưa token hoặc API key vào code vì repository là public.
+`FIINQUANT_USERNAME` là email/tên đăng nhập FiinQuant đã đăng ký; `FIINQUANT_PASSWORD` là mật khẩu tương ứng. Không đưa token, API key hoặc mật khẩu vào code vì repository là public.
+
+Sau khi tạo hai FiinQuant Secret, vào **Actions → THIEUCUBU FiinQuant Check → Run workflow**. Workflow này chỉ đăng nhập và lấy mẫu lịch sử VCB, không gửi Telegram và không ghi dữ liệu vào repository. Khi job xanh, scanner hằng ngày và cuối tuần sẽ tự ưu tiên FiinQuantX.
 
 Chạy local:
 
 ```bash
 python -m pip install -r requirements.txt -r requirements-dev.txt
 python -m pytest -q
+```
+
+Nếu muốn dùng FiinQuantX khi chạy local:
+
+```bash
+python -m pip install -r requirements-fiinquant.txt
+python -m pip install --no-deps --extra-index-url https://fiinquant.github.io/fiinquantx/simple fiinquantx==0.1.67
 ```
 
 Test scanner không gửi Telegram:
@@ -229,8 +242,11 @@ Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể c�
 
 ## Cấu hình quan trọng
 
-- `SCAN_API_SOURCES=VCI,KBS,DNSE`
-- `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15`
+- `SCAN_API_SOURCES=FIINQUANT,VCI,KBS,DNSE`
+- `SCAN_SOURCE_LIMITS=FIINQUANT=80,VCI=20,KBS=20,DNSE=15`
+- `FIINQUANT_REQUESTS_PER_MINUTE=80`
+- `FIINQUANT_USAGE_RATIO=0.75`
+- `FIINQUANT_MAX_CONCURRENCY=2`
 - `SCAN_SOURCE_USAGE_RATIO=0.78`
 - `SCAN_ROTATING_UNIVERSE_SIZE=36`
 - `WEEKEND_HISTORY_BARS=780`

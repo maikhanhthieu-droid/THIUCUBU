@@ -15,6 +15,7 @@ from typing import Any
 
 import pandas as pd
 
+import fiinquant_provider
 import market_phase
 import scan
 import scan_safe
@@ -33,6 +34,7 @@ DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 FUNDAMENTAL_HISTORY_PATH = DATA_DIR / "fundamental_history.json"
 _FUNDAMENTAL_HISTORY_CACHE: dict[str, list[dict[str, Any]]] | None = None
+_FIINQUANT_WARNING_LOGGED = False
 
 try:
     from vnstock import Fundamental as VnFundamental
@@ -371,6 +373,26 @@ def snapshot_from_df(symbol: str, df: pd.DataFrame, source: str) -> FundamentalS
     )
 
 
+def snapshot_from_mapping(symbol: str, values: dict[str, Any]) -> FundamentalSnapshot | None:
+    pe = safe_float(values.get("pe"))
+    pb = safe_float(values.get("pb"))
+    if pe is None and pb is None:
+        return None
+    return FundamentalSnapshot(
+        symbol=symbol,
+        pe=pe,
+        pb=pb,
+        roe=as_percent(values.get("roe")),
+        roa=as_percent(values.get("roa")),
+        debt_to_equity=safe_float(values.get("debt_to_equity")),
+        current_ratio=safe_float(values.get("current_ratio")),
+        profit_margin=as_percent(values.get("profit_margin")),
+        eps=safe_float(values.get("eps")),
+        period=str(values.get("period") or ""),
+        source=str(values.get("source") or "FiinQuantX"),
+    )
+
+
 def call_ratio_method(method: Any, args: tuple[Any, ...], source: str, symbol: str) -> FundamentalSnapshot | None:
     kwargs_options = (
         {"period": "quarter", "orient": "time_series"},
@@ -393,6 +415,19 @@ def call_ratio_method(method: Any, args: tuple[Any, ...], source: str, symbol: s
 
 
 def fetch_fundamental(symbol: str) -> FundamentalSnapshot | None:
+    global _FIINQUANT_WARNING_LOGGED
+    if fiinquant_provider.is_configured():
+        try:
+            values = fiinquant_provider.fetch_fundamental(symbol)
+            if values:
+                snap = snapshot_from_mapping(symbol, values)
+                if snap:
+                    return snap
+        except fiinquant_provider.FiinQuantError as exc:
+            if not _FIINQUANT_WARNING_LOGGED:
+                logger.warning("FiinQuantX fundamentals unavailable; using fallback sources: %s", exc)
+                _FIINQUANT_WARNING_LOGGED = True
+
     if VnFundamental is not None:
         try:
             fun = VnFundamental()

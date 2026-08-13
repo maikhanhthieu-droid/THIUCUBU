@@ -7,6 +7,8 @@ def test_settings_reads_env(monkeypatch):
     monkeypatch.setenv("DRY_RUN", "0")
     monkeypatch.setenv("TELEGRAM_TOKEN", "token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat")
+    monkeypatch.setenv("FIINQUANT_USERNAME", "fiin-user")
+    monkeypatch.setenv("FIINQUANT_PASSWORD", "fiin-password")
     monkeypatch.setenv("SCAN_SOURCE_USAGE_RATIO", "0.8")
     config.get_settings.cache_clear()
 
@@ -15,6 +17,9 @@ def test_settings_reads_env(monkeypatch):
     assert settings.telegram_token == "token"
     assert settings.telegram_chat_id == "chat"
     assert settings.effective_dry_run is False
+    assert settings.fiinquant_username.get_secret_value() == "fiin-user"
+    assert "fiin-password" not in repr(settings)
+    assert config.settings_summary(settings)["fiinquant_configured"] is True
     assert float(settings.scan_source_usage_ratio) == 0.8
 
 
