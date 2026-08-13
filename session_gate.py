@@ -149,8 +149,8 @@ def build_session_report(
     now = datetime.now(plus.sess.VN_TZ).strftime("%d/%m %H:%M")
 
     lines = [
-        f"*THIEUCUTOO {window['title']}* `{now}`",
-        f"{window['description']} Score 0-100, khong phai cam ket loi nhuan.",
+        f"*THIEUCUBU {window['title']}* `{now}`",
+        f"{window['description']} Score v2 tối đa 97, không phải cam kết lợi nhuận.",
         plus.market_status(market, regime),
         intel.format_regime(regime),
     ]

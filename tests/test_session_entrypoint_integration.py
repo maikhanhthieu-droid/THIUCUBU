@@ -76,7 +76,7 @@ latest = scan.json_load(scan.DATA_DIR / "session_alerts_latest.json", {})
 assert latest.get("mode") == "test"
 assert latest.get("market") is not None
 assert sent, "report was not sent"
-assert "THIEUCUTOO TEST" in sent[0][1]
+assert "THIEUCUBU TEST" in sent[0][1]
 print("integration-ok", datetime.now().isoformat())
 ''',
         encoding="utf-8",

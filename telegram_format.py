@@ -1,5 +1,7 @@
 from typing import Any
 
+import scoring
+
 
 def clean_text(value: Any) -> str:
     text = str(value or "").strip()
@@ -11,15 +13,16 @@ def setup_label(value: Any) -> str:
 
 
 def score_label(score: int) -> str:
-    if score >= 82:
-        return "RAT MANH"
-    if score >= 72:
-        return "MANH"
-    if score >= 62:
-        return "THEO DOI"
-    if score >= 50:
-        return "TRUNG BINH"
-    return "YEU"
+    labels = {
+        "S": "HIẾM / RẤT MẠNH",
+        "A+": "RẤT HẤP DẪN",
+        "A": "HẤP DẪN",
+        "B+": "CÓ THỂ HÀNH ĐỘNG",
+        "B": "THEO DÕI",
+        "C": "CHƯA ĐỦ ĐIỀU KIỆN",
+        "D": "YẾU / RỦI RO",
+    }
+    return labels[scoring.grade(score)]
 
 
 def format_price(value: Any) -> str:
@@ -44,17 +47,25 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
     timing = clean_text(timing)
     close = getattr(r, "close", 0.0)
     close_text = format_price(close)
-    obv = "OBV up" if getattr(r, "obv_up", False) else "OBV flat"
+    obv = "OBV tăng" if getattr(r, "obv_up", False) else "OBV phẳng"
     flags = []
     if getattr(r, "near_break", False):
-        flags.append("gan break")
+        flags.append("gần break")
     if getattr(r, "failed_break", False):
-        flags.append("failed break")
+        flags.append("failed-break")
     flag_text = f" | {', '.join(flags)}" if flags else ""
 
+    score = int(getattr(r, "win_score", 0))
+    grade = str(getattr(r, "grade", "") or scoring.grade(score))
+    trade_score = int(getattr(r, "trade_score", score))
+    position_score = int(getattr(r, "position_score", score))
+    confidence = int(getattr(r, "confidence", 0))
+    horizon = clean_text(getattr(r, "horizon", "WATCH"))
+    confidence_text = f" | Tin cậy {confidence}%" if confidence else ""
     lines = [
-        f"`{getattr(r, 'symbol', '')}`  *{int(getattr(r, 'win_score', 0))}/100*  {status}",
-        f"Gia {close_text} | Setup {setup} | Nganh {clean_text(getattr(r, 'sector', ''))}{flag_text}",
+        f"`{getattr(r, 'symbol', '')}`  *{grade} · {score}/97*  {status}",
+        f"Lướt {trade_score} | Gom {position_score} | {horizon}{confidence_text}",
+        f"Giá {close_text} | Setup {setup} | Ngành {clean_text(getattr(r, 'sector', ''))}{flag_text}",
         (
             f"DD {float(getattr(r, 'discount_pct', 0.0)):.1f}%/"
             f"{float(getattr(r, 'target_discount_pct', 0.0)):.0f}% | "
@@ -64,11 +75,11 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
         ),
     ]
     if timing:
-        lines.append(f"Thoi diem: {timing}")
+        lines.append(f"Thời điểm: {timing}")
     if reason:
-        lines.append(f"Ly do: {reason}")
+        lines.append(f"Lý do: {reason}")
     if note:
-        lines.append(f"Note: {note}")
+        lines.append(f"Ghi chú: {note}")
     sl = getattr(r, "stop_loss", None) or getattr(r, "sl", None)
     tp = getattr(r, "take_profit", None) or getattr(r, "tp", None)
     rr = getattr(r, "risk_reward", None) or getattr(r, "rr", None)
@@ -80,14 +91,14 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
 
 def format_market_card(market: Any, state: str) -> str:
     if market is None:
-        return "*VNINDEX*\nChua co du lieu."
+        return "*VNINDEX*\nChưa có dữ liệu."
     reason = clean_text(getattr(market, "reason", ""))
     close = getattr(market, "close", None)
     close_text = f"VNI {float(close):,.0f}pt" if close else "VNI n/a"
     above_ema34 = getattr(market, "above_ema34", None)
     ema34_text = ""
     if above_ema34 is not None:
-        ema34_text = f" | EMA34 {'tren' if above_ema34 else 'duoi'}"
+        ema34_text = f" | EMA34 {'trên' if above_ema34 else 'dưới'}"
     return "\n".join(
         [
             f"*VNINDEX*  `{int(getattr(market, 'win_score', 0))}/100`  {clean_text(state)}",
@@ -97,7 +108,7 @@ def format_market_card(market: Any, state: str) -> str:
                 f"MFI {float(getattr(market, 'mfi', 0.0)):.0f} | "
                 f"Volx{float(getattr(market, 'vol_ratio', 0.0)):.1f}"
             ),
-            f"Trang thai: {reason}" if reason else "Trang thai: dang cap nhat",
+            f"Trạng thái: {reason}" if reason else "Trạng thái: đang cập nhật",
         ]
     )
 
@@ -108,7 +119,13 @@ def format_sector_line(line: str) -> str:
 
 
 def format_opportunity_card(item: Any) -> str:
-    action = clean_text(getattr(item, "action", "")).upper()
+    action_key = str(getattr(item, "action", "")).upper()
+    action = {
+        "UU_TIEN_GOM": "ƯU TIÊN GOM",
+        "UNG_VIEN_GOM": "ỨNG VIÊN GOM",
+        "CHO_DIEM_GOM": "CHỜ ĐIỂM GOM",
+        "THEO_DOI_DINH_GIA": "THEO DÕI ĐỊNH GIÁ",
+    }.get(action_key, clean_text(action_key).upper())
     symbol = getattr(item, "symbol", "")
     score = int(getattr(item, "opportunity_score", 0))
     sector = clean_text(getattr(item, "sector", ""))
@@ -124,13 +141,23 @@ def format_opportunity_card(item: Any) -> str:
     sector_pb_text = "n/a" if sector_pb is None else f"{float(sector_pb):.2f}"
     pe_disc_text = "n/a" if pe_disc is None else f"{float(pe_disc):+.0f}%"
     pb_disc_text = "n/a" if pb_disc is None else f"{float(pb_disc):+.0f}%"
-    return "\n".join(
-        [
-            f"`{symbol}`  *{score}/100*  {action}",
-            f"Nganh {sector} | PE {pe_text} vs {sector_pe_text} ({pe_disc_text})",
+    grade = clean_text(getattr(item, "grade", "") or scoring.grade(score))
+    confidence = int(getattr(item, "confidence", 0))
+    structure_score = int(getattr(item, "structure_score", 0))
+    structure_state = clean_text(getattr(item, "structure_state", "WAIT"))
+    trigger = clean_text(getattr(item, "trigger", "WAIT"))
+    buy_low = getattr(item, "buy_zone_low", None)
+    buy_high = getattr(item, "buy_zone_high", None)
+    invalidation = getattr(item, "invalidation_price", None)
+    selected = bool(getattr(item, "selected", False))
+    marker = "💎 " if selected else ""
+    lines = [
+            f"{marker}`{symbol}`  *{grade} · {score}/97*  {action}",
+            f"Cấu trúc tuần {structure_score} | {structure_state} | Trigger {trigger} | Tin cậy {confidence}%",
+            f"Ngành {sector} | PE {pe_text} vs {sector_pe_text} ({pe_disc_text})",
             f"PB {pb_text} vs {sector_pb_text} ({pb_disc_text}) | DD {float(getattr(item, 'discount_pct', 0.0)):.0f}/{float(getattr(item, 'target_discount_pct', 0.0)):.0f}%",
             (
-                f"Diem V/Q/T/S "
+                f"Điểm ĐG/CL/KT/Ngành "
                 f"{int(getattr(item, 'valuation_score', 0))}/"
                 f"{int(getattr(item, 'quality_score', 0))}/"
                 f"{int(getattr(item, 'technical_score', 0))}/"
@@ -138,5 +165,11 @@ def format_opportunity_card(item: Any) -> str:
             ),
             f"Case: {clean_text(getattr(item, 'bull_case', ''))}",
             f"Risk: {clean_text(getattr(item, 'bear_case', ''))}",
-        ]
-    ) + "\n"
+    ]
+    as_of = getattr(item, "as_of", None)
+    cache_status = clean_text(getattr(item, "cache_status", "unknown")).upper()
+    if as_of:
+        lines.append(f"Dữ liệu {cache_status} · {as_of}")
+    if buy_low is not None and buy_high is not None:
+        lines.append(f"Vùng gom {format_price(buy_low)}–{format_price(buy_high)} | Vô hiệu dưới {format_price(invalidation)}")
+    return "\n".join(lines) + "\n"

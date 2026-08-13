@@ -17,6 +17,7 @@ import market_calendar
 import market_probe
 import state_manager
 import telegram_format as tf
+import universe as market_universe
 
 logging.basicConfig(
     level=logging.INFO,
@@ -274,11 +275,12 @@ def all_universe_symbols(mode: str, watch_items: dict[str, dict[str, Any]]) -> l
     if mode == "test":
         symbols = ["VCB", "FPT", "HPG", "TCB", "SSI", "DIG", "VIX", "VNM", "PVD", "KDH"]
     else:
-        symbols = list(scan.ALL_TICKERS)
-    for symbol in watch_items:
-        if symbol not in symbols:
-            symbols.append(symbol)
-    return sorted(set(symbols))
+        core = list(scan.ALL_TICKERS)
+        rotation = market_universe.rotating_batch(core + list(watch_items))
+        # Priority order matters because broad scans have a hard deadline.
+        # Personal watch items and the rotating discovery slice go first.
+        symbols = list(watch_items) + rotation + core
+    return list(dict.fromkeys(symbols))
 
 
 def add_symbol_once(target: list[str], seen: set[str], symbol: Any) -> None:
@@ -545,8 +547,8 @@ def build_session_report(
     now = datetime.now(VN_TZ).strftime("%d/%m %H:%M")
 
     lines = [
-        f"*THIEUCUTOO {window['title']}* `{now}`",
-        f"{window['description']} Score 0-100, khong phai cam ket loi nhuan.",
+        f"*THIEUCUBU {window['title']}* `{now}`",
+        f"{window['description']} Score v2 tối đa 97, không phải cam kết lợi nhuận.",
         market_status(market),
     ]
     if market_day and market_day.closed:
@@ -618,7 +620,7 @@ async def main() -> None:
                 market_status.reason,
             )
             scan.json_save(DATA_DIR / "session_alerts_latest.json", market_calendar.closed_alert_payload(mode, market_status), pretty=False)
-            await scan.send_chunks("*THIEUCUTOO SESSION*", market_calendar.closed_notice(mode, market_status))
+            await scan.send_chunks("*THIEUCUBU SESSION*", market_calendar.closed_notice(mode, market_status))
             return
         logger.info(
             "Market closed on %s (%s), policy=scan_old. Scanner will continue using latest available data.",
@@ -675,7 +677,7 @@ async def main() -> None:
         )
         if market_probe.should_stop_for_inactive(activity_probe):
             scan.json_save(DATA_DIR / "session_alerts_latest.json", market_probe.inactive_alert_payload(mode, activity_probe), pretty=False)
-            await scan.send_chunks("*THIEUCUTOO SESSION*", market_probe.inactive_notice(mode, activity_probe))
+            await scan.send_chunks("*THIEUCUBU SESSION*", market_probe.inactive_notice(mode, activity_probe))
             return
 
     if "VNINDEX" not in results:
@@ -773,7 +775,7 @@ async def main() -> None:
         activity_probe=activity_probe,
         market_day=market_status,
     )
-    await scan.send_chunks("*THIEUCUTOO SESSION*", report)
+    await scan.send_chunks("*THIEUCUBU SESSION*", report)
 
     today = datetime.now(VN_TZ).date().isoformat()
     recent = scan.latest_failed_breaks(failed_breaks, limit=10, only_date=today)
@@ -781,7 +783,7 @@ async def main() -> None:
         text = "*FAILED BREAK WATCH 25D*\n" + "\n".join(
             f"`{x['symbol']}` {x['date']} score {x.get('score')}: {x.get('reason','')}" for x in recent
         )
-        await scan.send_chunks("*THIEUCUTOO RISK*", text)
+        await scan.send_chunks("*THIEUCUBU RISK*", text)
 
     logger.info("Session %s completed: results=%s focus=%s", mode, len(results), len(focus_symbols))
 

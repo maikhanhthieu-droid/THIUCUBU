@@ -32,7 +32,7 @@ def test_filter_feed_is_facts_only_and_sorted() -> None:
         },
         regime={"regime": "BULL", "risk_multiplier": 1.0},
     )
-    assert report["schema_version"] == "thieucubu.raw_filter.v1"
+    assert report["schema_version"] == "thieucubu.raw_filter.v2"
     assert report["producer"] == "maikhanhthieu-droid/THIUCUBU"
     assert report["as_of"] == "2026-07-24"
     assert report["status"] == "ok"
@@ -41,6 +41,7 @@ def test_filter_feed_is_facts_only_and_sorted() -> None:
     assert report["facts"][0]["as_of"] == "2026-07-24"
     assert report["facts"][0]["data_source"] == "VCI"
     assert report["facts"][0]["data_quality"]["status"] == "current"
+    assert "scores" in report["facts"][0]
     assert report["quality"]["facts_with_provenance"] == 2
     assert "forecast" not in report["facts"][0]
     assert "target" not in report["facts"][0]
@@ -61,3 +62,20 @@ def test_filter_feed_marks_unknown_and_stale_provenance() -> None:
     assert by_symbol["AAA"]["data_quality"]["known_data_only"] is False
     assert by_symbol["BBB"]["data_quality"]["status"] == "stale"
     assert report["quality"]["stale_facts"] == 1
+
+
+def test_filter_feed_marks_old_live_symbol_stale_relative_to_feed() -> None:
+    old = Result("AAA", 10.0, 80, as_of="2025-01-01", cache_status="live")
+    current = Result("BBB", 20.0, 70, as_of="2026-07-24", cache_status="live")
+
+    report = build_filter_feed(
+        mode="eod",
+        updated_at="2026-07-24T15:10:00+07:00",
+        results=[old, current],
+        metrics={},
+        regime={},
+    )
+
+    by_symbol = {item["symbol"]: item for item in report["facts"]}
+    assert by_symbol["AAA"]["data_quality"]["status"] == "stale"
+    assert by_symbol["BBB"]["data_quality"]["status"] == "current"

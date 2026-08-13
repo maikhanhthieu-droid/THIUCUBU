@@ -64,9 +64,10 @@ jobs:
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
           WEEKEND_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'full' }}
           WEEKEND_TOP_N: "20"
+          WEEKEND_CONVICTION_LIMIT: "2"
+          WEEKEND_HISTORY_BARS: "780"
           WEEKEND_MIN_SCORE: "60"
           WEEKEND_MIN_SECTOR_SCORE: "52"
-          WEEKEND_HIGH_CONFIDENCE_SCORE: "80"
           WEEKEND_MAX_WORKERS: "3"
           WEEKEND_RANDOM_START_MAX_SEC: "600"
           WEEKEND_FUNDAMENTAL_REQUESTS_PER_MINUTE: "15"
@@ -108,6 +109,9 @@ jobs:
             data/weekend_opportunities_latest.json
             data/filter_feed_latest.json
             data/weekend_opportunities_history.json
+            data/candidate_book_latest.json
+            data/investment_theses.json
+            data/fundamental_history.json
             data/signal_tracker.json
             data/near_high_skiplist.json
             data/run_journal.json
@@ -123,6 +127,9 @@ jobs:
             data/weekend_opportunities_latest.json \
             data/filter_feed_latest.json \
             data/weekend_opportunities_history.json \
+            data/candidate_book_latest.json \
+            data/investment_theses.json \
+            data/fundamental_history.json \
             data/signal_tracker.json \
             data/near_high_skiplist.json \
             data/run_journal.json \

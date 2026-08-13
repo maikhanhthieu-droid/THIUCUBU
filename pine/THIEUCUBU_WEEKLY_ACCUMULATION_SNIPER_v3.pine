@@ -1,0 +1,169 @@
+//@version=6
+indicator("THIEUCUBU WEEKLY ACCUMULATION SNIPER v3", shorttitle="W ACCUM v3", overlay=true, max_bars_back=500)
+
+// Companion visual indicator for weekly_sniper.py.
+// Use on 1W. This script recognises price/volume structure only; PE/PB, quality
+// and final 0-2 weekend convictions are evaluated by the Python weekend engine.
+
+G1 = "1. QUALITY GATES"
+prepMin      = input.int(70, "PREP minimum", minval=55, maxval=90, group=G1)
+earlyMin     = input.int(76, "EARLY MARKUP minimum", minval=65, maxval=94, group=G1)
+ddMin        = input.float(15.0, "Minimum discount from 104W high (%)", minval=5, maxval=50, group=G1)
+ddMax        = input.float(62.0, "Maximum discount from 104W high (%)", minval=30, maxval=80, group=G1)
+maxRiskPct   = input.float(21.0, "Maximum risk to key (%)", minval=8, maxval=35, group=G1)
+minRR        = input.float(1.5, "Minimum R/R proxy", minval=1, maxval=5, step=0.1, group=G1)
+
+G2 = "2. CKVN LIQUIDITY"
+useLiquidity = input.bool(true, "Enable liquidity gate", group=G2)
+priceUnit    = input.float(1000.0, "Price unit", minval=1, maxval=1000, group=G2)
+minTurnBn    = input.float(50.0, "Minimum average weekly turnover (bn VND)", minval=0, group=G2)
+
+G3 = "3. DISPLAY"
+showEMA      = input.bool(true, "EMA 8/21/40", group=G3)
+showZones    = input.bool(true, "Buy/break/invalidation zones", group=G3)
+showTable    = input.bool(true, "Decision table", group=G3)
+
+f_div(float a, float b, float fallback) => math.abs(b) > 1e-10 ? a / b : fallback
+f_cap(float x) => math.max(0.0, math.min(x, 100.0))
+f_pct(float x) => na(x) ? "-" : str.tostring(x, "#.0") + "%"
+
+tfOK = timeframe.isweekly
+ema8 = ta.ema(close, 8)
+ema21 = ta.ema(close, 21)
+ema40 = ta.ema(close, 40)
+atr14 = ta.atr(14)
+rsi14 = ta.rsi(close, 14)
+[macdLine, macdSignal, macdHist] = ta.macd(close, 12, 26, 9)
+vol13 = ta.sma(volume, 13)
+vol26 = ta.sma(volume, 26)
+turnover13 = ta.sma(close * priceUnit * volume / 1000000000.0, 13)
+liquidOK = not useLiquidity or (turnover13 >= minTurnBn and close >= 5 and vol13 > 0)
+
+barRange = math.max(high - low, syminfo.mintick)
+closePos = (close - low) / barRange
+lowerWick = (math.min(open, close) - low) / barRange
+mfMultiplier = ((close - low) - (high - close)) / barRange
+cmf20 = f_div(math.sum(mfMultiplier * nz(volume), 20), math.sum(nz(volume), 20), 0.0)
+obvStep = close > close[1] ? nz(volume) : close < close[1] ? -nz(volume) : 0.0
+obv = ta.cum(obvStep)
+obvUp = obv > obv[5] and obv[5] >= obv[10]
+upVol13 = math.sum(close >= open ? nz(volume) : 0.0, 13)
+downVol13 = math.sum(close < open ? nz(volume) : 0.0, 13)
+upShare = f_div(upVol13, upVol13 + downVol13, 0.5)
+
+high104 = ta.highest(high, 104)
+discountPct = high104 > 0 ? (high104 - close) / high104 * 100.0 : na
+discountOK = not na(discountPct) and discountPct >= ddMin and discountPct <= ddMax
+discountFit = discountOK ? 100.0 - math.min(math.abs(discountPct - 35.0) / 27.0 * 58.0, 58.0) : 0.0
+
+low8 = ta.lowest(low, 8)
+low20 = ta.lowest(low, 20)
+high4Prev = ta.highest(high, 4)[1]
+high13Prev = ta.highest(high, 13)[1]
+low10Prev = ta.lowest(low, 10)[1]
+range8 = f_div(ta.highest(high, 8) - low8, close, 1.0)
+range20 = f_div(ta.highest(high, 20) - low20, close, 1.0)
+priorRange = f_div(ta.highest(high[8], 12) - ta.lowest(low[8], 12), close[8], 1.0)
+atrPct = f_div(atr14, close, 1.0)
+atrPrevPct = f_div(atr14[4], close[4], 1.0)
+
+ema8Rising = ema8 > ema8[1] and ema8[1] > ema8[2]
+ema21Flat = ema21 >= ema21[4] * 0.96
+earlyTransition = close > ema8 and ema8 >= ema21 * 0.96
+notBroken = close >= ema40 * 0.76 and low8 >= low20 * 0.94
+notExtended = close <= ema21 * 1.12 and rsi14 <= 70
+baseContracting = range8 <= priorRange * 0.82 and range20 <= 0.32
+atrContracting = atrPct <= atrPrevPct * 1.02
+higherLow = ta.lowest(low, 4) > ta.lowest(low, 4)[4]
+volumeDry = vol13 <= vol26 * 0.92 or ta.sma(volume, 5) <= vol13 * 0.82
+volumePulse = volume >= vol13 * 1.15 and closePos >= 0.60 and close > open
+cmfRising = cmf20 > cmf20[3]
+flowOK = cmf20 >= -0.04 and upShare >= 0.51 and (cmfRising or obvUp)
+
+vnindex = request.security("HOSE:VNINDEX", "1W", close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off, ignore_invalid_symbol=true)
+stockROC13 = close / close[13] - 1.0
+indexROC13 = vnindex / vnindex[13] - 1.0
+rsEdge = (stockROC13 - indexROC13) * 100.0
+rsRising = rsEdge > rsEdge[3]
+rsScore = f_cap(50.0 + rsEdge * 2.2 + (rsRising ? 16.0 : -6.0))
+
+protectKey = low8 - atr14 * 0.25
+riskPct = close > protectKey ? (close - protectKey) / close * 100.0 : na
+resistance = high13Prev > close * 1.03 ? high13Prev : high104
+rr = not na(riskPct) and riskPct > 0 ? (resistance - close) / math.max(close - protectKey, syminfo.mintick) : na
+
+spring = low < low10Prev and close > low10Prev and closePos >= 0.62 and lowerWick >= 0.20
+reclaim = ta.crossover(close, ema8) and rsi14 >= 44
+earlyBreak = close > high4Prev and close[1] <= ta.highest(high, 4)[2]
+pocketPivot = volumePulse and close > ema8 and close < high13Prev
+momentumKick = rsi14 > rsi14[1] and macdHist > macdHist[1]
+trigger = spring ? "SPRING" : reclaim ? "RECLAIM" : earlyBreak ? "EARLY BREAK" : pocketPivot ? "POCKET PIVOT" : "WAIT"
+triggerOK = spring or reclaim or earlyBreak or pocketPivot
+
+structureScore = f_cap((earlyTransition ? 26 : 0) + (ema8Rising ? 22 : 0) + (ema21Flat ? 18 : 0) + (notBroken ? 18 : 0) + (notExtended ? 16 : 0))
+baseScore = f_cap((baseContracting ? 30 : 0) + (atrContracting ? 22 : 0) + (higherLow ? 20 : 0) + (volumeDry ? 18 : 0) + (range20 <= 0.24 ? 10 : 0))
+flowScore = f_cap((cmf20 >= 0 ? 28 : cmf20 >= -0.04 ? 16 : 0) + (cmfRising ? 24 : 0) + (obvUp ? 24 : 0) + (upShare >= 0.57 ? 24 : upShare >= 0.51 ? 12 : 0))
+timingScore = f_cap((triggerOK ? 35 : 8) + (momentumKick ? 25 : 0) + (riskPct <= 16 ? 18 : riskPct <= 21 ? 7 : 0) + (rr >= 2.2 ? 14 : rr >= 1.5 ? 6 : 0) + (notExtended ? 8 : 0))
+scoreRaw = discountFit * 0.15 + structureScore * 0.25 + baseScore * 0.22 + flowScore * 0.20 + rsScore * 0.10 + timingScore * 0.08
+score = math.min(math.round(scoreRaw), 97.0)
+score := not liquidOK ? math.min(score, 54) : score
+score := discountPct > ddMax ? math.min(score, 58) : score
+score := not notBroken ? math.min(score, 49) : score
+score := not flowOK ? math.min(score, 69) : score
+score := na(riskPct) or riskPct > maxRiskPct ? math.min(score, 64) : score
+score := na(rr) or rr < minRR ? math.min(score, 69) : score
+score := rsEdge < -6 or not rsRising ? math.min(score, 72) : score
+
+qualified = tfOK and bar_index >= 104 and discountOK and liquidOK and earlyTransition and ema8Rising and ema21Flat and notBroken and baseContracting
+earlyMarkup = qualified and flowOK and triggerOK and momentumKick and score >= earlyMin
+prep = qualified and flowOK and score >= prepMin and not earlyMarkup
+buyLow = math.max(protectKey * 1.03, ema8 * 0.98)
+buyHigh = math.min(close * 1.03, ema21 * 1.06)
+
+plot(earlyMarkup ? 1.0 : 0.0, "EARLY_MARKUP", display=display.none)
+plot(prep ? 1.0 : 0.0, "PREP_BASE", display=display.none)
+plot(score, "STRUCTURE_SCORE_MAX97", display=display.none)
+plot(discountPct, "DISCOUNT_104W", display=display.none)
+plot(timingScore, "TIMING_SCORE", display=display.none)
+plot(rr, "RR_PROXY", display=display.none)
+plot(riskPct, "RISK_TO_KEY", display=display.none)
+plot(rsEdge, "RS_VS_VNINDEX_13W", display=display.none)
+plot(turnover13, "TURNOVER_13W_BN", display=display.none)
+
+plot(showEMA ? ema8 : na, "EMA 8W", color=color.aqua, linewidth=2)
+plot(showEMA ? ema21 : na, "EMA 21W", color=color.orange, linewidth=2)
+plot(showEMA ? ema40 : na, "EMA 40W", color=color.fuchsia)
+plot(showZones and (earlyMarkup or prep) ? protectKey : na, "INVALIDATION", color=color.red, style=plot.style_stepline)
+plot(showZones and (earlyMarkup or prep) ? high4Prev : na, "BREAKOUT", color=color.lime, style=plot.style_stepline)
+plotshape(earlyMarkup and barstate.isconfirmed, title="EARLY MARKUP", style=shape.labelup, location=location.belowbar, color=color.lime, text="EARLY\nMARKUP", textcolor=color.black)
+plotshape(prep and not prep[1], title="PREP", style=shape.diamond, location=location.belowbar, color=color.aqua, text="PREP", textcolor=color.black)
+bgcolor(earlyMarkup ? color.new(color.lime, 87) : prep ? color.new(color.aqua, 92) : discountOK ? color.new(color.orange, 96) : na)
+
+alertcondition(earlyMarkup and barstate.isconfirmed, "W ACCUM EARLY MARKUP", "W ACCUM EARLY MARKUP | {{ticker}} | {{interval}} | {{close}}")
+alertcondition(prep and not prep[1], "W ACCUM PREP", "W ACCUM PREP | {{ticker}} | {{interval}} | {{close}}")
+
+var table dash = table.new(position.top_right, 2, 10, border_width=1)
+status = not tfOK ? "USE 1W" : earlyMarkup ? "EARLY MARKUP" : prep ? "PREP BASE" : discountOK ? "DISCOUNT WATCH" : "NO SETUP"
+if barstate.islast and showTable
+    table.cell(dash, 0, 0, "W ACCUM v3", text_color=color.white, bgcolor=color.rgb(20, 30, 45))
+    table.cell(dash, 1, 0, status, text_color=earlyMarkup ? color.lime : prep ? color.aqua : color.orange, bgcolor=color.rgb(20, 30, 45))
+    table.cell(dash, 0, 1, "SCORE")
+    table.cell(dash, 1, 1, str.tostring(score, "#") + "/97")
+    table.cell(dash, 0, 2, "DISCOUNT")
+    table.cell(dash, 1, 2, f_pct(discountPct))
+    table.cell(dash, 0, 3, "STRUCT / BASE")
+    table.cell(dash, 1, 3, str.tostring(structureScore, "#") + " / " + str.tostring(baseScore, "#"))
+    table.cell(dash, 0, 4, "FLOW / TIMING")
+    table.cell(dash, 1, 4, str.tostring(flowScore, "#") + " / " + str.tostring(timingScore, "#"))
+    table.cell(dash, 0, 5, "RS 13W")
+    table.cell(dash, 1, 5, f_pct(rsEdge))
+    table.cell(dash, 0, 6, "RR / RISK")
+    table.cell(dash, 1, 6, str.tostring(rr, "#.1") + " / " + f_pct(riskPct))
+    table.cell(dash, 0, 7, "TRIGGER")
+    table.cell(dash, 1, 7, trigger)
+    table.cell(dash, 0, 8, "BUY ZONE")
+    table.cell(dash, 1, 8, str.tostring(buyLow, format.mintick) + " - " + str.tostring(buyHigh, format.mintick))
+    table.cell(dash, 0, 9, "INVALID")
+    table.cell(dash, 1, 9, str.tostring(protectKey, format.mintick), text_color=color.red)
+else if barstate.islast and not showTable
+    table.clear(dash, 0, 0, 1, 9)

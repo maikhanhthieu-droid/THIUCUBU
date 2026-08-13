@@ -18,7 +18,23 @@ import numpy as np
 import pandas as pd
 
 import fetcher
+import scoring
 from config import env_csv, env_int, get_settings
+
+
+def _configure_utf8_console() -> None:
+    # Windows PowerShell may still expose a cp1252 stream. Reports intentionally
+    # use Vietnamese accents and emoji, so make local DRY_RUN output reliable.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError):
+                pass
+
+
+_configure_utf8_console()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -125,6 +141,30 @@ for ticker in ["ANV", "IDI", "ASM", "FMC", "CMX", "LCG", "HHV", "CII", "HAG", "D
     TICKER_GROUP[ticker] = "G6"
 for ticker in ["HNG", "VIG", "TTF", "PSH", "PVC", "PVB"]:
     TICKER_GROUP[ticker] = "G7"
+SECTOR_DEFAULT_GROUP = {
+    "Bank": "G2",
+    "Chung khoan": "G4",
+    "Bao hiem": "G3",
+    "BDS dan cu": "G5",
+    "BDS KCN": "G3",
+    "Xay dung dau tu cong": "G6",
+    "Thep": "G4",
+    "Da xi mang nhua duong": "G4",
+    "Go cao su": "G3",
+    "Hoa chat phan bon": "G4",
+    "Cao su nhua": "G4",
+    "Dau khi": "G4",
+    "Dien tien ich": "G3",
+    "Ban le": "G2",
+    "Thuc pham do uong": "G2",
+    "Det may san xuat": "G6",
+    "Thuy san": "G6",
+    "Nong nghiep chan nuoi": "G6",
+    "Cong nghe vien thong": "G2",
+    "Logistics cang bien": "G4",
+}
+for ticker in ALL_TICKERS:
+    TICKER_GROUP.setdefault(ticker, SECTOR_DEFAULT_GROUP.get(TICKER_TO_SECTOR.get(ticker, ""), "G4"))
 TICKER_GROUP["VNINDEX"] = "G1"
 
 
@@ -154,6 +194,13 @@ class ScanResult:
     as_of: str | None = None
     data_source: str | None = None
     cache_status: str = "unknown"
+    trade_score: int = 0
+    position_score: int = 0
+    grade: str = "D"
+    confidence: int = 0
+    horizon: str = "WATCH"
+    action: str = "CHUA_DAT"
+    score_version: str = scoring.SCORE_VERSION
 
 
 def json_load(path: Path, default: Any) -> Any:
@@ -580,11 +627,18 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
         risk_penalty += 12
         warnings.append("DISTRIBUTION")
 
-    discount_setup = discount_score + base_score + flow_score + min(trend_score, 18) - risk_penalty
-    vcp_setup = min(trend_score, 32) + base_score + flow_score + break_score - risk_penalty
-    raw_score = max(discount_setup, vcp_setup)
-    win_score = int(clamp(raw_score, 0, 100))
-    setup = "DISCOUNT_BASE" if discount_setup >= vcp_setup else "VCP_BREAK"
+    score_v2 = scoring.daily_scores(
+        trend=trend_score,
+        base=base_score,
+        flow=flow_score,
+        timing=break_score,
+        discount=discount_score,
+        risk_penalty=risk_penalty,
+        near_break=near_break,
+        failed_break=failed_break,
+    )
+    win_score = int(score_v2["score"])
+    setup = "DISCOUNT_BASE" if score_v2["position_score"] >= score_v2["trade_score"] else "VCP_BREAK"
     if failed_break:
         setup = "AVOID_FAILED_BREAK"
 
@@ -626,6 +680,13 @@ def analyze_symbol(symbol: str, df: pd.DataFrame) -> ScanResult | None:
         failed_break=failed_break,
         warning=",".join(warnings),
         reason="; ".join(reason_parts[:7]),
+        trade_score=int(score_v2["trade_score"]),
+        position_score=int(score_v2["position_score"]),
+        grade=str(score_v2["grade"]),
+        confidence=int(score_v2["confidence"]),
+        horizon=str(score_v2["horizon"]),
+        action=str(score_v2["action"]),
+        score_version=str(score_v2["score_version"]),
     )
 
 
@@ -686,7 +747,7 @@ async def send_chunks(title: str, text: str) -> None:
 def result_line(r: ScanResult) -> str:
     warn = " [?]" if r.warning else ""
     return (
-        f"`{r.symbol}` {r.win_score}/100{warn} {r.setup} | "
+        f"`{r.symbol}` {r.grade} · {r.win_score}/97{warn} {r.setup} | "
         f"DD {r.discount_pct:.1f}%/{r.target_discount_pct:.0f}% {r.discount_group} | "
         f"Volx{r.vol_ratio:.1f} RSI {r.rsi:.0f} MFI {r.mfi:.0f} | {r.reason}"
     )
@@ -729,7 +790,7 @@ def portfolio_report(results: list[ScanResult]) -> str:
             action = "CANH MUA THEM"
         else:
             action = "GIU / THEO DOI"
-        lines.append(f"`{symbol}` {r.win_score}/100 -> *{action}* | {r.reason} | {note}")
+        lines.append(f"`{symbol}` {r.grade} · {r.win_score}/97 -> *{action}* | {r.reason} | {note}")
     return "\n".join(lines)
 
 
@@ -888,8 +949,8 @@ def build_report(mode: str, results: list[ScanResult]) -> str:
 
     now = datetime.now(VN_TZ).strftime("%d/%m %H:%M")
     lines = [
-        f"*THIEUCUTOO {mode.upper()}* `{now}`",
-        f"Scan {len(stock_results)} ma | score la diem 0-100, khong phai cam ket win.",
+        f"*THIEUCUBU {mode.upper()}* `{now}`",
+        f"Quét {len(stock_results)} mã | Score v2 tối đa 97, không phải cam kết lợi nhuận.",
     ]
     if market:
         lines.append(f"VNI `{market.win_score}/100` | RSI {market.rsi:.0f} MFI {market.mfi:.0f} | {market.reason}")
@@ -924,13 +985,13 @@ async def main() -> None:
     json_save(DATA_DIR / "historical_peaks.json", peak_store, pretty=False)
 
     report = build_report(mode, results)
-    await send_chunks("*THIEUCUTOO REPORT*", report)
+    await send_chunks("*THIEUCUBU REPORT*", report)
 
     today = datetime.now(VN_TZ).date().isoformat()
     recent = latest_failed_breaks(failed_breaks, limit=10, only_date=today)
     if recent and mode not in {"eod", "test"}:
         text = "*FAILED BREAK WATCH 25D*\n" + "\n".join(f"`{x['symbol']}` {x['date']} score {x.get('score')}: {x.get('reason','')}" for x in recent)
-        await send_chunks("*THIEUCUTOO RISK*", text)
+        await send_chunks("*THIEUCUBU RISK*", text)
 
 
 if __name__ == "__main__":

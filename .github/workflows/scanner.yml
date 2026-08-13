@@ -202,6 +202,7 @@ jobs:
           SESSION_QUICK_LIMIT: "50"
           SESSION_QUICK_SIGNAL_LIMIT: "38"
           SESSION_QUICK_NOTE_LIMIT: "12"
+          SCAN_ROTATING_UNIVERSE_SIZE: "36"
           SCAN_SYMBOL_TIMEOUT_SEC: "90"
           SCAN_RETRY_FAILED_DELAY_MIN_SEC: "20"
           SCAN_RETRY_FAILED_DELAY_MAX_SEC: "60"
@@ -287,6 +288,8 @@ jobs:
             data/failed_breaks.json
             data/session_alerts_latest.json
             data/filter_feed_latest.json
+            data/stock_features_latest.json
+            data/universe_state.json
             data/run_journal.json
             data/source_health.json
             data/memory_state.json
@@ -307,6 +310,8 @@ jobs:
             data/results_latest.json \
             data/session_alerts_latest.json \
             data/filter_feed_latest.json \
+            data/stock_features_latest.json \
+            data/universe_state.json \
             data/run_journal.json \
             data/source_health.json \
             data/memory_state.json \

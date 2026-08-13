@@ -121,7 +121,7 @@ def suppressed_lines(
             continue
         item["gate"] = gate
         lines.append(
-            f"`{result.symbol}` Intel {adv_score(result, item)}/100 | "
+            f"`{result.symbol}` Intel {adv_score(result, item)}/97 | "
             f"RS {gate['rs_score']} | {gate['reason']}"
         )
         if len(lines) >= limit:

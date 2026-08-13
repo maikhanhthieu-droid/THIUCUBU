@@ -10,8 +10,11 @@ on:
     paths:
       - "*.py"
       - "tests/**"
+      - "schemas/**"
+      - "pine/**"
       - "scripts/**"
       - "requirements*.txt"
+      - "pyproject.toml"
       - ".github/workflows/*.yml"
   workflow_dispatch:
 
@@ -38,6 +41,9 @@ jobs:
 
       - name: Syntax check
         run: python -m compileall -q .
+
+      - name: Static correctness check
+        run: python -m ruff check .
 
       - name: Unit tests
         env:

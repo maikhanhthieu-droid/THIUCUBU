@@ -17,6 +17,8 @@ import pandas as pd
 
 import scan
 import scan_safe
+import scoring
+import weekly_sniper
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +30,8 @@ logger = logging.getLogger("thieucutoo.weekend")
 VN_TZ = timezone(timedelta(hours=7))
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
+FUNDAMENTAL_HISTORY_PATH = DATA_DIR / "fundamental_history.json"
+_FUNDAMENTAL_HISTORY_CACHE: dict[str, list[dict[str, Any]]] | None = None
 
 try:
     from vnstock import Fundamental as VnFundamental
@@ -70,14 +74,17 @@ def env_float(name: str, default: float, min_value: float = 0.0, max_value: floa
 
 
 TOP_N = env_int("WEEKEND_TOP_N", 20, min_value=5)
+CONVICTION_LIMIT = env_int("WEEKEND_CONVICTION_LIMIT", 2, min_value=1)
 MIN_SCORE = env_int("WEEKEND_MIN_SCORE", 58, min_value=0)
 MIN_SECTOR_SCORE = env_int("WEEKEND_MIN_SECTOR_SCORE", 50, min_value=0)
+HISTORY_BARS = env_int("WEEKEND_HISTORY_BARS", 780, min_value=520)
 FUNDAMENTAL_DELAY_MIN = env_float("WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC", 0.7, min_value=0.0)
 FUNDAMENTAL_DELAY_MAX = max(
     FUNDAMENTAL_DELAY_MIN,
     env_float("WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC", 2.2, min_value=0.0),
 )
 RANDOM_START_MAX = env_int("WEEKEND_RANDOM_START_MAX_SEC", 600, min_value=0)
+WEEKLY_INDEX_DF: pd.DataFrame | None = None
 
 FINANCIAL_SECTORS = {"Bank", "Chung khoan", "Bao hiem"}
 PB_HEAVY_SECTORS = {
@@ -147,6 +154,23 @@ class Opportunity:
     bull_case: str
     bear_case: str
     data_source: str
+    grade: str = "D"
+    confidence: int = 0
+    structure_score: int = 0
+    timing_score: int = 0
+    structure_state: str = "NO_DATA"
+    trigger: str = "WAIT"
+    risk_reward: float | None = None
+    buy_zone_low: float | None = None
+    buy_zone_high: float | None = None
+    breakout_price: float | None = None
+    invalidation_price: float | None = None
+    selected: bool = False
+    thesis_status: str = "watch"
+    score_version: str = scoring.SCORE_VERSION
+    weekly: dict[str, Any] | None = None
+    as_of: str | None = None
+    cache_status: str = "unknown"
 
 
 def clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -192,6 +216,58 @@ def median(values: list[float]) -> float | None:
     return (values[mid - 1] + values[mid]) / 2
 
 
+def load_fundamental_history() -> dict[str, list[dict[str, Any]]]:
+    global _FUNDAMENTAL_HISTORY_CACHE
+    if _FUNDAMENTAL_HISTORY_CACHE is not None:
+        return _FUNDAMENTAL_HISTORY_CACHE
+    raw = scan.json_load(FUNDAMENTAL_HISTORY_PATH, {})
+    if not isinstance(raw, dict):
+        _FUNDAMENTAL_HISTORY_CACHE = {}
+        return _FUNDAMENTAL_HISTORY_CACHE
+    _FUNDAMENTAL_HISTORY_CACHE = {
+        str(symbol).upper(): [row for row in rows if isinstance(row, dict)][-104:]
+        for symbol, rows in raw.items()
+        if isinstance(rows, list)
+    }
+    return _FUNDAMENTAL_HISTORY_CACHE
+
+
+def historical_multiple(symbol: str, field: str) -> float | None:
+    rows = load_fundamental_history().get(symbol.upper(), [])
+    values = [safe_float(row.get(field)) for row in rows]
+    return median([value for value in values if value is not None and value > 0])
+
+
+def save_fundamental_history(packets: list[dict[str, Any]]) -> None:
+    global _FUNDAMENTAL_HISTORY_CACHE
+    history = load_fundamental_history()
+    now = datetime.now(VN_TZ).isoformat(timespec="seconds")
+    for packet in packets:
+        fund = packet.get("fundamental")
+        if fund is None:
+            continue
+        symbol = str(packet.get("symbol") or "").upper()
+        rows = history.setdefault(symbol, [])
+        record = {
+            "captured_at": now,
+            "period": fund.period,
+            "pe": fund.pe,
+            "pb": fund.pb,
+            "roe": fund.roe,
+            "roa": fund.roa,
+            "eps": fund.eps,
+            "source": fund.source,
+        }
+        # Replace another observation from the same VN date so reruns do not
+        # distort the historical median.
+        vn_day = now[:10]
+        rows = [row for row in rows if str(row.get("captured_at") or "")[:10] != vn_day]
+        rows.append(record)
+        history[symbol] = rows[-104:]
+    scan.json_save(FUNDAMENTAL_HISTORY_PATH, history, pretty=False)
+    _FUNDAMENTAL_HISTORY_CACHE = history
+
+
 def fmt_num(value: float | None, digits: int = 1) -> str:
     if value is None:
         return "n/a"
@@ -203,6 +279,19 @@ def fmt_pct(value: float | None, digits: int = 0, signed: bool = False) -> str:
         return "n/a"
     sign = "+" if signed and value > 0 else ""
     return f"{sign}{value:.{digits}f}%"
+
+
+def recent_market_data(as_of: Any, max_age_days: int = 10) -> bool:
+    try:
+        value = datetime.fromisoformat(str(as_of)).date()
+        return 0 <= (datetime.now(VN_TZ).date() - value).days <= max_age_days
+    except (TypeError, ValueError):
+        return False
+
+
+def set_weekly_index(df: pd.DataFrame | None) -> None:
+    global WEEKLY_INDEX_DF
+    WEEKLY_INDEX_DF = df
 
 
 ALIASES = {
@@ -332,24 +421,49 @@ def build_universe(mode: str) -> list[str]:
         symbol = str(item.get("symbol", "")).upper().strip()
         if symbol and symbol not in tickers:
             tickers.append(symbol)
-    return sorted(set(tickers))
+    notes = scan.json_load(DATA_DIR / "notes.json", {})
+    if isinstance(notes, dict):
+        tickers.extend(str(symbol).upper() for symbol in notes)
+    memory = scan.json_load(DATA_DIR / "memory_state.json", {})
+    if isinstance(memory, dict):
+        for bucket in ("strong_stocks", "watchlist"):
+            for item in memory.get(bucket, []):
+                if isinstance(item, dict):
+                    tickers.append(str(item.get("symbol") or "").upper())
+        tickers.extend(str(symbol).upper() for symbol in memory.get("session_focus", []))
+    latest = scan.json_load(DATA_DIR / "results_latest.json", [])
+    if isinstance(latest, list):
+        for item in latest:
+            if not isinstance(item, dict):
+                continue
+            if int(item.get("win_score") or 0) >= 60 or str(item.get("action")) in {"CANH_MUA", "CANH_GOM"}:
+                tickers.append(str(item.get("symbol") or "").upper())
+    return sorted({symbol for symbol in tickers if 3 <= len(symbol) <= 12 and symbol.isalnum()})
 
 
 def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
     sector = scan.TICKER_TO_SECTOR.get(symbol, "Other")
-    df = scan_safe.fetch_ohlcv_safe(symbol, bars=260, force_refresh=force_refresh)
+    df = scan_safe.fetch_ohlcv_safe(symbol, bars=HISTORY_BARS, force_refresh=force_refresh)
     tech = scan.analyze_symbol(symbol, df) if df is not None else None
+    weekly = weekly_sniper.analyze_weekly_structure(df, WEEKLY_INDEX_DF)
     time.sleep(random.uniform(FUNDAMENTAL_DELAY_MIN, FUNDAMENTAL_DELAY_MAX))
     fundamental = fetch_fundamental(symbol)
     close = safe_float(df["close"].iloc[-1]) if df is not None and not df.empty else None
     if close is None and tech is not None:
         close = tech.close
+    as_of = (str(df.attrs.get("as_of") or "") or None) if df is not None else None
+    cache_status = str(df.attrs.get("cache_status") or "unknown") if df is not None else "missing"
     return {
         "symbol": symbol,
         "sector": sector,
         "df": df,
         "tech": tech,
         "fundamental": fundamental,
+        "historical_pe": historical_multiple(symbol, "pe"),
+        "historical_pb": historical_multiple(symbol, "pb"),
+        "weekly": weekly,
+        "as_of": as_of,
+        "cache_status": cache_status,
         "close": close,
     }
 
@@ -422,6 +536,13 @@ def valuation_score(packet: dict[str, Any], sector: SectorSnapshot) -> tuple[int
         score += clamp(pb_discount * pb_weight, -18, 28)
     if pe_discount is not None:
         score += clamp(pe_discount * pe_weight, -16, 25)
+
+    own_pe_discount = relative_discount(fund.pe, packet.get("historical_pe"))
+    own_pb_discount = relative_discount(fund.pb, packet.get("historical_pb"))
+    if own_pe_discount is not None:
+        score += clamp(own_pe_discount * 0.24, -9, 13)
+    if own_pb_discount is not None:
+        score += clamp(own_pb_discount * 0.22, -8, 12)
 
     if fund.pb is not None and fund.pb > 0:
         if fund.pb <= 1.0:
@@ -553,16 +674,6 @@ def build_bull_case(packet: dict[str, Any], sector: SectorSnapshot, pe_disc: flo
     return "; ".join(parts[:4]) or "dinh gia/ky thuat dang can theo doi"
 
 
-def make_action(score: int, risk: int, valuation: int, sector_score: int) -> str:
-    if score >= 78 and risk <= 30 and valuation >= 65 and sector_score >= 55:
-        return "CO_HOI_LON"
-    if score >= 70 and risk <= 40:
-        return "CANH_MUA_TUNG_PHAN"
-    if score >= 62:
-        return "WATCHLIST"
-    return "THEO_DOI"
-
-
 def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, SectorSnapshot]) -> list[Opportunity]:
     opportunities: list[Opportunity] = []
     for packet in packets:
@@ -574,20 +685,71 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
         val_score, pe_disc, pb_disc = valuation_score(packet, sector)
         qual_score = quality_score(packet)
         tech_score = technical_score(packet)
+        weekly = packet.get("weekly") or weekly_sniper.empty_structure()
         risk, risk_flags = risk_score(packet, qual_score, sector, pe_disc, pb_disc)
-        raw_score = (
-            val_score * 0.33
-            + qual_score * 0.22
-            + tech_score * 0.22
-            + sector.score * 0.23
-            - risk * 0.30
+        risk += 18 if weekly.state in {"NO_DATA", "NO_SETUP"} else 0
+        risk += 14 if "BROKEN_STRUCTURE" in weekly.flags else 0
+        risk += 10 if weekly.risk_reward is None or weekly.risk_reward < 1.5 else 0
+        if fund.eps is not None and fund.eps <= 0:
+            risk_flags.append("nguy cơ value trap: EPS âm")
+        if weekly.flags:
+            risk_flags.extend(flag.lower().replace("_", " ") for flag in weekly.flags[:2])
+        data_current = (
+            packet.get("cache_status") in {"live", "fresh_cache"}
+            and recent_market_data(packet.get("as_of"))
         )
-        score = int(clamp(raw_score))
+        if not data_current:
+            risk += 20
+            risk_flags.append("dữ liệu giá không còn mới")
+        risk = int(clamp(risk))
+        score = scoring.weekend_score(
+            valuation=val_score,
+            quality=qual_score,
+            structure=weekly.score,
+            timing=weekly.timing_score,
+            sector=sector.score,
+            risk=risk,
+        )
+        # Hard caps make the top band interpretable. A cheap multiple cannot
+        # compensate for weak quality or a broken weekly structure.
+        if qual_score < 50:
+            score = min(score, 67)
+        if val_score < 58:
+            score = min(score, 71)
+        if weekly.score < 65:
+            score = min(score, 69)
+        if risk > 38:
+            score = min(score, 69)
         if score < MIN_SCORE or sector.score < MIN_SECTOR_SCORE:
             continue
-        action = make_action(score, risk, val_score, sector.score)
+        strict_candidate = (
+            score >= 76
+            and val_score >= 66
+            and qual_score >= 56
+            and weekly.score >= 72
+            and weekly.timing_score >= 62
+            and weekly.confidence >= 70
+            and weekly.state in {"EARLY_MARKUP", "READY_TO_ACCUMULATE"}
+            and weekly.risk_reward is not None
+            and weekly.risk_reward >= 1.7
+            and risk <= 34
+            and data_current
+            and tech is not None
+            and not tech.failed_break
+        )
+        if strict_candidate:
+            action = "UNG_VIEN_GOM"
+        elif weekly.state in {"EARLY_MARKUP", "READY_TO_ACCUMULATE", "PREP_BASE"} and score >= 68:
+            action = "CHO_DIEM_GOM"
+        else:
+            action = "THEO_DOI_DINH_GIA"
         bull_case = build_bull_case(packet, sector, pe_disc, pb_disc)
+        if weekly.state in {"EARLY_MARKUP", "READY_TO_ACCUMULATE"}:
+            bull_case = f"{bull_case}; cấu trúc tuần {weekly.state.lower().replace('_', ' ')}"
         bear_case = "; ".join(risk_flags[:4]) if risk_flags else "cho diem mua va quan tri ty trong"
+        fundamental_fields = [fund.pe, fund.pb, fund.roe, fund.roa, fund.eps]
+        completeness = sum(value is not None for value in fundamental_fields) / len(fundamental_fields)
+        confidence = int(clamp(weekly.confidence * 0.68 + completeness * 100 * 0.32, 0, 96))
         opportunities.append(
             Opportunity(
                 symbol=packet["symbol"],
@@ -615,14 +777,53 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
                 bull_case=bull_case,
                 bear_case=bear_case,
                 data_source=fund.source,
+                grade=scoring.grade(score),
+                confidence=confidence,
+                structure_score=weekly.score,
+                timing_score=weekly.timing_score,
+                structure_state=weekly.state,
+                trigger=weekly.trigger,
+                risk_reward=weekly.risk_reward,
+                buy_zone_low=weekly.buy_zone_low,
+                buy_zone_high=weekly.buy_zone_high,
+                breakout_price=weekly.breakout_price,
+                invalidation_price=weekly.invalidation_price,
+                thesis_status="candidate" if strict_candidate else "waiting_price",
+                weekly=weekly.to_dict(),
+                as_of=packet.get("as_of"),
+                cache_status=str(packet.get("cache_status") or "unknown"),
             )
         )
-    return sorted(opportunities, key=lambda item: item.opportunity_score, reverse=True)
+    ranked = sorted(
+        opportunities,
+        key=lambda item: (
+            item.action == "UNG_VIEN_GOM",
+            item.opportunity_score,
+            item.structure_score,
+            item.confidence,
+        ),
+        reverse=True,
+    )
+    eligible = [item for item in ranked if item.action == "UNG_VIEN_GOM"]
+    limit = min(CONVICTION_LIMIT, 2)
+    selected: list[Opportunity] = []
+    used_sectors: set[str] = set()
+    for item in eligible:
+        if len(selected) >= limit:
+            break
+        if item.sector in used_sectors and any(other.sector not in used_sectors for other in eligible):
+            continue
+        item.selected = True
+        item.action = "UU_TIEN_GOM"
+        item.thesis_status = "high_conviction"
+        selected.append(item)
+        used_sectors.add(item.sector)
+    return ranked
 
 
 def opportunity_line(item: Opportunity) -> str:
     return (
-        f"`{item.symbol}` {item.opportunity_score}/100 {item.action} | {item.sector} | "
+        f"`{item.symbol}` {item.grade} · {item.opportunity_score}/97 {item.action} | {item.sector} | "
         f"PE {fmt_num(item.pe)} vs {fmt_num(item.sector_pe)} ({fmt_pct(item.pe_discount_pct, signed=True)}) | "
         f"PB {fmt_num(item.pb, 2)} vs {fmt_num(item.sector_pb, 2)} ({fmt_pct(item.pb_discount_pct, signed=True)}) | "
         f"DD {item.discount_pct:.0f}/{item.target_discount_pct:.0f}% | "
@@ -642,37 +843,98 @@ def sector_line(item: SectorSnapshot) -> str:
 def build_report(opportunities: list[Opportunity], sectors: dict[str, SectorSnapshot], mode: str) -> str:
     now = datetime.now(VN_TZ).strftime("%d/%m/%Y %H:%M")
     top = opportunities[:TOP_N]
-    strong = [item for item in top if item.action in {"CO_HOI_LON", "CANH_MUA_TUNG_PHAN"}]
+    selected = [item for item in top if item.selected][:2]
+    prep = [item for item in top if not item.selected and item.structure_state in {"EARLY_MARKUP", "READY_TO_ACCUMULATE", "PREP_BASE"}]
     sector_rows = sorted(sectors.values(), key=lambda item: item.score, reverse=True)[:8]
 
     lines = [
-        f"*THIEUCUTOO WEEKEND OPPORTUNITIES* `{now}`",
-        "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.",
+        f"*THIEUCUBU WEEKLY CONVICTION* `{now}`",
+        "Score v2 (tối đa 97): định giá + chất lượng + cấu trúc tuần + thời điểm + rủi ro. Không phải khuyến nghị mua bán.",
         "",
-        "*CO HOI LON / CANH MUA*",
+        "*💎 TỐI ĐA 2 MÃ ƯU TIÊN GOM*",
     ]
-    lines += [opportunity_line(item) for item in strong[:10]] or ["Chua co ma du nguong co hoi lon."]
-    lines += ["", "*TOP WATCHLIST DINH GIA TOT*"]
-    lines += [opportunity_line(item) for item in top] or ["Chua co ma dat nguong loc."]
-    lines += ["", "*NGANH DANG NGON*"]
-    lines += [sector_line(item) for item in sector_rows] or ["Chua du du lieu nganh."]
+    lines += [opportunity_line(item) for item in selected] or ["Tuần này chưa có mã đồng thời đủ 5 cửa; không ép chọn."]
+    lines += ["", "*🟢 CẤU TRÚC ĐANG CHUẨN BỊ*"]
+    lines += [opportunity_line(item) for item in prep[:8]] or ["Chưa có mã chuẩn bị đủ rõ."]
+    lines += ["", "*👀 WATCHLIST ĐỊNH GIÁ / CHỜ GIÁ*"]
+    lines += [opportunity_line(item) for item in top if not item.selected][:10] or ["Chưa có mã đạt ngưỡng lọc."]
+    lines += ["", "*NGÀNH ĐÁNG CHÚ Ý*"]
+    lines += [sector_line(item) for item in sector_rows] or ["Chưa đủ dữ liệu ngành."]
     if mode == "test":
-        lines += ["", "`TEST MODE`: chi quet mot tap ma mau."]
+        lines += ["", "`TEST MODE`: chỉ quét một tập mã mẫu."]
     return "\n".join(lines)
+
+
+def update_investment_theses(opportunities: list[Opportunity], updated_at: str) -> dict[str, Any]:
+    path = DATA_DIR / "investment_theses.json"
+    existing = scan.json_load(path, {})
+    if not isinstance(existing, dict):
+        existing = {}
+    stocks = existing.get("stocks")
+    if not isinstance(stocks, dict):
+        stocks = {}
+    for item in opportunities[:TOP_N]:
+        if item.opportunity_score < 66 and not item.selected:
+            continue
+        previous = stocks.get(item.symbol) if isinstance(stocks.get(item.symbol), dict) else {}
+        stocks[item.symbol] = {
+            "symbol": item.symbol,
+            "status": item.thesis_status,
+            "first_detected": previous.get("first_detected") or updated_at,
+            "last_reviewed": updated_at,
+            "last_score": item.opportunity_score,
+            "grade": item.grade,
+            "confidence": item.confidence,
+            "strategies": ["position", "investment"] if item.selected else ["watch"],
+            "preferred_buy_zone": [item.buy_zone_low, item.buy_zone_high],
+            "breakout_price": item.breakout_price,
+            "invalidation_price": item.invalidation_price,
+            "thesis": item.bull_case,
+            "risks": item.bear_case,
+            "review_after_sessions": 5 if item.selected else 10,
+            "score_version": item.score_version,
+        }
+    payload = {
+        "schema_version": "thieucubu.investment_theses.v1",
+        "updated_at": updated_at,
+        "stocks": stocks,
+    }
+    scan.json_save(path, payload, pretty=True)
+    return payload
 
 
 def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnapshot]) -> None:
     now = datetime.now(VN_TZ).isoformat(timespec="seconds")
+    selected = [item for item in opportunities if item.selected][:2]
     latest = {
+        "schema_version": "thieucubu.weekend_opportunities.v2",
+        "score_version": scoring.SCORE_VERSION,
         "updated_at": now,
+        "selection_policy": {
+            "max_convictions": 2,
+            "may_return_zero": True,
+            "requires": ["valuation", "business_quality", "weekly_structure", "timing", "risk_reward"],
+        },
+        "convictions": [asdict(item) for item in selected],
         "top": [asdict(item) for item in opportunities[:TOP_N]],
         "sectors": [asdict(item) for item in sorted(sectors.values(), key=lambda x: x.score, reverse=True)],
     }
     scan.json_save(DATA_DIR / "weekend_opportunities_latest.json", latest, pretty=False)
+    scan.json_save(
+        DATA_DIR / "candidate_book_latest.json",
+        {
+            "schema_version": "thieucubu.candidate_book.v1",
+            "updated_at": now,
+            "convictions": latest["convictions"],
+            "watchlist": [asdict(item) for item in opportunities if not item.selected][:TOP_N],
+        },
+        pretty=False,
+    )
+    update_investment_theses(opportunities, now)
 
     history_path = DATA_DIR / "weekend_opportunities_history.json"
     history = scan.json_load(history_path, [])
-    history.append({"updated_at": now, "top": latest["top"][:10]})
+    history.append({"updated_at": now, "convictions": latest["convictions"], "top": latest["top"][:10]})
     history = history[-60:]
     scan.json_save(history_path, history, pretty=False)
 
@@ -697,6 +959,9 @@ async def main() -> None:
 
     packets = []
     force_refresh = mode == "test"
+    set_weekly_index(
+        await asyncio.to_thread(scan_safe.fetch_ohlcv_safe, "VNINDEX", HISTORY_BARS, force_refresh)
+    )
     for index, symbol in enumerate(tickers, start=1):
         logger.info("[%s/%s] Analyze %s", index, len(tickers), symbol)
         try:
@@ -706,11 +971,12 @@ async def main() -> None:
             logger.exception("[%s] weekend scan failed: %s", symbol, exc)
 
     sectors = build_sector_snapshots(packets)
+    save_fundamental_history(packets)
     opportunities = build_opportunities(packets, sectors)
     save_outputs(opportunities, sectors)
 
     report = build_report(opportunities, sectors, mode)
-    await scan.send_chunks("*THIEUCUTOO WEEKEND*", report)
+    await scan.send_chunks("*THIEUCUBU WEEKEND*", report)
     logger.info("Weekend opportunities found: %s", len(opportunities))
 
 

@@ -124,8 +124,8 @@ def build_session_report(
     now = datetime.now(sess.VN_TZ).strftime("%d/%m %H:%M")
 
     lines = [
-        f"*THIEUCUTOO {window['title']}* `{now}`",
-        f"{window['description']} Score 0-100, khong phai cam ket loi nhuan.",
+        f"*THIEUCUBU {window['title']}* `{now}`",
+        f"{window['description']} Score v2 tối đa 97; báo lại đầy đủ mỗi phiên, không chỉ mã mới. Không phải cam kết lợi nhuận.",
         market_status(market, regime),
         intel.format_regime(regime),
     ]
@@ -137,21 +137,21 @@ def build_session_report(
     probe_note = market_probe.report_note(activity_probe)
     if probe_note:
         lines += ["", probe_note]
-    lines += ["", "*PORTFOLIO / NOTE BAT BUOC*"]
+    lines += ["", "*PORTFOLIO / GHI CHÚ BẮT BUỘC*"]
     lines += portfolio_lines(results, watch_items, metrics)
-    lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
+    lines += ["", "*DỰ PHÓNG CỔ MẠNH CẦN CHÚ Ý*"]
     lines += [projection_line(x, mode, metrics) for x in (focus_results or strong)[:12]] or ["Chua co co manh du nguong."]
-    lines += ["", "*CO MANH THI TRUONG*"]
+    lines += ["", "*CỔ MẠNH THỊ TRƯỜNG*"]
     lines += [with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Khong co ma dat nguong."]
-    lines += ["", "*GAN BREAK / CO THE MUA TUNG PHAN*"]
+    lines += ["", "*GẦN BREAK / CÓ THỂ MUA TỪNG PHẦN*"]
     lines += [with_intel(tf.format_stock_card(x, action="CANH BREAK / MUA TUNG PHAN"), metrics.get(x.symbol)) for x in break_watch] or ["Khong co ma dat nguong."]
-    lines += ["", "*NGANH LEAD / RISK*"]
+    lines += ["", "*NGÀNH DẪN DẮT / RỦI RO*"]
     lines += [tf.format_sector_line(x) for x in sectors] or ["Chua du du lieu nganh."]
     if rotation_alerts:
-        lines += ["", "*SECTOR ROTATION*"]
+        lines += ["", "*LUÂN CHUYỂN NGÀNH*"]
         lines += rotation_alerts[:8]
     if mode == "eod" or sess.base_mode(mode) == "afternoon":
-        lines += ["", "*FAILED BREAK / CAN NE*"]
+        lines += ["", "*FAILED-BREAK / CẦN TRÁNH*"]
         lines += [with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
     if mode == "eod":
         lines += ["", intel.build_performance_report()]
@@ -211,9 +211,7 @@ def save_session_outputs(
         "top": [asdict(x) for x in ordered[:20]],
     }
     scan.json_save(sess.DATA_DIR / "session_alerts_latest.json", latest, pretty=False)
-    scan.json_save(
-        sess.DATA_DIR / "filter_feed_latest.json",
-        filter_feed.build_filter_feed(
+    feed = filter_feed.build_filter_feed(
             mode=mode,
             updated_at=latest["updated_at"],
             results=results,
@@ -221,9 +219,9 @@ def save_session_outputs(
             regime=regime,
             source_health=scan_safe.source_health_payload(),
             market_activity=asdict(activity_probe) if activity_probe else None,
-        ),
-        pretty=False,
     )
+    scan.json_save(sess.DATA_DIR / "filter_feed_latest.json", feed, pretty=False)
+    scan.json_save(sess.DATA_DIR / "stock_features_latest.json", feed, pretty=False)
     return failed_breaks
 
 
@@ -255,7 +253,7 @@ def build_fallback_report(mode: str, error: BaseException) -> str:
         )
     focus = ", ".join(memory.get("session_focus", [])[:12]) if isinstance(memory, dict) else ""
     lines = [
-        f"*THIEUCUTOO FALLBACK* `{mode}`",
+        f"*THIEUCUBU FALLBACK* `{mode}`",
         "Scanner gap loi giua phien, da ghi journal/source health de run sau tu hoi phuc.",
         f"Loi: `{str(error)[:260]}`",
         f"Latest report: {latest_mode or 'n/a'} | {latest_at or 'n/a'}",
@@ -281,7 +279,7 @@ async def main() -> None:
         failed_symbols = sorted(getattr(sess, "SCAN_FAILED_SYMBOLS", set()))
         summary = intel.build_scan_completion_summary(len(results), failed_symbols, time.time() - float(_STATE.get("started_at", time.time())))
         try:
-            await scan.send_chunks("*THIEUCUTOO SUMMARY*", summary)
+            await scan.send_chunks("*THIEUCUBU SUMMARY*", summary)
             summary_sent = True
         except Exception as exc:
             logger.warning("Cannot send completion summary, main report may already be sent: %s", exc)
@@ -299,12 +297,12 @@ async def main() -> None:
         logger.exception("Fatal enhanced session scan error")
         fallback_sent = False
         try:
-            await scan.send_chunks("*THIEUCUTOO FALLBACK*", build_fallback_report(mode_hint, exc))
+            await scan.send_chunks("*THIEUCUBU FALLBACK*", build_fallback_report(mode_hint, exc))
             fallback_sent = True
         except Exception as fallback_exc:
             logger.warning("Cannot send fallback report: %s", fallback_exc)
             try:
-                await scan.send_telegram(f"*THIEUCUTOO ALERT* `{mode_hint}` FAILED\n`{str(exc)[:300]}`")
+                await scan.send_telegram(f"*THIEUCUBU ALERT* `{mode_hint}` FAILED\n`{str(exc)[:300]}`")
                 fallback_sent = True
             except Exception:
                 logger.exception("Cannot send fatal Telegram alert")

@@ -186,7 +186,7 @@ async def update_skiplist(mode: str) -> list[NearHighItem]:
 def build_report(items: list[NearHighItem]) -> str:
     now = datetime.now(VN_TZ).strftime("%d/%m %H:%M")
     lines = [
-        f"*THIEUCUTOO NEAR HIGH 6Y* `{now}`",
+        f"*THIEUCUBU NEAR HIGH 6Y* `{now}`",
         f"Gan/vuot dinh 6 nam <= {THRESHOLD_PCT:.0f}% se duoc bo qua trong broad scan ngay thuong, tru ma trong portfolio/note.",
     ]
     if not items:
@@ -206,7 +206,7 @@ async def main() -> None:
     if mode not in {"full", "test"}:
         mode = "full"
     items = await update_skiplist(mode)
-    await scan.send_chunks("*THIEUCUTOO NEAR HIGH*", build_report(items))
+    await scan.send_chunks("*THIEUCUBU NEAR HIGH*", build_report(items))
     logger.info("Near-high skiplist updated: %s symbols", len(items))
 
 

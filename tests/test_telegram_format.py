@@ -25,7 +25,7 @@ def test_format_stock_card_formats_vietnamese_prices():
 
     text = tf.format_stock_card(result)
 
-    assert "Gia 14,950" in text
+    assert "Giá 14,950" in text
     assert "14950.00" not in text
 
 

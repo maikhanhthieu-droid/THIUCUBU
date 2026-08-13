@@ -97,7 +97,7 @@ def build_health() -> dict[str, Any]:
 def format_health_text(health: dict[str, Any]) -> str:
     latest = health["latest_report"]
     lines = [
-        f"*THIEUCUTOO HEALTH* `{health['status']}`",
+        f"*THIEUCUBU HEALTH* `{health['status']}`",
         f"Checked: {health['checked_at']}",
         f"Latest: {latest.get('mode') or 'n/a'} | age {latest.get('age_minutes') if latest.get('age_minutes') is not None else 'n/a'}m",
         f"Telegram: {'OK' if health['settings']['telegram_configured'] else 'MISSING'} | DRY_RUN {health['settings']['dry_run']}",
@@ -117,7 +117,7 @@ async def main() -> None:
 
     health = build_health()
     if args.telegram:
-        await scan.send_chunks("*THIEUCUTOO HEALTH*", format_health_text(health))
+        await scan.send_chunks("*THIEUCUBU HEALTH*", format_health_text(health))
     else:
         print(json.dumps(health, ensure_ascii=False, indent=2 if args.pretty else None))
 

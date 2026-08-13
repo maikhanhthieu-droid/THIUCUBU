@@ -12,12 +12,19 @@ from datetime import datetime
 from typing import Any, Mapping
 
 
-SCHEMA_VERSION = "thieucubu.raw_filter.v1"
+SCHEMA_VERSION = "thieucubu.raw_filter.v2"
 
 
 def _float(value: Any) -> float | None:
     try:
         return round(float(value), 6)
+    except (TypeError, ValueError):
+        return None
+
+
+def _date(value: Any) -> datetime | None:
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except (TypeError, ValueError):
         return None
 
@@ -47,6 +54,19 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         "break_score": _float(raw.get("break_score")),
         "risk_score": _float(raw.get("risk_score")),
         "win_score": _float(raw.get("win_score")),
+        "scores": {
+            "overall": _float(raw.get("win_score")),
+            "trade": _float(raw.get("trade_score")),
+            "position": _float(raw.get("position_score")),
+            "advanced": _float(intel.get("advanced_score")),
+            "grade": intel.get("grade") or raw.get("grade"),
+            "confidence": _float(raw.get("confidence")),
+            "version": intel.get("score_version") or raw.get("score_version"),
+        },
+        "classification": {
+            "action": raw.get("action"),
+            "horizon": raw.get("horizon"),
+        },
         "near_break": bool(raw.get("near_break")),
         "failed_break": bool(raw.get("failed_break")),
         "weekly": {
@@ -107,6 +127,12 @@ def build_filter_feed(
         str(item["as_of"]) for item in facts if item.get("as_of")
     )
     feed_as_of = as_of_values[-1] if as_of_values else None
+    reference_date = _date(feed_as_of)
+    if reference_date is not None:
+        for item in facts:
+            item_date = _date(item.get("as_of"))
+            if item_date is not None and (reference_date.date() - item_date.date()).days > 10:
+                item["data_quality"]["status"] = "stale"
     return {
         "schema_version": SCHEMA_VERSION,
         "producer": "maikhanhthieu-droid/THIUCUBU",

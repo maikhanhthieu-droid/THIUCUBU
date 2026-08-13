@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/candidate_book.v1.schema.json",
+  "title": "THIEUCUBU Candidate Book v1",
+  "type": "object",
+  "required": ["schema_version", "updated_at", "convictions", "watchlist"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.candidate_book.v1"},
+    "updated_at": {"type": ["string", "null"]},
+    "convictions": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {"$ref": "#/$defs/candidate"}
+    },
+    "watchlist": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/candidate"}
+    }
+  },
+  "$defs": {
+    "candidate": {
+      "type": "object",
+      "required": [
+        "symbol", "opportunity_score", "grade", "confidence", "valuation_score",
+        "quality_score", "structure_score", "timing_score", "risk_score",
+        "structure_state", "trigger", "selected", "score_version"
+      ],
+      "properties": {
+        "symbol": {"type": "string"},
+        "opportunity_score": {"type": "integer", "minimum": 0, "maximum": 97},
+        "grade": {"enum": ["S", "A+", "A", "B+", "B", "C", "D"]},
+        "confidence": {"type": "integer", "minimum": 0, "maximum": 96},
+        "selected": {"type": "boolean"},
+        "score_version": {"const": "thieucubu.score.v2"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

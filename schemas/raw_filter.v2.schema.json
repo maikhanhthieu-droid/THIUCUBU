@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/raw_filter.v2.schema.json",
+  "title": "THIEUCUBU Raw Filter Feed v2",
+  "type": "object",
+  "required": ["schema_version", "producer", "generated_at", "status", "mode", "quality", "facts"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.raw_filter.v2"},
+    "producer": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "as_of": {"type": ["string", "null"]},
+    "status": {"enum": ["ok", "degraded"]},
+    "mode": {"type": "string"},
+    "market": {"type": "object"},
+    "quality": {"type": "object"},
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["symbol", "scores", "classification", "data_quality"],
+        "properties": {
+          "symbol": {"type": "string", "pattern": "^[A-Z0-9^.-]+$"},
+          "as_of": {"type": ["string", "null"]},
+          "data_source": {"type": ["string", "null"]},
+          "cache_status": {"type": "string"},
+          "close": {"type": ["number", "null"]},
+          "scores": {
+            "type": "object",
+            "required": ["overall", "trade", "position", "grade", "version"]
+          },
+          "classification": {"type": "object"},
+          "weekly": {"type": "object"},
+          "volume": {"type": "object"},
+          "relative_strength": {"type": "object"},
+          "trade_context": {"type": "object"},
+          "gate": {"type": "object"},
+          "data_quality": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

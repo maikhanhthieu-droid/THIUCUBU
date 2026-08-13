@@ -100,7 +100,7 @@ def closed_notice(mode: str, status: MarketDayStatus) -> str:
         action = "nghi quet de tranh spam tin hieu stale"
     return "\n".join(
         [
-            f"*THIEUCUTOO MARKET CLOSED* `{status.date}`",
+            f"*THIEUCUBU MARKET CLOSED* `{status.date}`",
             f"Mode: `{mode}` | Ly do: {status.reason}",
             f"Xu ly: {action}.",
             "Neu muon ep quet data cu trong ngay nghi, set `MARKET_CLOSED_POLICY=scan_old`.",

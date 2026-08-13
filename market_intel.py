@@ -13,6 +13,7 @@ from typing import Any
 import pandas as pd
 
 import scan
+import scoring
 
 logger = logging.getLogger("thieucutoo.intel")
 DATA_DIR = scan.DATA_DIR
@@ -315,30 +316,47 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
     vcp = vcp_quality(df)
     rs = relative_strength(df, df_index)
     trade = compute_trade_levels(result, levels)
-    score = float(result.win_score)
-    score += 8 if weekly["weekly_uptrend"] else 0
-    score += 4 if weekly["weekly_above_ema13"] else 0
-    score += 3 if weekly["weekly_ema13_slope"] > 0 else 0
-    score += 6 if volume["accumulation_ratio"] >= 1.30 else 0
-    score += 4 if volume["vol_contraction"] else 0
-    score += 6 if volume["vol_expansion_up"] else 0
-    score -= 12 if volume["churning"] else 0
-    score += min(int(vcp["vcp_score"]), 12)
-    score += clamp((int(rs["rs_score"]) - 50) * 0.35, -15, 18)
     rr = trade.get("risk_reward")
-    if rr is not None:
-        score += 6 if rr >= 2.5 else 3 if rr >= 1.5 else -7 if rr < 1.0 else 0
     name = str(regime.get("regime", "UNKNOWN"))
-    deep = result.discount_pct >= result.target_discount_pct + 8
-    if name == "BEAR":
-        score -= 8 if deep and int(rs["rs_score"]) >= 58 else 20
-    elif name == "CHOPPY":
-        score -= 8
-    elif name == "RECOVERY":
-        score -= 3
-    adv = int(clamp(round(score)))
+    weekly_score = (
+        (42 if weekly["weekly_uptrend"] else 12)
+        + (30 if weekly["weekly_above_ema13"] else 8)
+        + (18 if weekly["weekly_ema13_slope"] > 0 else 0)
+        + min(int(vcp["vcp_score"]), 10)
+    )
+    volume_score = (
+        (38 if volume["accumulation_ratio"] >= 1.30 else 22 if volume["accumulation_ratio"] >= 1.0 else 8)
+        + (24 if volume["vol_contraction"] else 0)
+        + (28 if volume["vol_expansion_up"] else 0)
+        + (10 if result.obv_up else 0)
+    )
+    rr_value = safe_float(rr)
+    rr_score = 90 if rr_value >= 2.5 else 72 if rr_value >= 1.8 else 55 if rr_value >= 1.2 else 25
+    adv = scoring.enhanced_daily_score(
+        base_score=int(result.win_score),
+        weekly_score=clamp(weekly_score),
+        volume_score=clamp(volume_score),
+        rs_score=int(rs["rs_score"]),
+        rr_score=rr_score,
+        regime=name,
+        churning=bool(volume["churning"]),
+    )
+    if result.failed_break:
+        adv = min(adv, 38)
     trade["position_size"] = position_size(trade.get("risk_reward"), adv, name)
-    return {"symbol": symbol, "advanced_score": adv, "weekly": weekly, "volume": volume, "levels": levels, "vcp": vcp, "rs": rs, "trade": trade, "regime": regime}
+    return {
+        "symbol": symbol,
+        "advanced_score": adv,
+        "grade": scoring.grade(adv),
+        "score_version": scoring.SCORE_VERSION,
+        "weekly": weekly,
+        "volume": volume,
+        "levels": levels,
+        "vcp": vcp,
+        "rs": rs,
+        "trade": trade,
+        "regime": regime,
+    }
 
 
 def build_market_metrics(results: dict[str, scan.ScanResult], history_store: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
@@ -383,7 +401,9 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     regime = metrics.get("regime", {})
     gate = metrics.get("gate", {})
     rr_text = f"{fmt_num(trade.get('risk_reward'))}x" if trade.get("risk_reward") is not None else "n/a"
-    line1 = f"Intel {int(metrics.get('advanced_score', 0))}/100 | RS {int(rs.get('rs_score', 50))} | Regime {regime.get('regime', 'UNKNOWN')} | SL {fmt_price(trade.get('stop_loss'))} | TP {fmt_price(trade.get('take_profit'))} | R/R {rr_text}"
+    adv = int(metrics.get("advanced_score", 0))
+    grade = str(metrics.get("grade") or scoring.grade(adv))
+    line1 = f"Intel {grade} · {adv}/97 | RS {int(rs.get('rs_score', 50))} | Regime {regime.get('regime', 'UNKNOWN')} | SL {fmt_price(trade.get('stop_loss'))} | TP {fmt_price(trade.get('take_profit'))} | R/R {rr_text}"
     flags: list[str] = []
     if weekly.get("weekly_uptrend"):
         flags.append("weekly up")

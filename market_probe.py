@@ -346,7 +346,7 @@ def inactive_notice(mode: str, result: MarketProbeResult) -> str:
     dates = ", ".join(f"{day}:{count}" for day, count in result.latest_dates.items()) or "unknown"
     return "\n".join(
         [
-            f"*THIEUCUTOO MARKET CHECK* `{datetime.now(VN_TZ).strftime('%d/%m %H:%M')}`",
+            f"*THIEUCUBU MARKET CHECK* `{datetime.now(VN_TZ).strftime('%d/%m %H:%M')}`",
             f"Mode: `{mode}`",
             f"Ket luan: thi truong nghi / API chua cap nhat / data dang dung.",
             f"Kiem tra: {result.checked} ma OK, {result.no_data} no-data.",

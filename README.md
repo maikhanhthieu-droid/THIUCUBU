@@ -1,176 +1,177 @@
-# Thieucutoo Scanner
+# THIEUCUBU Stock Intelligence
 
-Bot quet co phieu VN theo huong it nhung chat: chiet khau, di nen, vol kiet, OBV/MFI, sap break, break xit va danh muc dang nam giu.
+THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Việt Nam. Hệ thống theo dõi cơ hội mua/bán hằng ngày, săn tối đa 1–2 cơ hội gom có độ thuyết phục cao vào cuối tuần, đồng thời xuất dữ liệu có schema để các dự án khác sử dụng mà không phải lọc lại từ đầu.
 
-## Can tao GitHub Secrets
+> Đây là công cụ hỗ trợ nghiên cứu và quản trị rủi ro, không phải khuyến nghị đầu tư hay cam kết lợi nhuận.
 
-Vao repo -> Settings -> Secrets and variables -> Actions, tao:
+## Hệ thống làm gì?
+
+### Trong tuần
+
+- Quét rộng vào buổi sáng, buổi chiều và sau ATC.
+- Luôn ưu tiên danh mục và mã đã ghi chú.
+- Tách riêng điểm `Lướt` và điểm `Gom`.
+- Vẫn gửi lại báo cáo đầy đủ mỗi phiên để người dùng không bỏ trôi tín hiệu.
+- Nhận diện nền giá, volume co hẹp, OBV/MFI, relative strength, near-break và failed-break.
+- Điều chỉnh hành động theo trạng thái VNINDEX và R/R.
+- Khám phá universe động và quét xoay vòng các mã ngoài danh sách cốt lõi.
+
+### Cuối tuần
+
+- Kết hợp định giá, chất lượng doanh nghiệp, cấu trúc tuần, thời điểm, ngành và rủi ro.
+- Dùng cấu trúc từ Pine Weekly Accumulation Sniper v3 làm lớp price/volume, không dùng Pine thay cho định giá.
+- Chỉ chọn tối đa 2 mã `ƯU TIÊN GOM`; hệ thống được phép chọn 0 mã nếu thị trường không có cơ hội đủ tốt.
+- Lưu vùng gom, vùng breakout, mức vô hiệu luận điểm, bull case và rủi ro.
+- Ghi nhớ luận điểm qua nhiều tuần để một cổ phiếu tốt không biến mất chỉ vì nhiễu một phiên.
+
+## Kiến trúc
+
+```text
+VCI / KBS / DNSE
+        │
+        ▼
+Safe fetch + provenance + cache + source health
+        │
+        ├── Daily scanner ──► Telegram mua/bán, lướt/gom
+        │
+        ├── Feature feed ───► dự án downstream
+        │
+        └── Weekend engine
+             ├── định giá và chất lượng
+             ├── weekly_sniper.py
+             ├── sector + risk gate
+             └── 0–2 mã ưu tiên gom
+```
+
+## Score v2: rõ ràng và không còn tràn điểm 100
+
+Phiên bản cũ cộng nhiều bonus nhị phân rồi cắt tại 100, khiến nhiều setup khác nhau cùng hiển thị 100. Score v2 dùng trung bình cân bằng giữa các nhóm bằng chứng: một nhóm rất mạnh không thể che một nhóm quá yếu.
+
+- Điểm hành động tối đa là `97`, không có mã `100/100`.
+- `trade_score`: ưu tiên timing, dòng tiền và điểm phá nền.
+- `position_score`: ưu tiên xu hướng, chất lượng nền, dòng tiền và biên chiết khấu.
+- `confidence`: độ đầy đủ và đồng thuận của dữ liệu, không phải xác suất chắc chắn tăng giá.
+- `grade`: cấp độ đọc nhanh.
+
+| Grade | Điểm | Ý nghĩa |
+|---|---:|---|
+| S | 94–97 | Rất hiếm; nhiều lớp bằng chứng cùng mạnh |
+| A+ | 88–93 | Rất hấp dẫn |
+| A | 82–87 | Hấp dẫn |
+| B+ | 75–81 | Có thể hành động nếu đúng vùng giá |
+| B | 68–74 | Theo dõi |
+| C | 55–67 | Chưa đủ điều kiện |
+| D | dưới 55 | Yếu hoặc rủi ro cao |
+
+Trường `win_score` vẫn được giữ để tương thích với dự án cũ. Dự án mới nên đọc `scores.trade`, `scores.position`, `scores.advanced`, `grade`, `confidence` và `score_version` trong feed v2.
+
+## Năm cửa của bộ lọc cuối tuần
+
+Một mã chỉ có thể vào nhóm `ƯU TIÊN GOM` khi đồng thời vượt qua:
+
+1. `Valuation`: PE/PB so với ngành, ngưỡng tuyệt đối và lịch sử snapshot của chính doanh nghiệp.
+2. `Business quality`: ROE, ROA, EPS, biên lợi nhuận, nợ và thanh khoản tài chính phù hợp ngành.
+3. `Weekly structure`: nền co hẹp, higher-low, volume cạn, CMF/OBV, EMA và RS so với VNINDEX.
+4. `Timing`: spring, reclaim, pocket pivot hoặc early break kèm momentum xác nhận.
+5. `Risk`: thanh khoản, failed-break, value trap, R/R và mức vô hiệu cấu trúc.
+
+Chiết khấu sâu so với đỉnh 104 tuần chỉ là một dữ kiện giá, không đồng nghĩa với định giá rẻ. EPS âm, cấu trúc gãy, dữ liệu stale hoặc R/R yếu sẽ chặn mã khỏi nhóm ưu tiên.
+
+## Pine đi kèm
+
+File [`pine/THIEUCUBU_WEEKLY_ACCUMULATION_SNIPER_v3.pine`](pine/THIEUCUBU_WEEKLY_ACCUMULATION_SNIPER_v3.pine) dùng để kiểm tra trực quan trên TradingView khung `1W`.
+
+Pine hiển thị:
+
+- `EARLY MARKUP`: dấu hiệu đầu pha tăng đã có trigger và momentum.
+- `PREP BASE`: cấu trúc gom đang chuẩn bị nhưng chưa đủ xác nhận.
+- Vùng gom, breakout, mức vô hiệu, R/R, RS 13 tuần và thanh khoản.
+
+Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine không tự động trở thành mã ưu tiên; `weekly_sniper.py` tái hiện lớp cấu trúc trong Python rồi weekend engine mới ghép các lớp còn lại.
+
+## Dữ liệu dùng chung cho dự án sau
+
+| File | Vai trò |
+|---|---|
+| `data/stock_features_latest.json` | Feature feed đầy đủ của lần quét gần nhất |
+| `data/filter_feed_latest.json` | Alias tương thích của raw filter feed v2 |
+| `data/candidate_book_latest.json` | 0–2 conviction và watchlist cuối tuần |
+| `data/investment_theses.json` | Sổ luận điểm bền vững qua nhiều tuần |
+| `data/fundamental_history.json` | Snapshot PE/PB/chất lượng để xây lịch sử riêng |
+| `data/session_alerts_latest.json` | Snapshot báo cáo phiên gần nhất |
+| `data/source_health.json` | Sức khỏe từng nguồn dữ liệu |
+| `data/universe_state.json` | Universe động, cursor và lát quét gần nhất |
+
+`filter_feed_latest.json` sử dụng schema `thieucubu.raw_filter.v2`. Các trường v1 quan trọng vẫn được giữ tại root để tránh làm hỏng consumer cũ.
+
+## Universe động
+
+Danh sách cốt lõi được quét thường xuyên. Ngoài ra hệ thống tải danh sách mã niêm yết, lọc mã cổ phiếu ba ký tự và lấy một lát xoay vòng mỗi phiên. Cursor được lưu trong `data/universe_state.json`, nhờ đó scanner phủ dần thị trường thay vì luôn bắt đầu lại từ chữ A.
+
+- Portfolio/note luôn đứng đầu hàng đợi.
+- Lát discovery mặc định: 36 mã mỗi broad scan.
+- Các mã discovery đạt điểm đáng chú ý được đưa vào memory và sang vòng cuối tuần.
+- Cấu hình bằng `SCAN_ROTATING_UNIVERSE_SIZE`.
+
+## Lịch chạy mặc định
+
+- `10:31` giờ Việt Nam: quét rộng buổi sáng.
+- `13:31`: quét phần rộng chưa ưu tiên; sau `14:00` quét lại focus.
+- `15:05`: tổng kết EOD sau ATC.
+- `08:30` và `14:30` thứ Bảy: quét cơ hội cuối tuần.
+
+GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard timeout và run journal ngăn nhiều run chồng nhau hoặc treo vô hạn.
+
+## Nguồn dữ liệu và khả năng tự phục hồi
+
+- Nguồn mặc định: `VCI,KBS,DNSE`.
+- Mỗi mã có nguồn ưu tiên và fallback riêng.
+- Có jitter, rate limiter, `Retry-After`, cooldown và phục hồi nguồn trong cùng run.
+- Cache parquet được dùng khi phù hợp; stale cache luôn được gắn provenance.
+- Dữ liệu stale có thể xuất hiện trong báo cáo tham khảo nhưng không được chọn làm conviction cuối tuần.
+- Source health được lưu để lần chạy sau ưu tiên nguồn khỏe hơn.
+
+## Thiết lập
+
+Tạo GitHub Actions Secrets:
 
 - `TELEGRAM_TOKEN`
 - `TELEGRAM_CHAT_ID`
 - `VNSTOCK_API_KEY`
 
-Khong dua API key vao file code vi repo public.
+Không đưa token hoặc API key vào code vì repository là public.
 
-## Lich chay
+Chạy local:
 
-- 10:31 VN: quet rong buoi sang, muc tieu tra Telegram truoc 11:15.
-- 13:31 VN: quet cac ma chua uu tien truoc; 14:00 quet lai note/co manh/ma phien sang, muc tieu tra truoc 14:15.
-- 15:05 VN: tong ket EOD sau ATC, co trang thai VNINDEX va canh bao risk.
-
-Moi lan chay co random start ngan, chia nguon API, dung khoang 75-80% quota moi nguon va nghi ngau nhien de giam rui ro bi limit.
-
-## Co che chong limit API
-
-Scanner chia luong request qua `SCAN_API_SOURCES`, mac dinh `VCI,KBS,DNSE`.
-Moi ma co mot nguon uu tien rieng va nguon con lai lam fallback. Truoc moi request co
-sleep + jitter ngau nhien, neu mot nguon loi se cooldown ngau nhien truoc khi dung tiep.
-Workflow phien chay qua `session_scan.py`, ben trong van dung `scan_safe.py` de boc lop bao ve API quanh scanner goc.
-Lop `fetcher.py` cach ly scanner khoi thay doi import/API cua `vnstock`: `VCI/KBS` di qua
-`vnstock` va co fallback HTTP truc tiep toi endpoint cua VCI/KBS neu `vnstock` loi. `DNSE` di qua
-`vietfin` va co fallback HTTP truc tiep toi EnTrade neu adapter loi.
-`VIETFIN` trong `SCAN_API_SOURCES` duoc hieu nhu alias cua `DNSE`, khong phai mot lane API rieng.
-Neu API tra ve dau hieu rate-limit kem `Retry-After`, scanner uu tien dung dung thoi gian do
-thay vi chi sleep co dinh. Neu mot nguon chi loi tam thoi lien tiep, nguon do bi park vai phut
-roi tu duoc thu lai trong chinh run sau, khong lam chet ca phien quet.
-Suc khoe tung nguon duoc ghi vao `data/source_health.json`; nguon diem qua yeu se bi day xuong
-cuoi thu tu uu tien o run sau, nhung van co co hoi tu hoi phuc.
-Neu tat ca nguon live deu fail, scanner duoc phep dung lai parquet cache cu toi da
-`SCAN_STALE_CACHE_MAX_DAYS` ngay (mac dinh workflow ngay thuong 3 ngay, weekend 7 ngay) de van
-co report tham khao thay vi im lang.
-
-Mac dinh workflow dung `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15` va
-`SCAN_SOURCE_USAGE_RATIO=0.78`, tuc chi dung khoang 75-80% quota khai bao moi nguon.
-`TCBS` khong duoc dung mac dinh vi source nay co the khong duoc `vnstock` 4.x ho tro on dinh.
-
-Telegram duoc gui truc tiep bang `httpx`, nen repo khong can `python-telegram-bot`. Code hien tai
-khong import `requests`; cac request HTTP production di qua `httpx` hoac thu vien nguon du lieu.
-
-Cac bien co the chinh trong workflow:
-
-- `SCAN_API_SOURCES`: danh sach nguon, vi du `VCI,KBS,DNSE`.
-- `VIETFIN`: alias cua `DNSE`; dung de tranh cau hinh sai, nhung khong tang them quota.
-- `SCAN_SOURCE_REQUESTS_PER_MINUTE`: tran request/phut cua moi nguon.
-- `SCAN_SOURCE_LIMITS`: tran rieng tung nguon, vi du `VCI=20,KBS=20,DNSE=15`.
-- `SCAN_SOURCE_USAGE_RATIO`: ty le dung quota, mac dinh workflow `0.78`.
-- `SCAN_REQUEST_JITTER_MIN_SEC` / `SCAN_REQUEST_JITTER_MAX_SEC`: jitter truoc moi request.
-- `SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC` / `SCAN_SOURCE_ERROR_COOLDOWN_MAX_SEC`: cooldown khi nguon loi.
-- `SCAN_SOURCE_RECOVER_AFTER_SEC`: thoi gian park mot nguon loi tam thoi lien tiep truoc khi thu lai.
-- `SCAN_RETRY_AFTER_MAX_SEC`: tran toi da khi doc `Retry-After` tu API.
-- `SCAN_MAX_WORKERS`: so luong worker song song, nen <= so nguon API.
-
-## Dieu phoi theo phien
-
-Workflow ngay thuong chay qua `session_scan.py`.
-
-- Buoi sang: lay data sau 10:31, quet rong va gui report som de kip soi trong phien.
-- Buoi chieu: lay data sau 13:31, quet cac ma khong uu tien truoc; sau 14:00 quet lai toi da 50 ma note/co manh/ma phien sang, gui report truoc 14:15 neu API khong ngheo mang bat thuong.
-- EOD: chay sau 15:05, khong ep nhanh, uu tien ket qua muot va co trang thai VNINDEX.
-- Cac ma trong `data/portfolio.json` va `data/notes.json` luon duoc dua vao focus scan vi day la nhom chiem ty trong lon trong danh muc.
-
-Ket qua focus gan nhat duoc luu vao `data/session_alerts_latest.json`.
-Neu den deadline (`morning_broad` mac dinh 11:13, `afternoon_split` mac dinh 14:13) ma chua quet
-xong, scanner cat phan con lai va gui report voi du lieu da co. Muc tieu la dung gio hon la co
-quet bang moi ma nhung tre co hoi mua ban.
-
-Neu GitHub Actions bi tre/hut cron trong cac moc quan trong, workflow `Thieucutoo Scanner Watchdog`
-se kiem tra sau do va tu dispatch lai scanner neu chua co report cung ngay. Day la lop fallback,
-khong thay the scanner chinh.
-Watchdog phien chieu chay sau deadline, luc 14:18 VN, va chi dispatch mode `afternoon_focus`
-de quet nhanh nhom note/co manh thay vi quet rong lai tu dau.
-Ngoai ra watchdog co cac moc quick fallback som: 10:39/11:12 VN cho buoi sang va 13:39/14:12 VN
-cho buoi chieu. Cac moc nay chi dispatch neu chua co report cung phien va khong thay run scanner
-dang khoe, giup he thong tu hoi phuc khi cron bi hut hoac run loi som.
-Moi scanner run co hard timeout theo mode (`focus` 25 phut, morning broad 55 phut, afternoon 50 phut,
-EOD 160 phut) de mot run treo khong nam do ca ngay.
-
-## Ngay nghi / data khong doi
-
-Bot doc lich nghi trong `data/market_holidays.json`. Workflow production mac dinh
-`MARKET_CLOSED_POLICY=scan_old`: neu hom nay la ngay nghi/le, bot van quet bang du lieu moi nhat
-API tra ve va gan canh bao DATA CU trong report. Muc tieu la he thong ben, khong chet chi vi
-lich nghi chua khai bao hoac API tra du lieu phien cu.
-
-Ngoai lich nghi khai bao, scanner con co activity probe tu dong. Truoc khi quet nang, bot lay mau
-khoang 38 ma lon/bluechip/nganh dan dat va luu moc vao `data/market_probe_state.json`. Neu mau nay
-cho thay hang loat ma khong doi so voi lan truoc, ngay candle cu, hoac volume bang 0, bot se ket luan
-thi truong nghi / API chua cap nhat / data dang dung. Mac dinh `MARKET_ACTIVITY_PROBE_ACTION=warn`:
-bot van quet tiep va chi chen canh bao vao report, de stale data khong lam sap workflow.
-
-Neu muon doi sang kieu nghi han vao ngay nghi, doi bien workflow thanh:
-
-```yaml
-MARKET_CLOSED_POLICY: "skip"
+```bash
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q
 ```
 
-Neu muon activity probe dung som khi data dung, doi `MARKET_ACTIVITY_PROBE_ACTION=skip`.
-Bien `MARKET_ACTIVITY_PROBE_ENABLED=0` co the tat lop probe nay neu can test tay.
+Test scanner không gửi Telegram:
 
-## Tri nho cua bot
+```bash
+DRY_RUN=1 python session_plus.py --mode test
+DRY_RUN=1 python weekend_plus_safe.py --mode test
+```
 
-Bot co file `data/memory_state.json` va lop `StateManager` trong `state_manager.py` de giu tri nho
-giua cac lan chay GitHub Actions:
+Trên Windows PowerShell:
 
-- `strong_stocks`: toi da 7 ma dang rat manh/dong tien tot.
-- `watchlist`: toi da 15 ma dang co form nen/VCP/VSA can theo doi 1-3 tuan.
-- `session_focus`: toi da 40 ma uu tien cho lan quet nhanh tiep theo.
-- `retired`: cac ma bi loai do failed-break hoac diem yeu.
+```powershell
+$env:DRY_RUN = "1"
+python session_plus.py --mode test
+python weekend_plus_safe.py --mode test
+```
 
-File nay chi luu trang thai gon nhe, khong luu OHLCV day du. State duoc cap version/timestamp,
-gioi han toi da 7 ma manh, 15 ma watchlist, 40 ma focus, va tu prune entry cu qua han de file
-khong phinh vo han. Sau moi phien quet that, workflow se commit lai file nay voi `[skip ci]`
-de lan chay sau bot van nho nhom co can uu tien.
-`run_journal.json` cung duoc gioi han so entry, `signal_tracker.json` va rotation history deu ghi
-chen/giu tail thay vi append vo han, giup repo khong phinh to vi data rac.
+## Portfolio và ghi chú bắt buộc
 
-## Commit data ben hon
-
-Sau khi report da gui va artifact da upload, workflow dung `scripts/safe_commit_data.py` de commit
-du lieu nhe ve repo. Script nay chup lai data vua quet, fetch remote moi nhat, reset index theo
-remote, chen lai data moi cua run hien tai, commit/push toi da 3 lan. Neu van gap conflict/push fail,
-workflow van duoc giu xanh vi Telegram va artifact da co; lan chay sau bot tiep tuc hoat dong binh
-thuong thay vi bi ket do git conflict.
-
-## Run journal va fallback
-
-Moi lan scanner/weekend chay se ghi `data/run_journal.json` voi trang thai `started`, `success`
-hoac `failed`, so ma OK/fail, elapsed time va viec Telegram da gui hay chua. Neu scanner gap loi
-giua phien, `session_plus.py` se co gang gui mot fallback report ngan gom loi, memory gan nhat va
-suc khoe API. Workflow van de fail de watchdog co the dispatch lai neu chua co report moi dung phien.
-
-## Quet co hoi cuoi tuan
-
-Workflow `Thieucutoo Weekend Opportunities` chay luc 08:30 va 14:30 Thu bay gio Viet Nam
-de co them mot vong loc sau, va co the chay tay voi mode `test` hoac `full`.
-
-Workflow goi `weekend_plus_safe.py`, file nay boc `weekend_plus.py` va `weekend_opportunities.py`
-de chong quota kill, them format Telegram dep hon va chay weekend scan song song co gioi han.
-Script `weekend_opportunities.py` la loi TradingAgents-lite cho CK VN:
-
-- Valuation analyst: so PE/PB cua tung ma voi median nganh.
-- Fundamental analyst: check ROE/ROA, EPS, bien loi nhuan, no vay.
-- Technical analyst: dung lai diem scan, chiet khau gia, nen gia, near-break, failed-break.
-- Sector analyst: xep hang nganh dang co dong tien va nen gia tot.
-- Risk manager: tru diem khi PE/EPS am, failed-break, nganh yeu, chat luong thap.
-- High-confidence: tach rieng nhom diem cao, risk thap, dinh gia tot va nganh ung ho.
-
-Ket qua duoc gui Telegram va luu vao:
-
-- `data/weekend_opportunities_latest.json`
-- `data/weekend_opportunities_history.json`
-
-## File danh muc
-
-Sua `data/portfolio.json` de khai bao cac ma dang nam giu:
-
-Luu y: file nay bat buoc la JSON array/list `[...]`, khong phai single object `{...}`;
-neu khai bao sai dang thi danh muc se khong duoc dua vao focus scan.
+`data/portfolio.json` phải là một JSON array:
 
 ```json
 [
   {
     "symbol": "VNM",
-    "note": "ghi chu rieng",
+    "note": "Luận điểm riêng",
     "buy_more_score": 78,
     "sell_score": 45,
     "position": "holding"
@@ -178,25 +179,34 @@ neu khai bao sai dang thi danh muc se khong duoc dua vao focus scan.
 ]
 ```
 
-Sua `data/notes.json` de them ma can theo doi sat ngoai danh muc:
+`data/notes.json` nhận chuỗi hoặc object:
 
 ```json
 {
-  "VCB": "ghi chu rieng",
+  "VCB": "Theo dõi vùng hỗ trợ",
   "FPT": {
-    "note": "uu tien bao khi tin hieu xau/tot"
+    "note": "Ưu tiên báo khi cấu trúc thay đổi"
   }
 }
 ```
 
-He thong se bao ve Telegram:
+Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể cả khi điểm không đổi.
 
-- Diem <= `sell_score`: canh ban/giam ty trong.
-- Diem >= `buy_more_score`: canh mua them.
-- O giua: giu/theo doi.
+## Cấu hình quan trọng
 
-## Chay thu
+- `SCAN_API_SOURCES=VCI,KBS,DNSE`
+- `SCAN_SOURCE_LIMITS=VCI=20,KBS=20,DNSE=15`
+- `SCAN_SOURCE_USAGE_RATIO=0.78`
+- `SCAN_ROTATING_UNIVERSE_SIZE=36`
+- `WEEKEND_HISTORY_BARS=780`
+- `WEEKEND_CONVICTION_LIMIT=2`
+- `WEEKEND_MIN_SCORE=60`
+- `WEEKEND_MIN_SECTOR_SCORE=52`
 
-Vao tab Actions -> Thieucutoo Scanner -> Run workflow -> mode `test`.
+`WEEKEND_CONVICTION_LIMIT` được chặn cứng tối đa 2 trong code. Hạ threshold có thể làm watchlist nhạy hơn nhưng không làm tăng số conviction.
 
-Sau khi test gui duoc Telegram, chay `morning`, `afternoon`, `eod` hoac de lich tu dong.
+## Kiểm thử và an toàn vận hành
+
+CI chạy compile check và pytest trên mọi thay đổi Python/workflow. Dữ liệu generated được commit bằng `scripts/safe_commit_data.py`: snapshot đầu ra, cập nhật remote, áp lại snapshot và thử push tối đa ba lần. Báo cáo Telegram và artifact vẫn được giữ nếu data commit gặp conflict.
+
+Khi thay đổi Pine đang dùng trong TradingView, cần xóa và tạo lại alert vì TradingView lưu một bản snapshot của script và input tại thời điểm tạo alert.

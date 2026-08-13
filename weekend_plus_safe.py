@@ -75,27 +75,13 @@ def fetch_fundamental_safe(symbol: str) -> Any:
 
 
 def build_report_compat(opportunities, sectors, mode, near_high=None, missing_fundamental=None) -> str:
-    report = None
-    for args in (
-        (opportunities, sectors, mode, near_high, missing_fundamental),
-        (opportunities, sectors, mode, near_high),
-        (opportunities, sectors, mode),
-    ):
-        try:
-            report = _old_build_report(*args)
-            break
-        except TypeError:
-            continue
-    if report is None:
-        raise TypeError("No compatible weekend build_report signature")
+    report = _old_build_report(opportunities, sectors, mode)
     if missing_fundamental:
         preview = ",".join(missing_fundamental[:12])
         suffix = "..." if len(missing_fundamental) > 12 else ""
-        report = report.replace(
-            "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.",
-            "Quet PE/PB + chiet khau gia + chat luong + nganh + risk. Khong phai khuyen nghi mua ban.\n"
-            f"Fundamental missing: {len(missing_fundamental)} ma ({preview}{suffix})",
-        )
+        lines = report.splitlines()
+        lines.insert(2 if len(lines) > 1 else 1, f"Thiếu fundamental: {len(missing_fundamental)} mã ({preview}{suffix})")
+        report = "\n".join(lines)
     return report
 
 
@@ -128,11 +114,20 @@ async def main() -> None:
             plus.weekend.logger.warning("Dropping invalid ticker(s): %s", ",".join(dropped))
         tickers = valid_tickers
         random.shuffle(tickers)
+        force_refresh = mode == "test"
+        index_df = await asyncio.to_thread(
+            plus.weekend.scan_safe.fetch_ohlcv_safe,
+            "VNINDEX",
+            plus.weekend.HISTORY_BARS,
+            force_refresh,
+        )
+        plus.weekend.set_weekly_index(index_df)
+        if index_df is None:
+            plus.weekend.logger.warning("VNINDEX weekly context unavailable; RS confidence will be reduced")
         workers = int(os.getenv("WEEKEND_MAX_WORKERS", "3"))
         workers = max(1, min(workers, len(tickers) or 1))
         plus.weekend.logger.info("Weekend opportunity scan mode=%s tickers=%s workers=%s", mode, len(tickers), workers)
 
-        force_refresh = mode == "test"
         semaphore = asyncio.Semaphore(workers)
 
         async def analyze_one(index: int, symbol: str):
@@ -161,19 +156,17 @@ async def main() -> None:
                 ",".join(missing_fundamental[:30]),
             )
 
+        plus.weekend.save_fundamental_history(packets)
         sectors = plus.weekend.build_sector_snapshots(packets)
         opportunities = plus.weekend.build_opportunities(packets, sectors)
         near_high = []
         build_near_high = getattr(plus.weekend, "build_near_high_snapshots", None)
         if callable(build_near_high) and plus.weekend.UPDATE_NEAR_HIGH and mode != "test":
             near_high = build_near_high(packets)
-        try:
-            plus.weekend.save_outputs(opportunities, sectors, near_high)
-        except TypeError:
-            plus.weekend.save_outputs(opportunities, sectors)
+        plus.weekend.save_outputs(opportunities, sectors)
 
         report = plus.weekend.build_report(opportunities, sectors, mode, near_high, missing_fundamental)
-        await scan.send_chunks("*THIEUCUTOO WEEKEND*", report)
+        await scan.send_chunks("*THIEUCUBU WEEKEND*", report)
         scan_safe.save_source_health()
         run_journal.finish_run(
             run_id,
