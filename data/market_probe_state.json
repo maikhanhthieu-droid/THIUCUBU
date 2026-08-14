@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-08-14T16:42:47+07:00",
+  "updated_at": "2026-08-14T21:11:45+07:00",
   "mode": "eod",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 28,
-    "unchanged": 10,
+    "changed": 1,
+    "unchanged": 37,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -13,8 +13,8 @@
       "2026-08-14": 28,
       "2026-08-13": 10
     },
-    "inactive": false,
-    "reason": "market_active changed 28/38",
+    "inactive": true,
+    "reason": "khong_doi 37/38",
     "policy": "scan_old",
     "action": "warn"
   },
@@ -172,7 +172,7 @@
     "SSI": {
       "symbol": "SSI",
       "latest_date": "2026-08-13",
-      "close": 25.0,
+      "close": 19.98,
       "volume": 28037400.0
     },
     "STB": {
