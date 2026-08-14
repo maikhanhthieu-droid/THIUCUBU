@@ -63,6 +63,7 @@ jobs:
             scan-cache-${{ runner.os }}-
 
       - name: Run weekend opportunity scanner
+        id: weekend-scanner
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -111,6 +112,24 @@ jobs:
           if [ "$WEEKEND_MODE" != "test" ]; then
             python near_high_filter.py --mode full
           fi
+
+      - name: Run optional VIMO weekend support
+        if: steps.weekend-scanner.outcome == 'success'
+        continue-on-error: true
+        env:
+          VIMO_API_KEY: ${{ secrets.VIMO_API_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VIMO_REQUESTS_PER_MINUTE: "20"
+          VIMO_USAGE_RATIO: "0.75"
+          VIMO_MAX_WORKERS: "2"
+          VIMO_WEEKEND_MAX_SYMBOLS: "12"
+        run: |
+          if [ -z "$VIMO_API_KEY" ]; then
+            echo "VIMO_API_KEY is not configured; optional weekend support skipped."
+            exit 0
+          fi
+          python vimo_support.py --mode weekend
 
       - name: Upload weekend data artifact
         if: always()

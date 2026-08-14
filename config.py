@@ -78,6 +78,7 @@ if BaseSettings is not None:
         vnstock_api_key: str = Field("", validation_alias="VNSTOCK_API_KEY")
         fiinquant_username: SecretStr = Field("", validation_alias="FIINQUANT_USERNAME")
         fiinquant_password: SecretStr = Field("", validation_alias="FIINQUANT_PASSWORD")
+        vimo_api_key: SecretStr = Field("", validation_alias="VIMO_API_KEY")
         dry_run: bool = Field(False, validation_alias="DRY_RUN")
         scan_source_usage_ratio: float = Field(0.70, validation_alias="SCAN_SOURCE_USAGE_RATIO")
         scan_source_requests_per_minute: int = Field(15, validation_alias="SCAN_SOURCE_REQUESTS_PER_MINUTE")
@@ -99,6 +100,7 @@ else:
             self.vnstock_api_key = os.getenv("VNSTOCK_API_KEY", "").strip()
             self.fiinquant_username = os.getenv("FIINQUANT_USERNAME", "").strip()
             self.fiinquant_password = os.getenv("FIINQUANT_PASSWORD", "").strip()
+            self.vimo_api_key = os.getenv("VIMO_API_KEY", "").strip()
             self.dry_run = env_bool("DRY_RUN", False)
             self.scan_source_usage_ratio = env_float("SCAN_SOURCE_USAGE_RATIO", 0.70, min_value=0.05, max_value=1.0)
             self.scan_source_requests_per_minute = env_int("SCAN_SOURCE_REQUESTS_PER_MINUTE", 15, min_value=1)
@@ -124,6 +126,11 @@ def get_settings() -> Settings:
     if username and password:
         os.environ.setdefault("FIINQUANT_USERNAME", str(username))
         os.environ.setdefault("FIINQUANT_PASSWORD", str(password))
+    vimo_key = getattr(settings, "vimo_api_key", "")
+    if hasattr(vimo_key, "get_secret_value"):
+        vimo_key = vimo_key.get_secret_value()
+    if vimo_key:
+        os.environ.setdefault("VIMO_API_KEY", str(vimo_key))
     return settings
 
 
@@ -135,11 +142,15 @@ def settings_summary(settings: Settings | None = None) -> dict[str, Any]:
         username = username.get_secret_value()
     if hasattr(password, "get_secret_value"):
         password = password.get_secret_value()
+    vimo_key = getattr(item, "vimo_api_key", "")
+    if hasattr(vimo_key, "get_secret_value"):
+        vimo_key = vimo_key.get_secret_value()
     return {
         "telegram_configured": bool(item.telegram_token and item.telegram_chat_id),
         "dry_run": item.effective_dry_run,
         "vnstock_api_key": bool(item.vnstock_api_key),
         "fiinquant_configured": bool(username and password),
+        "vimo_configured": bool(vimo_key),
         "scan_source_usage_ratio": float(item.scan_source_usage_ratio),
         "scan_source_requests_per_minute": int(item.scan_source_requests_per_minute),
         "data_dir": str(item.data_dir),

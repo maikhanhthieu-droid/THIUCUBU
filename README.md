@@ -214,6 +214,26 @@ DRY_RUN=1 python session_plus.py --mode test
 DRY_RUN=1 python weekend_plus_safe.py --mode test
 ```
 
+### VIMO support flow (optional)
+
+VIMO is an independent confirmation layer, not an OHLCV dependency. Daily
+scans use `get_ta_signals` for a small top-candidate set; weekend scans use
+`get_bctc_profile`. A VIMO timeout, quota error, missing key, or malformed
+response is logged and skipped without changing the THIUCUBU score or failing
+the core scanner.
+
+Configure `VIMO_API_KEY` only in `.env` locally or GitHub Actions Secrets. Raw
+VIMO responses and narratives are never committed; compact support state lives
+under the ignored `data/cache/vimo/` directory. The support message is sent
+only for a new confirmation/conflict, a changed VIMO signal, or a THIUCUBU
+score move of at least 7 points.
+
+```bash
+python scripts/check_vimo.py --symbol FPT
+python vimo_support.py --mode daily
+python vimo_support.py --mode weekend
+```
+
 Trên Windows PowerShell:
 
 ```powershell

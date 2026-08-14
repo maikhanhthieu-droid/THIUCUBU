@@ -77,8 +77,11 @@ jobs:
           if [ "$MODE" = "morning_broad" ]; then ACTIVE_GRACE_MINUTES=55; fi
           if [ "$MODE" = "afternoon_split" ]; then ACTIVE_GRACE_MINUTES=55; fi
           if [ "$MODE" = "eod" ]; then ACTIVE_GRACE_MINUTES=25; fi
-          REPORT_JSON="$(gh api "repos/${{ github.repository }}/contents/data/session_alerts_latest.json?ref=${{ github.ref_name }}" --jq '.content' 2>/dev/null | base64 -d || echo '{}')"
-          REPORT_FRESH="$(REPORT_JSON="$REPORT_JSON" MODE="$MODE" python - <<'PY'
+          REPORT_FILE="$RUNNER_TEMP/session_alerts_latest.json"
+          if ! gh api "repos/${{ github.repository }}/contents/data/session_alerts_latest.json?ref=${{ github.ref_name }}" --jq '.content' 2>/dev/null | base64 -d > "$REPORT_FILE"; then
+            echo '{}' > "$REPORT_FILE"
+          fi
+          REPORT_FRESH="$(REPORT_FILE="$REPORT_FILE" MODE="$MODE" python - <<'PY'
           import json
           import os
           from datetime import datetime, timedelta, timezone
@@ -90,7 +93,8 @@ jobs:
               "eod": {"eod"},
           }
           try:
-              report = json.loads(os.environ.get("REPORT_JSON") or "{}")
+              with open(os.environ["REPORT_FILE"], encoding="utf-8") as handle:
+                  report = json.load(handle)
               updated_raw = str(report.get("updated_at") or "")
               updated = datetime.fromisoformat(updated_raw.replace("Z", "+00:00"))
               if updated.tzinfo is None:
@@ -109,13 +113,15 @@ jobs:
             echo "run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          RUNS_JSON="$(gh run list -R "${{ github.repository }}" --workflow scanner.yml --limit 30 --json databaseId,status,conclusion,createdAt,event)"
-          SHOULD_RUN="$(RUNS_JSON="$RUNS_JSON" CURRENT_RUN_ID="$GITHUB_RUN_ID" ACTIVE_GRACE_MINUTES="$ACTIVE_GRACE_MINUTES" python - <<'PY'
+          RUNS_FILE="$RUNNER_TEMP/scanner_runs.json"
+          gh run list -R "${{ github.repository }}" --workflow scanner.yml --limit 30 --json databaseId,status,conclusion,createdAt,event > "$RUNS_FILE"
+          SHOULD_RUN="$(RUNS_FILE="$RUNS_FILE" CURRENT_RUN_ID="$GITHUB_RUN_ID" ACTIVE_GRACE_MINUTES="$ACTIVE_GRACE_MINUTES" python - <<'PY'
           import json
           import os
           from datetime import datetime, timedelta, timezone
 
-          runs = json.loads(os.environ.get("RUNS_JSON") or "[]")
+          with open(os.environ["RUNS_FILE"], encoding="utf-8") as handle:
+              runs = json.load(handle)
           current = int(os.environ["CURRENT_RUN_ID"])
           active_cutoff = datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["ACTIVE_GRACE_MINUTES"]))
           should_run = True
@@ -176,6 +182,7 @@ jobs:
             scan-cache-${{ runner.os }}-
 
       - name: Run scanner
+        id: scanner
         if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -288,6 +295,24 @@ jobs:
           echo "Scanner hard timeout ${TIMEOUT_MIN}m for mode=$MODE"
           timeout --kill-after=120s "${TIMEOUT_MIN}m" python session_gate_near_high.py --mode "$MODE"
 
+      - name: Run optional VIMO support
+        if: steps.scanner.outcome == 'success'
+        continue-on-error: true
+        env:
+          VIMO_API_KEY: ${{ secrets.VIMO_API_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VIMO_REQUESTS_PER_MINUTE: "20"
+          VIMO_USAGE_RATIO: "0.75"
+          VIMO_MAX_WORKERS: "2"
+          VIMO_DAILY_MAX_SYMBOLS: "8"
+        run: |
+          if [ -z "$VIMO_API_KEY" ]; then
+            echo "VIMO_API_KEY is not configured; optional support flow skipped."
+            exit 0
+          fi
+          python vimo_support.py --mode daily
+
       - name: Upload data artifact
         if: always() && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
         uses: actions/upload-artifact@v7
@@ -343,7 +368,7 @@ jobs:
             data/portfolio.json
 
       - name: Notify workflow failure
-        if: failure() && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
+        if: failure()
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

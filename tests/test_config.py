@@ -9,6 +9,7 @@ def test_settings_reads_env(monkeypatch):
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "chat")
     monkeypatch.setenv("FIINQUANT_USERNAME", "fiin-user")
     monkeypatch.setenv("FIINQUANT_PASSWORD", "fiin-password")
+    monkeypatch.setenv("VIMO_API_KEY", "vimo-key")
     monkeypatch.setenv("SCAN_SOURCE_USAGE_RATIO", "0.8")
     config.get_settings.cache_clear()
 
@@ -20,6 +21,9 @@ def test_settings_reads_env(monkeypatch):
     assert settings.fiinquant_username.get_secret_value() == "fiin-user"
     assert "fiin-password" not in repr(settings)
     assert config.settings_summary(settings)["fiinquant_configured"] is True
+    assert settings.vimo_api_key.get_secret_value() == "vimo-key"
+    assert "vimo-key" not in repr(settings)
+    assert config.settings_summary(settings)["vimo_configured"] is True
     assert float(settings.scan_source_usage_ratio) == 0.8
 
 
