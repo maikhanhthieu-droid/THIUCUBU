@@ -129,6 +129,7 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 | `data/market_state_history.json` | Bộ nhớ chuyển pha và thay đổi điểm đáng kể |
 | `data/signal_tracker.json` | Episode tín hiệu v2 đo đúng T+5/T+10/T+20 phiên, MFE/MAE và excess so với VNINDEX |
 | `data/source_health.json` | Sức khỏe từng nguồn dữ liệu |
+| `data/source_routing.json` | Bản đồ phân luồng FiinQuant và VCI/KBS/DNSE, tự cập nhật theo trạng thái |
 | `data/universe_state.json` | Universe động, cursor và lát quét gần nhất |
 
 `filter_feed_latest.json` sử dụng schema `thieucubu.raw_filter.v2`. Các trường v1 quan trọng vẫn được giữ tại root để tránh làm hỏng consumer cũ.
@@ -156,7 +157,8 @@ GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard t
 
 ## Nguồn dữ liệu và khả năng tự phục hồi
 
-- Khi đã cấu hình tài khoản: ưu tiên `FIINQUANT`, sau đó tự fallback `VCI,KBS,DNSE`.
+- Mã cần chú ý trong `data/source_routing.json` ưu tiên `FIINQUANT`, sau đó tự fallback `VCI,KBS,DNSE`.
+- Mã bình thường được cân tải giữa `VCI/KBS/DNSE`; FiinQuant chỉ là cứu hộ cuối cùng khi cả ba nguồn thường cùng không lấy được dữ liệu.
 - Khi chưa có đủ hai FiinQuant Secret, nguồn này tự bị loại khỏi lượt chạy; các luồng cũ vẫn hoạt động bình thường.
 - FiinQuantX chỉ chạy historical request, dùng chung một phiên đăng nhập trong mỗi process và không mở WebSocket realtime.
 - Mỗi mã có nguồn ưu tiên và fallback riêng.
@@ -165,6 +167,17 @@ GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard t
 - Giá cổ phiếu từ mọi nguồn được chuẩn hóa về `thousand_vnd`; cache và nguồn mới còn được đối chiếu ngày trùng nhau để tự sửa sai lệch 1.000 lần.
 - Dữ liệu stale có thể xuất hiện trong báo cáo tham khảo nhưng không được chọn làm conviction cuối tuần.
 - Source health được lưu để lần chạy sau ưu tiên nguồn khỏe hơn.
+
+### Phân luồng tự động
+
+`data/source_routing.json` là file duy nhất cần xem khi muốn biết mã nào đang đi qua nguồn nào:
+
+- `fiinquant_priority`: mã cơ hội, tích lũy, gần break, retest/tái tích lũy, break xịt cần theo dõi, memory strong/watchlist và mã trong portfolio/note.
+- `standard_routes.VCI/KBS/DNSE`: các mã chưa cần chú ý nhiều, được chia tải ổn định theo mã.
+- Mã mất điều kiện phải qua 3 lần quét liên tiếp mới bị hạ từ FiinQuant xuống luồng thường, tránh nhảy nhóm do nhiễu một phiên.
+- Kết quả cuối tuần `ƯU TIÊN GOM/CHỜ ĐIỂM GOM` tự được nâng vào luồng FiinQuant cho các phiên sau.
+
+Chỉnh tay chỉ tại hai danh sách trong `manual`: `force_fiinquant` để ghim mã cần theo dõi sát, và `force_standard` để buộc mã dùng luồng thường. Các phần sinh tự động không nên sửa tay.
 
 ## Thiết lập
 
@@ -246,7 +259,7 @@ Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể c�
 - `SCAN_SOURCE_LIMITS=FIINQUANT=80,VCI=20,KBS=20,DNSE=15`
 - `FIINQUANT_REQUESTS_PER_MINUTE=80`
 - `FIINQUANT_USAGE_RATIO=0.75`
-- `FIINQUANT_MAX_CONCURRENCY=2`
+- `FIINQUANT_MAX_CONCURRENCY=1`
 - `SCAN_SOURCE_USAGE_RATIO=0.78`
 - `SCAN_ROTATING_UNIVERSE_SIZE=36`
 - `WEEKEND_HISTORY_BARS=780`

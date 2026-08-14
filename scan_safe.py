@@ -16,6 +16,7 @@ import pandas as pd
 import fetcher
 import market_intel as intel
 import scan
+import source_router
 
 logger = logging.getLogger("thieucutoo.safe")
 DATA_DIR = scan.DATA_DIR
@@ -356,19 +357,11 @@ def extract_retry_after_seconds(exc: BaseException) -> float | None:
 
 
 def source_order_for_symbol(symbol: str) -> list[str]:
-    sources = API_SOURCES
-    if symbol.upper() in INDEX_ALIASES or symbol.upper().startswith("^"):
-        sources = [source for source in API_SOURCES if source in INDEX_CAPABLE_SOURCES]
-    sources = sources or API_SOURCES
-    start = sum(ord(char) for char in symbol.upper()) % len(sources)
-    rotated = sources[start:] + sources[:start]
-    previous = PREVIOUS_SOURCE_HEALTH.get("sources", {}) if isinstance(PREVIOUS_SOURCE_HEALTH, dict) else {}
-    return sorted(
-        rotated,
-        key=lambda source: (
-            int((previous.get(source, {}) or {}).get("health_score", 100)) < 40,
-            source != "FIINQUANT",
-        ),
+    return source_router.source_order(
+        symbol,
+        API_SOURCES,
+        index_capable_sources=INDEX_CAPABLE_SOURCES,
+        previous_health=PREVIOUS_SOURCE_HEALTH,
     )
 
 

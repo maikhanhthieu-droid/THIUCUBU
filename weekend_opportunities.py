@@ -20,6 +20,7 @@ import market_phase
 import scan
 import scan_safe
 import scoring
+import source_router
 import weekly_sniper
 
 logging.basicConfig(
@@ -1078,6 +1079,8 @@ async def main() -> None:
     save_fundamental_history(packets)
     opportunities = build_opportunities(packets, sectors)
     save_outputs(opportunities, sectors)
+    if mode != "test":
+        source_router.update_from_weekend(opportunities, universe=scan.ALL_TICKERS)
 
     report = build_report(opportunities, sectors, mode)
     await scan.send_chunks("*THIEUCUBU WEEKEND*", report)

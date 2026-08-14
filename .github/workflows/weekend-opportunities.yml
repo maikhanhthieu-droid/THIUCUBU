@@ -91,7 +91,8 @@ jobs:
           SCAN_SOURCE_LIMITS: "FIINQUANT=80,VCI=20,KBS=20,DNSE=15"
           FIINQUANT_REQUESTS_PER_MINUTE: "80"
           FIINQUANT_USAGE_RATIO: "0.75"
-          FIINQUANT_MAX_CONCURRENCY: "2"
+          # The free FiinQuant plan allows one maximum connection.
+          FIINQUANT_MAX_CONCURRENCY: "1"
           SCAN_SOURCE_USAGE_RATIO: "0.78"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.4"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.8"
@@ -127,6 +128,7 @@ jobs:
             data/near_high_skiplist.json
             data/run_journal.json
             data/source_health.json
+            data/source_routing.json
           retention-days: 60
 
       - name: Commit weekend data
@@ -144,7 +146,8 @@ jobs:
             data/signal_tracker.json \
             data/near_high_skiplist.json \
             data/run_journal.json \
-            data/source_health.json
+            data/source_health.json \
+            data/source_routing.json
 
       - name: Notify workflow failure
         if: failure()

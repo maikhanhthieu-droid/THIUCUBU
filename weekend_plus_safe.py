@@ -165,6 +165,11 @@ async def main() -> None:
         if callable(build_near_high) and plus.weekend.UPDATE_NEAR_HIGH and mode != "test":
             near_high = build_near_high(packets)
         plus.weekend.save_outputs(opportunities, sectors)
+        if mode != "test":
+            plus.weekend.source_router.update_from_weekend(
+                opportunities,
+                universe=scan.ALL_TICKERS,
+            )
 
         report = plus.weekend.build_report(opportunities, sectors, mode, near_high, missing_fundamental)
         telegram_sent = bool(await scan.send_chunks("*THIEUCUBU WEEKEND*", report)) and not scan.DRY_RUN

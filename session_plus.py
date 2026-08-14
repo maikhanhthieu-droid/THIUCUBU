@@ -16,6 +16,7 @@ import run_journal
 import scan
 import scan_safe
 import session_scan as sess
+import source_router
 import state_manager
 import state_transition
 import telegram_format as tf
@@ -253,6 +254,7 @@ def save_session_outputs(
     if mode == "eod":
         intel.auto_update_portfolio_thresholds(results)
     memory_summary: dict[str, Any] = {}
+    memory_state: dict[str, Any] = {}
     if mode == "test":
         memory_summary = state_manager.memory_summary()
     else:
@@ -261,6 +263,18 @@ def save_session_outputs(
             memory_summary = state_manager.memory_summary(memory_state)
         except Exception as exc:
             logger.warning("Cannot update memory_state.json: %s", exc)
+        try:
+            source_router.update_routing(
+                results,
+                metrics=metrics,
+                memory_state=memory_state,
+                watch_items=watch_items,
+                transitions=transitions,
+                universe=[*scan.ALL_TICKERS, *focus_symbols, *watch_items.keys()],
+                mode=mode,
+            )
+        except Exception as exc:
+            logger.warning("Cannot update source_routing.json: %s", exc)
     ordered = sorted(results.values(), key=lambda x: (adv_score(x, metrics), x.win_score, x.flow_score), reverse=True)
     scan.json_save(sess.DATA_DIR / "results_latest.json", [asdict(x) for x in ordered], pretty=False)
     latest = {

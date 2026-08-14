@@ -8,6 +8,7 @@ import pytest
 import fetcher
 import fiinquant_provider as fiin
 import scan_safe
+import source_router
 import weekend_opportunities as weekend
 
 
@@ -38,11 +39,17 @@ def test_aliases_and_index_symbols_are_normalized(monkeypatch) -> None:
     assert fiin.canonical_symbol("UPCOMINDEX") == "UpcomIndex"
 
 
-def test_healthy_fiinquant_is_the_first_source(monkeypatch) -> None:
+def test_healthy_fiinquant_is_first_only_for_priority_symbols(monkeypatch) -> None:
     monkeypatch.setattr(scan_safe, "API_SOURCES", ["FIINQUANT", "VCI", "KBS", "DNSE"])
     monkeypatch.setattr(scan_safe, "PREVIOUS_SOURCE_HEALTH", {"sources": {}})
+    routing = source_router.default_routing()
+    routing["fiinquant_priority"] = [
+        {"symbol": "VCB", "reasons": ["test"], "attention_score": 100, "consecutive_misses": 0}
+    ]
+    monkeypatch.setattr(source_router, "get_routing", lambda path=None: routing)
 
     assert scan_safe.source_order_for_symbol("VCB")[0] == "FIINQUANT"
+    assert scan_safe.source_order_for_symbol("HPG")[-1] == "FIINQUANT"
 
 
 def test_history_reuses_one_session_and_never_requests_realtime(monkeypatch) -> None:
