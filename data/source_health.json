@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-14T21:17:58+07:00",
+  "updated_at": "2026-08-15T09:57:10+07:00",
   "sources": {
     "FIINQUANT": {
       "source": "FIINQUANT",
@@ -20,21 +20,21 @@
       "rpm_limit": 20,
       "effective_rpm": 15.6,
       "attempts": 53,
-      "successes": 53,
+      "successes": 52,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 0,
+      "transient_failures": 1,
       "parked_count": 0,
       "disabled": false,
-      "last_error": "",
-      "health_score": 100
+      "last_error": "transient",
+      "health_score": 90
     },
     "KBS": {
       "source": "KBS",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 67,
-      "successes": 67,
+      "attempts": 68,
+      "successes": 68,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 0,
