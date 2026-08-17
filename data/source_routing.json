@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-08-17T15:48:22+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-08-17T22:37:13+07:00",
+  "last_mode": "morning_broad",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -48,7 +48,7 @@
       "last_price": 68.2,
       "as_of": "2026-08-17",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-17T15:48:22+07:00",
+      "last_evaluated_at": "2026-08-17T22:37:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -96,7 +96,7 @@
       "last_price": 17.95,
       "as_of": "2026-08-14",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-17T15:48:22+07:00",
+      "last_evaluated_at": "2026-08-17T22:37:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -218,7 +218,7 @@
       "last_price": 76.0,
       "as_of": "2026-08-14",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-17T15:48:22+07:00",
+      "last_evaluated_at": "2026-08-17T22:37:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -314,7 +314,7 @@
       "last_price": 21.85,
       "as_of": "2026-08-17",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-17T15:48:22+07:00",
+      "last_evaluated_at": "2026-08-17T22:37:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -433,33 +433,6 @@
       "breakout_state": "NO_DATA",
       "last_price": null,
       "as_of": null,
-      "first_promoted_at": "2026-08-17T15:48:22+07:00",
-      "last_evaluated_at": "2026-08-17T15:48:22+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "VLB",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state:OPPORTUNITY",
-        "near_break",
-        "score:80",
-        "memory:watch",
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 80,
-      "advanced_score": 65,
-      "market_state": "OPPORTUNITY",
-      "breakout_state": "NEAR_BREAK",
-      "last_price": 48.3,
-      "as_of": "2026-08-17",
       "first_promoted_at": "2026-08-17T15:48:22+07:00",
       "last_evaluated_at": "2026-08-17T15:48:22+07:00",
       "consecutive_misses": 0
@@ -794,6 +767,29 @@
       "first_promoted_at": "2026-08-17T15:48:22+07:00",
       "last_evaluated_at": "2026-08-17T15:48:22+07:00",
       "consecutive_misses": 0
+    },
+    {
+      "symbol": "GMD",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "breakout:FAILED_BREAK_WATCH"
+      ],
+      "attention_score": 128,
+      "win_score": 4,
+      "advanced_score": 13,
+      "market_state": "CAUTION",
+      "breakout_state": "FAILED_BREAK_WATCH",
+      "last_price": 78.8,
+      "as_of": "2026-08-17",
+      "first_promoted_at": "2026-08-17T22:37:13+07:00",
+      "last_evaluated_at": "2026-08-17T22:37:13+07:00",
+      "consecutive_misses": 0
     }
   ],
   "standard_routes": {
@@ -810,7 +806,6 @@
       "FTS",
       "G36",
       "GEG",
-      "GMD",
       "HAH",
       "HDB",
       "HNG",
@@ -894,6 +889,7 @@
       "VCG",
       "VCI",
       "VIP",
+      "VLB",
       "VPB",
       "VPH"
     ],
@@ -952,11 +948,11 @@
     "standard_count": 143,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE; FiinQuant chỉ cứu hộ khi cả ba nguồn thường lỗi.",
     "standard_counts_by_source": {
-      "VCI": 45,
-      "KBS": 51,
+      "VCI": 44,
+      "KBS": 52,
       "DNSE": 47
     },
-    "evaluated_symbols": 175,
+    "evaluated_symbols": 37,
     "demote_after_scans": 3
   }
 }

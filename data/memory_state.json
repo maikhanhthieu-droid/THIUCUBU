@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-08-17T15:48:22+07:00",
-  "last_mode": "eod",
+  "last_updated": "2026-08-17T22:37:13+07:00",
+  "last_mode": "morning_broad",
   "strong_stocks": [],
   "watchlist": [
     {
@@ -47,8 +47,8 @@
       "category": "watchlist",
       "first_detected": "2026-08-17",
       "last_seen": "2026-08-17",
-      "last_updated": "2026-08-17T15:48:22+07:00",
-      "last_mode": "eod",
+      "last_updated": "2026-08-17T22:37:13+07:00",
+      "last_mode": "morning_broad",
       "score": 63,
       "win_score": 77,
       "close": 74.2,
@@ -119,10 +119,10 @@
     }
   ],
   "session_focus": [
-    "MCH",
-    "MSB",
     "STB",
     "VLB",
+    "MSB",
+    "MCH",
     "VNM",
     "BMP",
     "LPB",
