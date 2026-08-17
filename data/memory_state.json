@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-08-17T22:37:13+07:00",
-  "last_mode": "morning_broad",
+  "last_updated": "2026-08-17T22:37:18+07:00",
+  "last_mode": "afternoon_split",
   "strong_stocks": [],
   "watchlist": [
     {
@@ -47,8 +47,8 @@
       "category": "watchlist",
       "first_detected": "2026-08-17",
       "last_seen": "2026-08-17",
-      "last_updated": "2026-08-17T22:37:13+07:00",
-      "last_mode": "morning_broad",
+      "last_updated": "2026-08-17T22:37:18+07:00",
+      "last_mode": "afternoon_split",
       "score": 63,
       "win_score": 77,
       "close": 74.2,
@@ -119,8 +119,8 @@
     }
   ],
   "session_focus": [
-    "STB",
     "VLB",
+    "STB",
     "MSB",
     "MCH",
     "VNM",
