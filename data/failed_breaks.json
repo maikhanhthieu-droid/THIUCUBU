@@ -178,5 +178,17 @@
     "date": "2026-08-17",
     "score": 0,
     "reason": "vol kiet; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "PVD",
+    "date": "2026-08-17",
+    "score": 11,
+    "reason": "nen chat; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "GAS",
+    "date": "2026-08-17",
+    "score": 10,
+    "reason": "discount 42.2% >= target 15%; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   }
 ]
