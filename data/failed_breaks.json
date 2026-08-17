@@ -1,11 +1,5 @@
 [
   {
-    "symbol": "VNM",
-    "date": "2026-07-22",
-    "score": 20,
-    "reason": "discount 17.1% >= target 15%; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE,DISTRIBUTION"
-  },
-  {
     "symbol": "NVL",
     "date": "2026-07-24",
     "score": 53,
@@ -172,5 +166,17 @@
     "date": "2026-08-14",
     "score": 0,
     "reason": "discount 36.5% >= target 35%; vol kiet; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "ACB",
+    "date": "2026-08-17",
+    "score": 20,
+    "reason": "nen chat; vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "VHM",
+    "date": "2026-08-17",
+    "score": 0,
+    "reason": "vol kiet; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]

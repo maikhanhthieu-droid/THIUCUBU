@@ -1,9 +1,46 @@
 {
   "version": 1,
-  "last_updated": "2026-08-14T21:17:52+07:00",
-  "last_mode": "eod",
+  "last_updated": "2026-08-17T11:14:04+07:00",
+  "last_mode": "morning_broad",
   "strong_stocks": [],
   "watchlist": [
+    {
+      "symbol": "STB",
+      "category": "watchlist",
+      "first_detected": "2026-08-17",
+      "last_seen": "2026-08-17",
+      "last_updated": "2026-08-17T11:14:04+07:00",
+      "last_mode": "morning_broad",
+      "score": 62,
+      "win_score": 77,
+      "close": 73.8,
+      "sector": "Bank",
+      "setup": "VCP_BREAK",
+      "near_break": true,
+      "obv_up": false,
+      "failed_break": false,
+      "market_state": "OPPORTUNITY",
+      "daily_phase": "REACCUMULATION",
+      "weekly_phase": "REACCUMULATION",
+      "monthly_phase": "REACCUMULATION",
+      "breakout_state": "NEAR_BREAK",
+      "breakout_level": 76.1,
+      "reaccumulation": false,
+      "rsi": 55.3,
+      "mfi": 53.8,
+      "vol_ratio": 0.31,
+      "consolidation_days": 1,
+      "last_signal": "nen chat; vol kiet; MFI tot; gan nen break; MTF CƠ HỘI; GẦN ĐIỂM BREAK",
+      "flags": [
+        "near_break",
+        "mfi_ok",
+        "market_opportunity",
+        "near_break"
+      ],
+      "note": "",
+      "rs_score": 73,
+      "risk_reward": 5.07
+    },
     {
       "symbol": "MSB",
       "category": "watchlist",
@@ -44,8 +81,9 @@
     }
   ],
   "session_focus": [
-    "MCH",
+    "STB",
     "MSB",
+    "MCH",
     "VNM",
     "BMP",
     "LPB",
@@ -63,7 +101,6 @@
     "KSB",
     "BAF",
     "VGT",
-    "STB",
     "DPM",
     "HCM",
     "HDB",
@@ -177,37 +214,6 @@
       "note": "",
       "rs_score": 100,
       "risk_reward": 4.04,
-      "retired_reason": "failed_break"
-    },
-    {
-      "symbol": "NVL",
-      "category": "retired",
-      "first_detected": "2026-07-23",
-      "last_seen": "2026-07-24",
-      "last_updated": "2026-07-24T15:55:46+07:00",
-      "last_mode": "eod",
-      "score": 55,
-      "win_score": 53,
-      "close": 12.95,
-      "sector": "BDS dan cu",
-      "setup": "AVOID_FAILED_BREAK",
-      "near_break": true,
-      "obv_up": true,
-      "failed_break": true,
-      "rsi": 61.1,
-      "mfi": 59.6,
-      "vol_ratio": 1.8,
-      "consolidation_days": 2,
-      "last_signal": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK",
-      "flags": [
-        "near_break",
-        "obv_up",
-        "mfi_ok",
-        "failed_break"
-      ],
-      "note": "",
-      "rs_score": 61,
-      "risk_reward": 11.25,
       "retired_reason": "failed_break"
     },
     {
@@ -1371,8 +1377,8 @@
     "retired_limit": 50,
     "description": "Bot memory for strong stocks, VCP/VSA watchlist, and priority focus symbols.",
     "strong_count": 0,
-    "watchlist_count": 1,
+    "watchlist_count": 2,
     "session_focus_count": 40,
-    "retired_count": 38
+    "retired_count": 37
   }
 }
