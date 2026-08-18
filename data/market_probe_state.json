@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-08-18T11:05:12+07:00",
-  "mode": "morning_broad",
+  "updated_at": "2026-08-18T14:11:40+07:00",
+  "mode": "afternoon_split",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 38,
-    "unchanged": 0,
+    "changed": 28,
+    "unchanged": 10,
     "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
@@ -14,7 +14,7 @@
       "2026-08-17": 10
     },
     "inactive": false,
-    "reason": "market_active changed 38/38",
+    "reason": "market_active changed 28/38",
     "policy": "scan_old",
     "action": "warn"
   },
@@ -22,20 +22,20 @@
     "ACB": {
       "symbol": "ACB",
       "latest_date": "2026-08-18",
-      "close": 21.9,
-      "volume": 2036800.0
+      "close": 21.6,
+      "volume": 5534900.0
     },
     "BID": {
       "symbol": "BID",
       "latest_date": "2026-08-18",
-      "close": 36.25,
-      "volume": 1293700.0
+      "close": 36.0,
+      "volume": 2197900.0
     },
     "BSR": {
       "symbol": "BSR",
       "latest_date": "2026-08-18",
-      "close": 27.25,
-      "volume": 12093800.0
+      "close": 27.2,
+      "volume": 18735300.0
     },
     "CTG": {
       "symbol": "CTG",
@@ -52,32 +52,32 @@
     "DGC": {
       "symbol": "DGC",
       "latest_date": "2026-08-18",
-      "close": 42.0,
-      "volume": 109700.0
+      "close": 41.75,
+      "volume": 286700.0
     },
     "DIG": {
       "symbol": "DIG",
       "latest_date": "2026-08-18",
-      "close": 10.9,
-      "volume": 868500.0
+      "close": 10.7,
+      "volume": 3388700.0
     },
     "DPM": {
       "symbol": "DPM",
       "latest_date": "2026-08-18",
-      "close": 21.9,
-      "volume": 1026800.0
+      "close": 21.65,
+      "volume": 1761800.0
     },
     "FPT": {
       "symbol": "FPT",
       "latest_date": "2026-08-18",
-      "close": 69.1,
-      "volume": 1113800.0
+      "close": 68.5,
+      "volume": 2768300.0
     },
     "FRT": {
       "symbol": "FRT",
       "latest_date": "2026-08-18",
-      "close": 147.0,
-      "volume": 179300.0
+      "close": 146.0,
+      "volume": 279100.0
     },
     "GAS": {
       "symbol": "GAS",
@@ -88,8 +88,8 @@
     "GMD": {
       "symbol": "GMD",
       "latest_date": "2026-08-18",
-      "close": 79.2,
-      "volume": 211800.0
+      "close": 79.0,
+      "volume": 1535700.0
     },
     "HCM": {
       "symbol": "HCM",
@@ -100,20 +100,20 @@
     "HDB": {
       "symbol": "HDB",
       "latest_date": "2026-08-18",
-      "close": 26.95,
-      "volume": 3917500.0
+      "close": 26.8,
+      "volume": 7408500.0
     },
     "HPG": {
       "symbol": "HPG",
       "latest_date": "2026-08-18",
-      "close": 21.3,
-      "volume": 5745400.0
+      "close": 21.05,
+      "volume": 12427900.0
     },
     "HSG": {
       "symbol": "HSG",
       "latest_date": "2026-08-18",
-      "close": 10.65,
-      "volume": 265200.0
+      "close": 10.6,
+      "volume": 790200.0
     },
     "KDH": {
       "symbol": "KDH",
@@ -130,20 +130,20 @@
     "MSN": {
       "symbol": "MSN",
       "latest_date": "2026-08-18",
-      "close": 66.9,
-      "volume": 512700.0
+      "close": 66.1,
+      "volume": 1431100.0
     },
     "MWG": {
       "symbol": "MWG",
       "latest_date": "2026-08-18",
-      "close": 73.4,
-      "volume": 590500.0
+      "close": 72.3,
+      "volume": 1287600.0
     },
     "NKG": {
       "symbol": "NKG",
       "latest_date": "2026-08-18",
-      "close": 10.8,
-      "volume": 269300.0
+      "close": 10.7,
+      "volume": 757900.0
     },
     "NLG": {
       "symbol": "NLG",
@@ -154,8 +154,8 @@
     "PNJ": {
       "symbol": "PNJ",
       "latest_date": "2026-08-18",
-      "close": 35.5,
-      "volume": 1875500.0
+      "close": 34.9,
+      "volume": 4201700.0
     },
     "PVD": {
       "symbol": "PVD",
@@ -166,8 +166,8 @@
     "PVS": {
       "symbol": "PVS",
       "latest_date": "2026-08-18",
-      "close": 35.9,
-      "volume": 2367700.0
+      "close": 35.7,
+      "volume": 3842600.0
     },
     "SSI": {
       "symbol": "SSI",
@@ -178,56 +178,56 @@
     "STB": {
       "symbol": "STB",
       "latest_date": "2026-08-18",
-      "close": 74.3,
-      "volume": 251100.0
+      "close": 75.3,
+      "volume": 3609000.0
     },
     "TCB": {
       "symbol": "TCB",
       "latest_date": "2026-08-18",
-      "close": 31.45,
-      "volume": 2699200.0
+      "close": 30.7,
+      "volume": 11971600.0
     },
     "VCB": {
       "symbol": "VCB",
       "latest_date": "2026-08-18",
-      "close": 58.4,
-      "volume": 1273900.0
+      "close": 57.9,
+      "volume": 2356300.0
     },
     "VCI": {
       "symbol": "VCI",
       "latest_date": "2026-08-18",
-      "close": 21.55,
-      "volume": 1140600.0
+      "close": 20.9,
+      "volume": 7100200.0
     },
     "VHM": {
       "symbol": "VHM",
       "latest_date": "2026-08-18",
-      "close": 69.8,
-      "volume": 2219800.0
+      "close": 68.8,
+      "volume": 4000000.0
     },
     "VIC": {
       "symbol": "VIC",
       "latest_date": "2026-08-18",
-      "close": 200.5,
-      "volume": 790600.0
+      "close": 198.6,
+      "volume": 2464700.0
     },
     "VIX": {
       "symbol": "VIX",
       "latest_date": "2026-08-18",
-      "close": 13.45,
-      "volume": 9034000.0
+      "close": 13.15,
+      "volume": 24280100.0
     },
     "VND": {
       "symbol": "VND",
       "latest_date": "2026-08-18",
-      "close": 16.25,
-      "volume": 2674100.0
+      "close": 16.0,
+      "volume": 7056500.0
     },
     "VNINDEX": {
       "symbol": "VNINDEX",
       "latest_date": "2026-08-18",
-      "close": 1740.29,
-      "volume": 191639732.0
+      "close": 1725.01,
+      "volume": 423698242.0
     },
     "VNM": {
       "symbol": "VNM",
@@ -238,14 +238,14 @@
     "VPB": {
       "symbol": "VPB",
       "latest_date": "2026-08-18",
-      "close": 24.65,
-      "volume": 6107500.0
+      "close": 24.5,
+      "volume": 13639300.0
     },
     "VRE": {
       "symbol": "VRE",
       "latest_date": "2026-08-18",
-      "close": 24.65,
-      "volume": 1208300.0
+      "close": 24.3,
+      "volume": 2561200.0
     }
   }
 }

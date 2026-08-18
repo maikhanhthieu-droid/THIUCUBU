@@ -310,5 +310,11 @@
     "date": "2026-08-18",
     "score": 0,
     "reason": "discount 36.0% >= target 25%; vol kiet; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "KSB",
+    "date": "2026-08-18",
+    "score": 0,
+    "reason": "OBV up; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]
