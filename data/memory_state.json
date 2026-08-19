@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "last_updated": "2026-08-19T16:54:41+07:00",
-  "last_mode": "morning_broad",
+  "last_updated": "2026-08-19T16:54:42+07:00",
+  "last_mode": "afternoon_split",
   "strong_stocks": [],
   "watchlist": [],
   "session_focus": [
-    "PVS",
     "MCH",
     "OCB",
+    "PVS",
     "TVS",
     "VLB",
     "STB",
