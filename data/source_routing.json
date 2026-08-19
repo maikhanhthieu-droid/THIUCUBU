@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-08-19T15:42:38+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-08-19T16:54:41+07:00",
+  "last_mode": "morning_broad",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -48,7 +48,7 @@
       "last_price": 69.1,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -96,7 +96,7 @@
       "last_price": 18.5,
       "as_of": "2026-08-18",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -288,7 +288,7 @@
       "last_price": 21.8,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -576,30 +576,6 @@
       "consecutive_misses": 1
     },
     {
-      "symbol": "NKG",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state_transition",
-        "hysteresis:1/3"
-      ],
-      "attention_score": 130,
-      "win_score": 0,
-      "advanced_score": 0,
-      "market_state": "NO_DATA",
-      "breakout_state": "NO_DATA",
-      "last_price": null,
-      "as_of": null,
-      "first_promoted_at": "2026-08-18T11:11:08+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
-      "consecutive_misses": 1
-    },
-    {
       "symbol": "HUT",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
@@ -624,7 +600,7 @@
       "consecutive_misses": 1
     },
     {
-      "symbol": "VCB",
+      "symbol": "NKG",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -643,32 +619,8 @@
       "breakout_state": "NO_DATA",
       "last_price": null,
       "as_of": null,
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
-      "consecutive_misses": 2
-    },
-    {
-      "symbol": "HSG",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state_transition",
-        "hysteresis:2/3"
-      ],
-      "attention_score": 130,
-      "win_score": 0,
-      "advanced_score": 0,
-      "market_state": "NO_DATA",
-      "breakout_state": "NO_DATA",
-      "last_price": null,
-      "as_of": null,
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "first_promoted_at": "2026-08-18T11:11:08+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
       "consecutive_misses": 2
     },
     {
@@ -783,7 +735,54 @@
       "last_price": 78.6,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-18T14:13:02+07:00",
-      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
+      "consecutive_misses": 0
+    },
+    {
+      "symbol": "VNM",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "breakout:HEALTHY_RETEST",
+        "state:ACCUMULATION"
+      ],
+      "attention_score": 122,
+      "win_score": 61,
+      "advanced_score": 48,
+      "market_state": "ACCUMULATION",
+      "breakout_state": "HEALTHY_RETEST",
+      "last_price": 62.1,
+      "as_of": "2026-08-18",
+      "first_promoted_at": "2026-08-19T16:54:41+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
+      "consecutive_misses": 0
+    },
+    {
+      "symbol": "STB",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state:OPPORTUNITY"
+      ],
+      "attention_score": 121,
+      "win_score": 52,
+      "advanced_score": 43,
+      "market_state": "OPPORTUNITY",
+      "breakout_state": "NEAR_BREAK",
+      "last_price": 74.8,
+      "as_of": "2026-08-19",
+      "first_promoted_at": "2026-08-19T16:54:41+07:00",
+      "last_evaluated_at": "2026-08-19T16:54:41+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -820,10 +819,10 @@
       "SCR",
       "SGP",
       "SMC",
-      "STB",
       "TCB",
       "TTF",
       "TVS",
+      "VCB",
       "VGS",
       "VGT",
       "VIB",
@@ -856,6 +855,7 @@
       "FRT",
       "GIL",
       "HHV",
+      "HSG",
       "IDI",
       "LPB",
       "LSS",
@@ -933,7 +933,6 @@
       "VDS",
       "VHC",
       "VIG",
-      "VNM",
       "VSH",
       "VTO"
     ]
@@ -944,10 +943,10 @@
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE; FiinQuant chỉ cứu hộ khi cả ba nguồn thường lỗi.",
     "standard_counts_by_source": {
       "VCI": 42,
-      "KBS": 52,
-      "DNSE": 49
+      "KBS": 53,
+      "DNSE": 48
     },
-    "evaluated_symbols": 175,
+    "evaluated_symbols": 37,
     "demote_after_scans": 3
   }
 }
