@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-08-19T11:12:05+07:00",
-  "last_mode": "morning_broad",
+  "last_updated": "2026-08-19T14:13:21+07:00",
+  "last_mode": "afternoon_split",
   "strong_stocks": [],
   "watchlist": [
     {
@@ -9,11 +9,11 @@
       "category": "watchlist",
       "first_detected": "2026-08-17",
       "last_seen": "2026-08-19",
-      "last_updated": "2026-08-19T11:12:05+07:00",
-      "last_mode": "morning_broad",
-      "score": 66,
-      "win_score": 89,
-      "close": 74.1,
+      "last_updated": "2026-08-19T14:13:21+07:00",
+      "last_mode": "afternoon_split",
+      "score": 61,
+      "win_score": 77,
+      "close": 75.9,
       "sector": "Bank",
       "setup": "VCP_BREAK",
       "near_break": true,
@@ -26,11 +26,11 @@
       "breakout_state": "NEAR_BREAK",
       "breakout_level": 76.1,
       "reaccumulation": false,
-      "rsi": 59.1,
-      "mfi": 69.0,
-      "vol_ratio": 0.13,
+      "rsi": 66.2,
+      "mfi": 72.7,
+      "vol_ratio": 1.27,
       "consolidation_days": 3,
-      "last_signal": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF CƠ HỘI; GẦN ĐIỂM BREAK",
+      "last_signal": "nen chat; OBV up; MFI tot; gan nen break; MTF CƠ HỘI; GẦN ĐIỂM BREAK",
       "flags": [
         "near_break",
         "obv_up",
@@ -39,15 +39,15 @@
         "near_break"
       ],
       "note": "",
-      "rs_score": 73,
-      "risk_reward": 5.29
+      "rs_score": 78,
+      "risk_reward": 3.16
     }
   ],
   "session_focus": [
+    "STB",
     "BAF",
     "OCB",
     "PVS",
-    "STB",
     "TVS",
     "VLB",
     "MCH",
