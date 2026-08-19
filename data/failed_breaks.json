@@ -388,5 +388,11 @@
     "date": "2026-08-19",
     "score": 0,
     "reason": "discount 37.8% >= target 35%; vol kiet; MFI tot; gan nen break; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "HAH",
+    "date": "2026-08-19",
+    "score": 0,
+    "reason": "OBV up; MFI tot; gan nen break; MTF PHÂN PHỐI; GẦN ĐIỂM BREAK; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]

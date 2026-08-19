@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-08-19T14:13:21+07:00",
-  "last_mode": "afternoon_split",
+  "updated_at": "2026-08-19T15:42:38+07:00",
+  "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -45,10 +45,10 @@
       "advanced_score": 6,
       "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 68.9,
+      "last_price": 69.1,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -62,8 +62,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 8,
@@ -73,7 +72,7 @@
       "last_price": 86.4,
       "as_of": "2026-08-18",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -97,7 +96,7 @@
       "last_price": 18.5,
       "as_of": "2026-08-18",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -118,10 +117,10 @@
       "advanced_score": 25,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 38.35,
+      "last_price": 38.4,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -135,18 +134,17 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 24,
-      "advanced_score": 21,
+      "advanced_score": 17,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 13.05,
+      "last_price": 13.0,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -163,14 +161,37 @@
         "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
-      "win_score": 22,
-      "advanced_score": 12,
+      "win_score": 0,
+      "advanced_score": 1,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 12.95,
+      "last_price": 12.85,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 0
+    },
+    {
+      "symbol": "HAH",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "failed_break"
+      ],
+      "attention_score": 134,
+      "win_score": 0,
+      "advanced_score": 3,
+      "market_state": "DISTRIBUTION",
+      "breakout_state": "NEAR_BREAK",
+      "last_price": 47.6,
+      "as_of": "2026-08-19",
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -194,7 +215,7 @@
       "last_price": 21.45,
       "as_of": "2026-08-18",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -211,14 +232,14 @@
         "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
-      "win_score": 14,
-      "advanced_score": 21,
+      "win_score": 19,
+      "advanced_score": 23,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 13.9,
+      "last_price": 13.95,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -232,17 +253,18 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED"
+        "breakout:FAILED_BREAK_CONFIRMED",
+        "state_transition"
       ],
       "attention_score": 134,
       "win_score": 0,
-      "advanced_score": 2,
-      "market_state": "CAUTION",
+      "advanced_score": 1,
+      "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 6.9,
+      "last_price": 6.8,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -263,10 +285,10 @@
       "advanced_score": 21,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 21.75,
+      "last_price": 21.8,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -283,90 +305,18 @@
         "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
-      "win_score": 4,
-      "advanced_score": 7,
+      "win_score": 0,
+      "advanced_score": 5,
       "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 6.97,
+      "last_price": 6.9,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T14:04:34+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
-      "symbol": "VTO",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "breakout:REACCUMULATION",
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 37,
-      "advanced_score": 19,
-      "market_state": "CAUTION",
-      "breakout_state": "REACCUMULATION",
-      "last_price": 10.4,
-      "as_of": "2026-08-18",
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "VSH",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state:OPPORTUNITY",
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 61,
-      "advanced_score": 37,
-      "market_state": "OPPORTUNITY",
-      "breakout_state": "NEAR_BREAK",
-      "last_price": 41.55,
-      "as_of": "2026-08-18",
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "VGT",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "breakout:BREAKOUT_CONFIRMED",
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 60,
-      "advanced_score": 39,
-      "market_state": "CAUTION",
-      "breakout_state": "BREAKOUT_CONFIRMED",
-      "last_price": 11.4,
-      "as_of": "2026-08-19",
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "SZC",
+      "symbol": "VOS",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -384,12 +334,12 @@
       "breakout_state": "NO_DATA",
       "last_price": null,
       "as_of": null,
-      "first_promoted_at": "2026-08-18T11:11:08+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
-      "symbol": "STG",
+      "symbol": "VCG",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -407,32 +357,8 @@
       "breakout_state": "NO_DATA",
       "last_price": null,
       "as_of": null,
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "SIP",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "breakout:FAILED_BREAK_WATCH",
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 0,
-      "advanced_score": 2,
-      "market_state": "DISTRIBUTION",
-      "breakout_state": "FAILED_BREAK_WATCH",
-      "last_price": 49.4,
-      "as_of": "2026-08-18",
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -445,7 +371,7 @@
         "DNSE"
       ],
       "reasons": [
-        "breakout:HEALTHY_RETEST",
+        "breakout:BREAKOUT_CONFIRMED",
         "state:ACCUMULATION",
         "state_transition"
       ],
@@ -453,39 +379,15 @@
       "win_score": 61,
       "advanced_score": 45,
       "market_state": "ACCUMULATION",
-      "breakout_state": "HEALTHY_RETEST",
-      "last_price": 45.8,
+      "breakout_state": "BREAKOUT_CONFIRMED",
+      "last_price": 45.9,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-14T16:48:55+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
-      "symbol": "PVT",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "breakout:FAILED_BREAK_WATCH",
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 24,
-      "advanced_score": 21,
-      "market_state": "CAUTION",
-      "breakout_state": "FAILED_BREAK_WATCH",
-      "last_price": 20.3,
-      "as_of": "2026-08-19",
-      "first_promoted_at": "2026-08-18T15:41:48+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "PHR",
+      "symbol": "LCG",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -503,54 +405,8 @@
       "breakout_state": "NO_DATA",
       "last_price": null,
       "as_of": null,
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "NKG",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 0,
-      "advanced_score": 0,
-      "market_state": "NO_DATA",
-      "breakout_state": "NO_DATA",
-      "last_price": null,
-      "as_of": null,
-      "first_promoted_at": "2026-08-18T11:11:08+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "HUT",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state_transition"
-      ],
-      "attention_score": 130,
-      "win_score": 0,
-      "advanced_score": 0,
-      "market_state": "NO_DATA",
-      "breakout_state": "NO_DATA",
-      "last_price": null,
-      "as_of": null,
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -573,11 +429,34 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
-      "symbol": "GVR",
+      "symbol": "G36",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state_transition"
+      ],
+      "attention_score": 130,
+      "win_score": 0,
+      "advanced_score": 0,
+      "market_state": "NO_DATA",
+      "breakout_state": "NO_DATA",
+      "last_price": null,
+      "as_of": null,
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 0
+    },
+    {
+      "symbol": "DHA",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -590,18 +469,18 @@
         "state_transition"
       ],
       "attention_score": 130,
-      "win_score": 34,
-      "advanced_score": 24,
+      "win_score": 37,
+      "advanced_score": 36,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_WATCH",
-      "last_price": 31.75,
+      "last_price": 51.3,
       "as_of": "2026-08-19",
-      "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T11:12:05+07:00",
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
-      "symbol": "FRT",
+      "symbol": "BVH",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -611,19 +490,138 @@
       ],
       "reasons": [
         "breakout:BREAKOUT_CONFIRMED",
-        "state:OPPORTUNITY",
         "state_transition"
       ],
       "attention_score": 130,
-      "win_score": 19,
-      "advanced_score": 21,
-      "market_state": "OPPORTUNITY",
+      "win_score": 53,
+      "advanced_score": 36,
+      "market_state": "ACCUMULATION",
       "breakout_state": "BREAKOUT_CONFIRMED",
-      "last_price": 143.2,
+      "last_price": 66.8,
       "as_of": "2026-08-19",
-      "first_promoted_at": "2026-08-19T14:13:21+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
+      "first_promoted_at": "2026-08-19T15:42:38+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
+    },
+    {
+      "symbol": "SZC",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state_transition",
+        "hysteresis:1/3"
+      ],
+      "attention_score": 130,
+      "win_score": 0,
+      "advanced_score": 0,
+      "market_state": "NO_DATA",
+      "breakout_state": "NO_DATA",
+      "last_price": null,
+      "as_of": null,
+      "first_promoted_at": "2026-08-18T11:11:08+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 1
+    },
+    {
+      "symbol": "STG",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state_transition",
+        "hysteresis:1/3"
+      ],
+      "attention_score": 130,
+      "win_score": 0,
+      "advanced_score": 0,
+      "market_state": "NO_DATA",
+      "breakout_state": "NO_DATA",
+      "last_price": null,
+      "as_of": null,
+      "first_promoted_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 1
+    },
+    {
+      "symbol": "PHR",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state_transition",
+        "hysteresis:1/3"
+      ],
+      "attention_score": 130,
+      "win_score": 0,
+      "advanced_score": 0,
+      "market_state": "NO_DATA",
+      "breakout_state": "NO_DATA",
+      "last_price": null,
+      "as_of": null,
+      "first_promoted_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 1
+    },
+    {
+      "symbol": "NKG",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state_transition",
+        "hysteresis:1/3"
+      ],
+      "attention_score": 130,
+      "win_score": 0,
+      "advanced_score": 0,
+      "market_state": "NO_DATA",
+      "breakout_state": "NO_DATA",
+      "last_price": null,
+      "as_of": null,
+      "first_promoted_at": "2026-08-18T11:11:08+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 1
+    },
+    {
+      "symbol": "HUT",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "state_transition",
+        "hysteresis:1/3"
+      ],
+      "attention_score": 130,
+      "win_score": 0,
+      "advanced_score": 0,
+      "market_state": "NO_DATA",
+      "breakout_state": "NO_DATA",
+      "last_price": null,
+      "as_of": null,
+      "first_promoted_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 1
     },
     {
       "symbol": "VCB",
@@ -636,7 +634,7 @@
       ],
       "reasons": [
         "state_transition",
-        "hysteresis:1/3"
+        "hysteresis:2/3"
       ],
       "attention_score": 130,
       "win_score": 0,
@@ -646,8 +644,8 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 1
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 2
     },
     {
       "symbol": "HSG",
@@ -660,7 +658,7 @@
       ],
       "reasons": [
         "state_transition",
-        "hysteresis:1/3"
+        "hysteresis:2/3"
       ],
       "attention_score": 130,
       "win_score": 0,
@@ -670,8 +668,54 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-19T11:12:05+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 1
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 2
+    },
+    {
+      "symbol": "SIP",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "breakout:FAILED_BREAK_WATCH"
+      ],
+      "attention_score": 128,
+      "win_score": 0,
+      "advanced_score": 2,
+      "market_state": "DISTRIBUTION",
+      "breakout_state": "FAILED_BREAK_WATCH",
+      "last_price": 49.4,
+      "as_of": "2026-08-18",
+      "first_promoted_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 0
+    },
+    {
+      "symbol": "PVT",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "breakout:FAILED_BREAK_WATCH"
+      ],
+      "attention_score": 128,
+      "win_score": 7,
+      "advanced_score": 9,
+      "market_state": "CAUTION",
+      "breakout_state": "FAILED_BREAK_WATCH",
+      "last_price": 20.4,
+      "as_of": "2026-08-19",
+      "first_promoted_at": "2026-08-18T15:41:48+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 0
     },
     {
       "symbol": "KSB",
@@ -686,14 +730,37 @@
         "breakout:FAILED_BREAK_WATCH"
       ],
       "attention_score": 128,
-      "win_score": 11,
-      "advanced_score": 4,
+      "win_score": 1,
+      "advanced_score": 0,
       "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_WATCH",
-      "last_price": 13.6,
+      "last_price": 13.65,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-18T14:13:02+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
+      "consecutive_misses": 0
+    },
+    {
+      "symbol": "GVR",
+      "tier": "FIINQUANT_PRIORITY",
+      "primary_source": "FIINQUANT",
+      "fallback_sources": [
+        "VCI",
+        "KBS",
+        "DNSE"
+      ],
+      "reasons": [
+        "breakout:FAILED_BREAK_WATCH"
+      ],
+      "attention_score": 128,
+      "win_score": 30,
+      "advanced_score": 22,
+      "market_state": "CAUTION",
+      "breakout_state": "FAILED_BREAK_WATCH",
+      "last_price": 31.7,
+      "as_of": "2026-08-19",
+      "first_promoted_at": "2026-08-19T11:12:05+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     },
     {
@@ -709,88 +776,14 @@
         "breakout:FAILED_BREAK_WATCH"
       ],
       "attention_score": 128,
-      "win_score": 12,
-      "advanced_score": 19,
+      "win_score": 17,
+      "advanced_score": 22,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_WATCH",
-      "last_price": 79.4,
+      "last_price": 78.6,
       "as_of": "2026-08-19",
       "first_promoted_at": "2026-08-18T14:13:02+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "VNM",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "breakout:HEALTHY_RETEST",
-        "state:ACCUMULATION"
-      ],
-      "attention_score": 122,
-      "win_score": 61,
-      "advanced_score": 48,
-      "market_state": "ACCUMULATION",
-      "breakout_state": "HEALTHY_RETEST",
-      "last_price": 62.1,
-      "as_of": "2026-08-18",
-      "first_promoted_at": "2026-08-19T14:13:21+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "TVS",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state:OPPORTUNITY",
-        "near_break"
-      ],
-      "attention_score": 121,
-      "win_score": 64,
-      "advanced_score": 44,
-      "market_state": "OPPORTUNITY",
-      "breakout_state": "NEAR_BREAK",
-      "last_price": 13.65,
-      "as_of": "2026-08-19",
-      "first_promoted_at": "2026-08-18T11:11:08+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
-      "consecutive_misses": 0
-    },
-    {
-      "symbol": "STB",
-      "tier": "FIINQUANT_PRIORITY",
-      "primary_source": "FIINQUANT",
-      "fallback_sources": [
-        "VCI",
-        "KBS",
-        "DNSE"
-      ],
-      "reasons": [
-        "state:OPPORTUNITY",
-        "near_break",
-        "score:77",
-        "memory:watch"
-      ],
-      "attention_score": 121,
-      "win_score": 77,
-      "advanced_score": 61,
-      "market_state": "OPPORTUNITY",
-      "breakout_state": "NEAR_BREAK",
-      "last_price": 75.9,
-      "as_of": "2026-08-19",
-      "first_promoted_at": "2026-08-19T14:13:21+07:00",
-      "last_evaluated_at": "2026-08-19T14:13:21+07:00",
+      "last_evaluated_at": "2026-08-19T15:42:38+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -802,13 +795,10 @@
       "CII",
       "CTR",
       "D2D",
-      "DHA",
       "DXG",
       "FCN",
       "FTS",
-      "G36",
       "GEG",
-      "HAH",
       "HDB",
       "HNG",
       "HPG",
@@ -830,9 +820,12 @@
       "SCR",
       "SGP",
       "SMC",
+      "STB",
       "TCB",
       "TTF",
+      "TVS",
       "VGS",
+      "VGT",
       "VIB",
       "VIC",
       "VIX",
@@ -848,7 +841,6 @@
       "BMI",
       "BMP",
       "BSR",
-      "BVH",
       "BVS",
       "CEO",
       "CMG",
@@ -861,10 +853,10 @@
       "EIB",
       "FOX",
       "FPT",
+      "FRT",
       "GIL",
       "HHV",
       "IDI",
-      "LCG",
       "LPB",
       "LSS",
       "MBS",
@@ -886,13 +878,11 @@
       "TNG",
       "TPB",
       "TV2",
-      "VCG",
       "VCI",
       "VEA",
       "VGC",
       "VIP",
       "VLB",
-      "VOS",
       "VPB",
       "VPH"
     ],
@@ -942,7 +932,10 @@
       "TLH",
       "VDS",
       "VHC",
-      "VIG"
+      "VIG",
+      "VNM",
+      "VSH",
+      "VTO"
     ]
   },
   "meta": {
@@ -951,10 +944,10 @@
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE; FiinQuant chỉ cứu hộ khi cả ba nguồn thường lỗi.",
     "standard_counts_by_source": {
       "VCI": 42,
-      "KBS": 55,
-      "DNSE": 46
+      "KBS": 52,
+      "DNSE": 49
     },
-    "evaluated_symbols": 57,
+    "evaluated_symbols": 175,
     "demote_after_scans": 3
   }
 }
