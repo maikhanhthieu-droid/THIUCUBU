@@ -807,25 +807,25 @@
       "updated_at": "2026-08-20T11:12:24+07:00"
     },
     {
-      "run_id": "20260820141041-72b905b7",
-      "mode": "morning_broad",
+      "run_id": "20260820141104-53238b17",
+      "mode": "afternoon_split",
       "trigger": "workflow_dispatch",
       "status": "started",
-      "started_at": "2026-08-20T14:10:41+07:00",
-      "updated_at": "2026-08-20T14:10:41+07:00"
+      "started_at": "2026-08-20T14:11:04+07:00",
+      "updated_at": "2026-08-20T14:11:04+07:00"
     },
     {
-      "run_id": "20260820141041-72b905b7",
-      "mode": "morning_broad",
+      "run_id": "20260820141104-53238b17",
+      "mode": "afternoon_split",
       "status": "success",
-      "finished_at": "2026-08-20T14:12:38+07:00",
-      "success_count": 38,
+      "finished_at": "2026-08-20T14:13:31+07:00",
+      "success_count": 44,
       "failed_count": 0,
       "failed_symbols": [],
-      "elapsed_sec": 116.4,
+      "elapsed_sec": 146.6,
       "telegram_sent": true,
-      "updated_at": "2026-08-20T14:12:38+07:00"
+      "updated_at": "2026-08-20T14:13:31+07:00"
     }
   ],
-  "last_updated": "2026-08-20T14:12:38+07:00"
+  "last_updated": "2026-08-20T14:13:31+07:00"
 }
