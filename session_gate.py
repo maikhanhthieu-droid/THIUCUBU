@@ -90,6 +90,7 @@ plus.sess.SESSION_WINDOWS["eod"].update(
 )
 
 _old_wait_until = plus.sess.wait_until
+_five_stream_build_session_report = plus.build_session_report
 _JITTER_TARGETS = {dt_time(10, 31), dt_time(10, 35), dt_time(13, 35), dt_time(13, 46)}
 
 
@@ -140,94 +141,21 @@ def build_session_report(
     market_day: Any | None = None,
     **_: Any,
 ) -> str:
-    window = plus.sess.SESSION_WINDOWS[mode]
     metrics = plus._STATE.get("metrics", {})
-    regime = plus._STATE.get("regime", {})
-    rotation_alerts = plus._STATE.get("rotation", [])
-    transitions = plus._STATE.get("transitions", [])
-    ordered = sorted(results.values(), key=lambda x: (regime_gate.adv_score(x, metrics.get(x.symbol)), x.win_score, x.flow_score), reverse=True)
-    market = results.get("VNINDEX")
-    stocks = [x for x in ordered if x.symbol != "VNINDEX"]
-    focus_set = set(focus_symbols)
-    focus_candidates = [x for x in stocks if x.symbol in focus_set and regime_gate.signal_allowed(x, metrics.get(x.symbol), min_score=62)]
-    strong_candidates = regime_gate.filter_results(stocks, metrics, min_score=72)
-    break_candidates = regime_gate.filter_results(stocks, metrics, min_score=62, require_near_break=True)
-    failed_candidates = [
-        x for x in stocks
-        if x.failed_break
-        or metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") == "FAILED_BREAK_CONFIRMED"
-    ]
-    structure_watch_states = {
-        "FAILED_BREAK_CONFIRMED",
-        "FAILED_BREAK_WATCH",
-        "REACCUMULATION",
-        "HEALTHY_RETEST",
-        "RECLAIMED_BREAK",
-        "BREAKOUT_UNCONFIRMED",
-    }
-    structure_candidates = [
-        x for x in stocks
-        if metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") in structure_watch_states
-    ]
-    seen_symbols = set(watch_items)
-    show_failed = mode == "eod" or plus.sess.base_mode(mode) == "afternoon"
-    failed = plus.unique_results(failed_candidates, seen_symbols, 10) if show_failed else []
-    structure_watch = plus.unique_results(structure_candidates, seen_symbols, 12)
-    focus_results = plus.unique_results(focus_candidates, seen_symbols, 12)
-    strong = plus.unique_results(strong_candidates, seen_symbols, 10)
-    break_watch = plus.unique_results(break_candidates, seen_symbols, 14)
-    suppressed = regime_gate.suppressed_lines(
-        stocks,
-        metrics,
-        min_score=72,
-        exclude_symbols=seen_symbols,
+    for symbol, result in results.items():
+        if symbol == "VNINDEX":
+            continue
+        item = metrics.get(symbol)
+        if isinstance(item, dict):
+            item["gate"] = regime_gate.signal_gate(result, item, min_score=62)
+    return _five_stream_build_session_report(
+        mode,
+        results,
+        focus_symbols,
+        watch_items,
+        activity_probe=activity_probe,
+        market_day=market_day,
     )
-    sectors = scan.summarize_sector(stocks)[:8]
-    now = datetime.now(plus.sess.VN_TZ).strftime("%d/%m %H:%M")
-
-    lines = [
-        f"*THIEUCUBU {window['title']}* `{now}`",
-        f"{window['description']} Score v2 tối đa 97, không phải cam kết lợi nhuận.",
-        plus.market_status(market, regime),
-        intel.format_regime(regime),
-        "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
-        *intel.structure_map_lines(stocks, metrics),
-    ]
-    if transitions:
-        lines += ["", "*CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý*"]
-        lines += [state_transition.format_transition(item) for item in transitions[:10]]
-    if market_day and getattr(market_day, "closed", False):
-        lines += [
-            "",
-            f"*CALENDAR*: {getattr(market_day, 'reason', 'Market closed')} `{getattr(market_day, 'date', '')}` | van quet data moi nhat theo policy `{getattr(market_day, 'policy', '')}`.",
-        ]
-    probe_note = market_probe.report_note(activity_probe)
-    if probe_note:
-        lines += ["", probe_note]
-    lines += ["", "*PORTFOLIO / NOTE BAT BUOC*"]
-    lines += plus.portfolio_lines(results, watch_items, metrics)
-    lines += ["", "*DU PHONG CO MANH CAN CHU Y*"]
-    lines += [plus.projection_line(x, mode, metrics) for x in focus_results] or ["Không có mã focus riêng ngoài các nhóm bên dưới."]
-    lines += ["", "*CO MANH THI TRUONG*"]
-    lines += [plus.with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Market regime dang chan bot signal mua."]
-    lines += ["", "*GAN BREAK / CO THE MUA TUNG PHAN*"]
-    lines += [plus.with_intel(tf.format_stock_card(x, action="CANH BREAK / MUA TUNG PHAN"), metrics.get(x.symbol)) for x in break_watch] or ["Khong co ma dat nguong sau khi loc regime."]
-    lines += ["", "*BREAK XỊT / RETEST / TÁI TÍCH LŨY*"]
-    lines += [intel.format_breakout_watch(x, metrics.get(x.symbol)) for x in structure_watch] or ["Không có cấu trúc break cần chú ý."]
-    if suppressed:
-        lines += ["", "*BI MARKET REGIME LOC BOT*"]
-        lines += suppressed
-    lines += ["", "*NGANH LEAD / RISK*"]
-    lines += [tf.format_sector_line(x) for x in sectors] or ["Chua du du lieu nganh."]
-    if rotation_alerts:
-        lines += ["", "*SECTOR ROTATION*"]
-        lines += rotation_alerts[:8]
-    if show_failed:
-        lines += ["", "*FAILED BREAK / CAN NE*"]
-        lines += [plus.with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
-    if mode == "eod":
-        lines += ["", intel.build_performance_report()]
-    return "\n".join(lines)
 
 
 def save_session_outputs(

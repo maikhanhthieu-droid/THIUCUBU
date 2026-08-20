@@ -70,3 +70,27 @@ def test_partial_scan_preserves_unseen_symbol_state(tmp_path):
 
     stored = state_transition._load(path)
     assert "BBB" in stored["states"]
+
+
+def test_primary_stream_change_is_reported_after_stream_state_has_been_seeded(tmp_path):
+    path = tmp_path / "states.json"
+    early_metrics = metrics(68, "CAUTION", "NO_BREAKOUT")
+    early_metrics["AAA"]["primary_stream"] = "early"
+    opportunity_metrics = metrics(82, "OPPORTUNITY", "BREAKOUT_CONFIRMED")
+    opportunity_metrics["AAA"]["primary_stream"] = "opportunity"
+
+    state_transition.update_transitions(
+        path=path,
+        results={"AAA": result("2026-01-02")},
+        metrics_by_symbol=early_metrics,
+    )
+    events = state_transition.update_transitions(
+        path=path,
+        results={"AAA": result("2026-01-05", 82)},
+        metrics_by_symbol=opportunity_metrics,
+    )
+
+    stream_events = [item for item in events if item["kind"] == "PRIMARY_STREAM"]
+    assert len(stream_events) == 1
+    assert stream_events[0]["from"] == "early"
+    assert stream_events[0]["to"] == "opportunity"

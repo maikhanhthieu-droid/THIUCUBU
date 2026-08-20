@@ -77,6 +77,9 @@ assert latest.get("mode") == "test"
 assert latest.get("market") is not None
 assert sent, "report was not sent"
 assert "THIEUCUBU TEST" in sent[0][1]
+assert "TÓM TẮT 5 LUỒNG" in sent[0][1]
+assert "LUỒNG 1 — PORTFOLIO" in sent[0][1]
+assert "LUỒNG 5 — BREAK XỊT" in sent[0][1]
 print("integration-ok", datetime.now().isoformat())
 ''',
         encoding="utf-8",

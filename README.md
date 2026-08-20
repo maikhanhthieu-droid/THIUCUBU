@@ -26,6 +26,18 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 - Lưu vùng gom, vùng breakout, mức vô hiệu luận điểm, bull case và rủi ro.
 - Ghi nhớ luận điểm qua nhiều tuần để một cổ phiếu tốt không biến mất chỉ vì nhiễu một phiên.
 
+## Báo cáo hằng ngày theo 5 luồng
+
+Mỗi báo cáo Telegram mở đầu bằng `TÓM TẮT 5 LUỒNG`, liệt kê mã trước rồi mới trình bày nội dung. Một mã chỉ có một luồng chính; portfolio luôn được ưu tiên và vẫn được phân tích đầy đủ dù cấu trúc đang xấu.
+
+1. `PORTFOLIO`: mã đang nắm giữ hoặc có note; phân tích bắt buộc và quản trị vị thế.
+2. `OPPORTUNITY`: cơ hội/tích lũy đủ điều kiện để phân tích sâu.
+3. `EARLY`: gom sớm E1 cạn bán, E2 đang tạo đáy, E3 đã có xác nhận thăm dò.
+4. `TECHNICAL`: RSI/MACD/SMI phân kỳ, hội tụ hoặc gần giao cắt ở vùng đáy; chỉ là cảnh báo theo dõi.
+5. `STRUCTURE`: break xịt, retest, reclaim hoặc tái tích lũy; hiển thị ngắn để tránh làm loãng báo cáo.
+
+Phân loại được tạo tự động sau mỗi lần quét. `session_alerts_latest.json` và feature feed đều có payload `five_streams`; mỗi fact có `classification.primary_stream`. Khi một mã đổi luồng, `market_state_history.json` ghi sự kiện `PRIMARY_STREAM` để mục chuyển pha có thể báo lại ở phiên sau.
+
 ## Kiến trúc
 
 ```text

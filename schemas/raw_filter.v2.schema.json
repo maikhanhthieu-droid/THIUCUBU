@@ -31,6 +31,8 @@
           },
           "classification": {"type": "object"},
           "market_structure": {"type": "object"},
+          "technical_watch": {"type": "object"},
+          "early_accumulation": {"type": "object"},
           "weekly": {"type": "object"},
           "volume": {"type": "object"},
           "relative_strength": {"type": "object"},

@@ -38,6 +38,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
     trade = intel.get("trade") if isinstance(intel.get("trade"), Mapping) else {}
     gate = intel.get("gate") if isinstance(intel.get("gate"), Mapping) else {}
     structure = intel.get("market_structure") if isinstance(intel.get("market_structure"), Mapping) else {}
+    technical_watch = intel.get("technical_watch") if isinstance(intel.get("technical_watch"), Mapping) else {}
+    early_accumulation = intel.get("early_accumulation") if isinstance(intel.get("early_accumulation"), Mapping) else {}
     as_of = raw.get("as_of") or raw.get("date") or raw.get("as_of_date")
     data_source = raw.get("data_source")
     cache_status = str(raw.get("cache_status") or "unknown")
@@ -91,6 +93,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
                 "reaccumulation": bool(raw.get("reaccumulation")),
             },
         },
+        "technical_watch": dict(technical_watch),
+        "early_accumulation": dict(early_accumulation),
         "weekly": {
             "uptrend": bool(weekly.get("weekly_uptrend")),
             "above_ema13": bool(weekly.get("weekly_above_ema13")),

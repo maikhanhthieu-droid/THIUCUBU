@@ -56,6 +56,7 @@ def _state(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         "daily_phase": str(getattr(result, "daily_phase", "NO_DATA")),
         "weekly_phase": str(getattr(result, "weekly_phase", "NO_DATA")),
         "monthly_phase": str(getattr(result, "monthly_phase", "NO_DATA")),
+        "primary_stream": str(metrics.get("primary_stream") or "unclassified"),
     }
 
 
@@ -89,6 +90,15 @@ def _material_events(symbol: str, old: Mapping[str, Any], new: Mapping[str, Any]
     new_market = str(new.get("market_state", "NO_DATA"))
     if old_market != new_market and (old_market in IMPORTANT_MARKET or new_market in IMPORTANT_MARKET):
         events.append(_event(symbol, "MARKET_STATE", old_market, new_market, int(new["score"]), new.get("as_of")))
+
+    old_stream = str(old.get("primary_stream") or "unclassified")
+    new_stream = str(new.get("primary_stream") or "unclassified")
+    if "primary_stream" in old and old_stream != new_stream and (
+        old_stream != "unclassified" or new_stream != "unclassified"
+    ):
+        events.append(
+            _event(symbol, "PRIMARY_STREAM", old_stream, new_stream, int(new["score"]), new.get("as_of"))
+        )
 
     old_score = int(old.get("score", 0) or 0)
     new_score = int(new.get("score", 0) or 0)
@@ -149,4 +159,6 @@ def format_transition(event: Mapping[str, Any]) -> str:
         return f"`{symbol}` điểm giảm đáng kể {old} → {new} (rơi mốc {event.get('crossed_band')})"
     if kind == "BREAKOUT_STATE":
         return f"`{symbol}` cấu trúc break: {old} → *{new}* | điểm {score}"
+    if kind == "PRIMARY_STREAM":
+        return f"`{symbol}` chuyển luồng: {old} → *{new}* | điểm {score}"
     return f"`{symbol}` trạng thái: {old} → *{new}* | điểm {score}"

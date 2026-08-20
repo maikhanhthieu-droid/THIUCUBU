@@ -17,6 +17,7 @@ import market_phase
 import scan
 import scoring
 import signal_tracker
+import technical_features
 
 logger = logging.getLogger("thieucutoo.intel")
 DATA_DIR = scan.DATA_DIR
@@ -325,6 +326,14 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
     rs = relative_strength(df, df_index)
     trade = compute_trade_levels(result, levels)
     structure = market_phase.analyze_market_structure(df)
+    technical_watch = technical_features.analyze_technical_watch(df)
+    early_accumulation = technical_features.analyze_early_accumulation(
+        df,
+        result,
+        structure=structure.to_dict(),
+        technical=technical_watch,
+        relative_strength=rs,
+    )
     rr = trade.get("risk_reward")
     name = str(regime.get("regime", "UNKNOWN"))
     weekly_score = (
@@ -372,6 +381,8 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         "trade": trade,
         "regime": regime,
         "market_structure": structure.to_dict(),
+        "technical_watch": technical_watch,
+        "early_accumulation": early_accumulation,
     }
 
 
@@ -417,6 +428,8 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     regime = metrics.get("regime", {})
     gate = metrics.get("gate", {})
     structure = metrics.get("market_structure", {})
+    technical_watch = metrics.get("technical_watch", {})
+    early_accumulation = metrics.get("early_accumulation", {})
     rr_text = f"{fmt_num(trade.get('risk_reward'))}x" if trade.get("risk_reward") is not None else "n/a"
     adv = int(metrics.get("advanced_score", 0))
     grade = str(metrics.get("grade") or scoring.grade(adv))
@@ -451,7 +464,20 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
         phase_line += f" | {break_label}"
         if breakout.get("event_age_bars") is not None:
             phase_line += f" ({int(breakout['event_age_bars'])} phiên)"
-    return [line1, phase_line, line2]
+    lines = [line1, phase_line, line2]
+    secondary_labels: list[str] = []
+    if early_accumulation.get("eligible"):
+        secondary_labels.append(
+            f"Early {early_accumulation.get('stage', 'E1')} {int(early_accumulation.get('score') or 0)}/97"
+        )
+    if technical_watch.get("watch"):
+        secondary_labels.append(
+            f"KT đáy {int(technical_watch.get('score') or 0)}/97: "
+            + ", ".join(str(item) for item in technical_watch.get("signals", [])[:2])
+        )
+    if secondary_labels:
+        lines.append("Nhãn phụ: " + " | ".join(secondary_labels))
+    return lines
 
 
 def structure_map_lines(

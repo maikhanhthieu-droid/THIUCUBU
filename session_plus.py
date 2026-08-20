@@ -12,6 +12,7 @@ from typing import Any
 import market_intel as intel
 import market_probe
 import near_high_filter
+import report_streams
 import run_journal
 import scan
 import scan_safe
@@ -123,6 +124,72 @@ def projection_line(result: scan.ScanResult, mode: str, metrics: dict[str, dict[
     return with_intel(tf.format_stock_card(result, action=action, timing=timing), metrics.get(result.symbol))
 
 
+def opportunity_action(result: scan.ScanResult, metrics: dict[str, dict[str, Any]]) -> str:
+    item = metrics.get(result.symbol, {})
+    gate = item.get("gate", {})
+    if gate and not gate.get("allowed", True):
+        return f"CÓ CƠ HỘI NHƯNG CHƯA MUA / {tf.clean_text(gate.get('reason'))}"
+    structure = item.get("market_structure", {})
+    state = str(structure.get("overall_state") or result.market_state)
+    if state == "OPPORTUNITY" and result.near_break:
+        return "CƠ HỘI / CANH MUA TỪNG PHẦN"
+    if state == "OPPORTUNITY":
+        return "CƠ HỘI / CHỜ ĐIỂM MUA"
+    return "TÍCH LŨY / ƯU TIÊN THEO DÕI"
+
+
+def early_accumulation_card(result: scan.ScanResult, metrics: dict[str, dict[str, Any]]) -> str:
+    early = metrics.get(result.symbol, {}).get("early_accumulation", {})
+    stage = str(early.get("stage") or "E1")
+    score = int(early.get("score") or 0)
+    confidence = int(early.get("confidence") or 0)
+    signals = "; ".join(tf.clean_text(item) for item in early.get("signals", [])[:4]) or "đang thu thập bằng chứng"
+    missing = "; ".join(tf.clean_text(item) for item in early.get("missing", [])[:3]) or "chờ duy trì cấu trúc"
+    return "\n".join(
+        [
+            f"`{result.symbol}` *{stage} · {score}/97*  {tf.clean_text(early.get('label')).upper()}",
+            f"Giá {tf.format_price(result.close)} | DD {result.discount_pct:.1f}% | Vol5/20 {float(early.get('vol_5_20') or 0):.2f}x | RSI {result.rsi:.0f} | Tin cậy {confidence}%",
+            f"Có: {signals}",
+            f"Còn thiếu: {missing} | Hành động: {tf.clean_text(early.get('action')).upper()}",
+        ]
+    )
+
+
+def technical_watch_line(result: scan.ScanResult, metrics: dict[str, dict[str, Any]]) -> str:
+    technical = metrics.get(result.symbol, {}).get("technical_watch", {})
+    score = int(technical.get("score") or 0)
+    confidence = int(technical.get("confidence") or 0)
+    stage = tf.clean_text(technical.get("stage")).upper()
+    signals = "; ".join(tf.clean_text(item) for item in technical.get("signals", [])[:4]) or "động lượng đáy đang hình thành"
+    return (
+        f"`{result.symbol}` *T · {score}/97* {stage} | Giá {tf.format_price(result.close)} | "
+        f"RSI {float(technical.get('rsi') or result.rsi):.0f} | "
+        f"MACD Hist {float(technical.get('macd_hist_pct') or 0):+.3f}% | "
+        f"SMI {float(technical.get('smi') or 0):+.0f} | Tin cậy {confidence}%\n"
+        f"Tín hiệu: {signals} | Chỉ theo dõi, chưa phải lệnh mua"
+    )
+
+
+def five_stream_summary(
+    streams: dict[str, list[scan.ScanResult]],
+    metrics: dict[str, dict[str, Any]],
+    watch_items: dict[str, dict[str, Any]],
+) -> list[str]:
+    labels = {
+        report_streams.PORTFOLIO: "1. DANH MỤC BẮT BUỘC",
+        report_streams.OPPORTUNITY: "2. CƠ HỘI / TÍCH LŨY",
+        report_streams.EARLY: "3. GOM SỚM E1-E3",
+        report_streams.TECHNICAL: "4. RSI / MACD / SMI",
+        report_streams.STRUCTURE: "5. BREAK / RETEST / TÁI TL",
+    }
+    lines = ["*TÓM TẮT 5 LUỒNG — MÃ TRƯỚC, NỘI DUNG SAU*"]
+    for stream in report_streams.DISPLAY_ORDER:
+        extras = list(watch_items) if stream == report_streams.PORTFOLIO else None
+        summary = report_streams.symbol_summary(stream, streams[stream], metrics, extra_symbols=extras)
+        lines.append(f"{labels[stream]}: {summary}")
+    return lines
+
+
 def build_session_report(
     mode: str,
     results: dict[str, scan.ScanResult],
@@ -138,43 +205,23 @@ def build_session_report(
     regime = _STATE.get("regime", {})
     rotation_alerts = _STATE.get("rotation", [])
     transitions = _STATE.get("transitions", [])
-    ordered = sorted(results.values(), key=lambda x: (adv_score(x, metrics), x.win_score, x.flow_score), reverse=True)
     market = results.get("VNINDEX")
-    stocks = [x for x in ordered if x.symbol != "VNINDEX"]
-    focus_set = set(focus_symbols)
-    focus_candidates = [x for x in stocks if x.symbol in focus_set and not x.failed_break]
-    strong_candidates = [x for x in stocks if adv_score(x, metrics) >= 72 and not x.failed_break]
-    break_candidates = [x for x in stocks if adv_score(x, metrics) >= 62 and x.near_break and not x.failed_break]
-    failed_candidates = [x for x in stocks if x.failed_break]
-    structure_watch_states = {
-        "FAILED_BREAK_CONFIRMED", "FAILED_BREAK_WATCH", "REACCUMULATION",
-        "HEALTHY_RETEST", "RECLAIMED_BREAK", "BREAKOUT_UNCONFIRMED",
-    }
-    structure_candidates = [
-        x for x in stocks
-        if metrics.get(x.symbol, {}).get("market_structure", {}).get("breakout", {}).get("state") in structure_watch_states
-    ]
-    seen_symbols = set(watch_items)
-    show_failed = mode == "eod" or sess.base_mode(mode) == "afternoon"
-    failed = unique_results(failed_candidates, seen_symbols, 10) if show_failed else []
-    structure_watch = unique_results(structure_candidates, seen_symbols, 12)
-    focus_results = unique_results(focus_candidates, seen_symbols, 12)
-    strong = unique_results(strong_candidates, seen_symbols, 10)
-    break_watch = unique_results(break_candidates, seen_symbols, 14)
+    stocks = [x for x in results.values() if x.symbol != "VNINDEX"]
+    streams = report_streams.classify_streams(results, metrics, watch_items)
     sectors = scan.summarize_sector(stocks)[:8]
     now = datetime.now(sess.VN_TZ).strftime("%d/%m %H:%M")
 
     lines = [
         f"*THIEUCUBU {window['title']}* `{now}`",
-        f"{window['description']} Score v2 tối đa 97; báo lại đầy đủ mỗi phiên, không chỉ mã mới. Không phải cam kết lợi nhuận.",
+        f"{window['description']} Score v2 tối đa 97; tự xếp 5 luồng, không phải cam kết lợi nhuận.",
         market_status(market, regime),
         intel.format_regime(regime),
+        "",
+        *five_stream_summary(streams, metrics, watch_items),
+        "",
         "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
         *intel.structure_map_lines(stocks, metrics),
     ]
-    if transitions:
-        lines += ["", "*CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý*"]
-        lines += [state_transition.format_transition(item) for item in transitions[:10]]
     if market_day and getattr(market_day, "closed", False):
         lines += [
             "",
@@ -183,24 +230,56 @@ def build_session_report(
     probe_note = market_probe.report_note(activity_probe)
     if probe_note:
         lines += ["", probe_note]
-    lines += ["", "*PORTFOLIO / GHI CHÚ BẮT BUỘC*"]
+    lines += [
+        "",
+        "*LUỒNG 1 — PORTFOLIO / GHI CHÚ BẮT BUỘC*",
+        "*MÃ:* " + report_streams.symbol_summary(
+            report_streams.PORTFOLIO,
+            streams[report_streams.PORTFOLIO],
+            metrics,
+            extra_symbols=list(watch_items),
+        ),
+    ]
     lines += portfolio_lines(results, watch_items, metrics)
-    lines += ["", "*DỰ PHÓNG CỔ MẠNH CẦN CHÚ Ý*"]
-    lines += [projection_line(x, mode, metrics) for x in focus_results] or ["Không có mã focus riêng ngoài các nhóm bên dưới."]
-    lines += ["", "*CỔ MẠNH THỊ TRƯỜNG*"]
-    lines += [with_intel(tf.format_stock_card(x), metrics.get(x.symbol)) for x in strong] or ["Khong co ma dat nguong."]
-    lines += ["", "*GẦN BREAK / CÓ THỂ MUA TỪNG PHẦN*"]
-    lines += [with_intel(tf.format_stock_card(x, action="CANH BREAK / MUA TUNG PHAN"), metrics.get(x.symbol)) for x in break_watch] or ["Khong co ma dat nguong."]
-    lines += ["", "*BREAK XỊT / RETEST / TÁI TÍCH LŨY*"]
-    lines += [intel.format_breakout_watch(x, metrics.get(x.symbol)) for x in structure_watch] or ["Không có cấu trúc break cần chú ý."]
+    opportunity = streams[report_streams.OPPORTUNITY]
+    lines += [
+        "",
+        "*LUỒNG 2 — CƠ HỘI / TÍCH LŨY*",
+        "*MÃ:* " + report_streams.symbol_summary(report_streams.OPPORTUNITY, opportunity, metrics),
+    ]
+    lines += [
+        with_intel(tf.format_stock_card(x, action=opportunity_action(x, metrics)), metrics.get(x.symbol))
+        for x in opportunity[:15]
+    ] or ["Không có mã đạt chuẩn cơ hội/tích lũy."]
+    early = streams[report_streams.EARLY]
+    lines += [
+        "",
+        "*LUỒNG 3 — EARLY ACCUMULATION / GOM SỚM*",
+        "*MÃ:* " + report_streams.symbol_summary(report_streams.EARLY, early, metrics),
+    ]
+    lines += [early_accumulation_card(x, metrics) for x in early[:15]] or ["Không có mã E1/E2/E3 đạt điều kiện."]
+    technical = streams[report_streams.TECHNICAL]
+    lines += [
+        "",
+        "*LUỒNG 4 — KỸ THUẬT ĐÁY RSI / MACD / SMI*",
+        "*MÃ:* " + report_streams.symbol_summary(report_streams.TECHNICAL, technical, metrics),
+    ]
+    lines += [technical_watch_line(x, metrics) for x in technical[:15]] or ["Không có tín hiệu kỹ thuật đáy đáng chú ý."]
+    structure_watch = streams[report_streams.STRUCTURE]
+    lines += [
+        "",
+        "*LUỒNG 5 — BREAK XỊT / RETEST / TÁI TÍCH LŨY*",
+        "*MÃ:* " + report_streams.symbol_summary(report_streams.STRUCTURE, structure_watch, metrics),
+    ]
+    lines += [intel.format_breakout_watch(x, metrics.get(x.symbol)) for x in structure_watch[:20]] or ["Không có cấu trúc break cần chú ý."]
+    if transitions:
+        lines += ["", "*CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý*"]
+        lines += [state_transition.format_transition(item) for item in transitions[:10]]
     lines += ["", "*NGÀNH DẪN DẮT / RỦI RO*"]
     lines += [tf.format_sector_line(x) for x in sectors] or ["Chua du du lieu nganh."]
     if rotation_alerts:
         lines += ["", "*LUÂN CHUYỂN NGÀNH*"]
         lines += rotation_alerts[:8]
-    if show_failed:
-        lines += ["", "*FAILED-BREAK / CẦN TRÁNH*"]
-        lines += [with_intel(tf.format_stock_card(x, action="CAN NE / GIAM RUI RO"), metrics.get(x.symbol)) for x in failed] or ["Khong co failed-break dang chu y."]
     if mode == "eod":
         lines += ["", intel.build_performance_report()]
     return "\n".join(lines)
@@ -219,6 +298,15 @@ def save_session_outputs(
 ) -> list[dict[str, Any]]:
     near_high_filter.annotate_results(results)
     metrics, regime = intel.build_market_metrics(results, history_store)
+    streams = report_streams.classify_streams(results, metrics, watch_items)
+    primary_streams = report_streams.primary_stream_map(streams)
+    for symbol, item in metrics.items():
+        item["primary_stream"] = primary_streams.get(symbol, "unclassified")
+    stream_payload = report_streams.serialize_streams(
+        streams,
+        metrics,
+        portfolio_symbols=list(watch_items),
+    )
     if mode == "test":
         rotation_alerts: list[str] = []
     else:
@@ -238,6 +326,7 @@ def save_session_outputs(
             "regime": regime,
             "rotation": rotation_alerts,
             "transitions": transitions,
+            "streams": streams,
         }
     )
     failed_breaks = _old_save_session_outputs(
@@ -286,6 +375,7 @@ def save_session_outputs(
         "market_day": asdict(market_day) if market_day else None,
         "market_activity": asdict(activity_probe) if activity_probe else None,
         "market_regime": regime,
+        "five_streams": stream_payload,
         "new_signals": new_signals,
         "state_transitions": transitions,
         "memory": memory_summary,
@@ -307,6 +397,12 @@ def save_session_outputs(
             source_health=scan_safe.source_health_payload(),
             market_activity=asdict(activity_probe) if activity_probe else None,
     )
+    feed["five_streams"] = stream_payload
+    for fact in feed.get("facts", []):
+        symbol = str(fact.get("symbol") or "")
+        fact.setdefault("classification", {})["primary_stream"] = primary_streams.get(
+            symbol, "unclassified"
+        )
     scan.json_save(sess.DATA_DIR / "filter_feed_latest.json", feed, pretty=False)
     scan.json_save(sess.DATA_DIR / "stock_features_latest.json", feed, pretty=False)
     return failed_breaks

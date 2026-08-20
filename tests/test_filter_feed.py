@@ -43,6 +43,8 @@ def test_filter_feed_is_facts_only_and_sorted() -> None:
     assert report["facts"][0]["data_quality"]["status"] == "current"
     assert "scores" in report["facts"][0]
     assert "market_structure" in report["facts"][0]
+    assert "technical_watch" in report["facts"][0]
+    assert "early_accumulation" in report["facts"][0]
     assert set(report["facts"][0]["market_structure"]["timeframes"]) == {"1D", "1W", "1M"}
     assert report["quality"]["facts_with_provenance"] == 2
     assert "forecast" not in report["facts"][0]
