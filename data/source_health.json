@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-21T15:40:24+07:00",
+  "updated_at": "2026-08-21T15:45:59+07:00",
   "sources": {
     "FIINQUANT": {
       "source": "FIINQUANT",
@@ -19,22 +19,22 @@
       "source": "VCI",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 14,
-      "successes": 14,
+      "attempts": 53,
+      "successes": 52,
       "failures": 0,
       "rate_limit_failures": 0,
-      "transient_failures": 0,
+      "transient_failures": 1,
       "parked_count": 0,
       "disabled": false,
-      "last_error": "",
-      "health_score": 100
+      "last_error": "transient",
+      "health_score": 90
     },
     "KBS": {
       "source": "KBS",
       "rpm_limit": 20,
       "effective_rpm": 15.6,
-      "attempts": 14,
-      "successes": 14,
+      "attempts": 68,
+      "successes": 68,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 0,
@@ -47,8 +47,8 @@
       "source": "DNSE",
       "rpm_limit": 15,
       "effective_rpm": 11.7,
-      "attempts": 10,
-      "successes": 10,
+      "attempts": 56,
+      "successes": 56,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 0,
