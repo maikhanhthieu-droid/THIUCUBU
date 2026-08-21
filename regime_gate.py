@@ -70,6 +70,34 @@ def signal_gate(
         return {"allowed": False, "reason": "CHO_RECLAIM_TAI_TICH_LUY", "market_state": overall_state, "breakout_state": breakout_state}
     if breakout_state == "BREAKOUT_UNCONFIRMED":
         return {"allowed": False, "reason": "CHO_BREAK_GIU_NEN", "market_state": overall_state, "breakout_state": breakout_state}
+    technical = _dict_value(info.get("technical_watch"))
+    if technical.get("bearish_top_divergence") and technical.get("risk_dominant", True):
+        return {
+            "allowed": False,
+            "reason": "PRE_RISK_DIV_TOP_CHO_XAC_NHAN",
+            "market_state": overall_state,
+            "breakout_state": breakout_state,
+            "risk_label": technical.get("risk_label"),
+        }
+
+    systemic = _dict_value(info.get("systemic_regime"))
+    sector = _dict_value(info.get("sector_rotation"))
+    systemic_state = str(systemic.get("state") or "NEUTRAL").upper()
+    sector_state = str(sector.get("state") or "NO_DATA").upper()
+    systemic_adjustment = max(0, _safe_int(systemic.get("min_score_adjustment"), 0))
+    sector_adjustment = 4 if sector_state == "LAGGING" else 2 if sector_state == "EXITING" else 0
+    if systemic_state == "SYSTEMIC_RISK" and bool(systemic.get("hard_lock_new_accumulation")):
+        return {
+            "allowed": False,
+            "reason": "SYSTEMIC_RISK_KHOA_MUA_MOI",
+            "systemic_state": systemic_state,
+            "sector_state": sector_state,
+            "market_state": overall_state,
+            "breakout_state": breakout_state,
+            "position_size_multiplier": _safe_float(
+                systemic.get("position_size_multiplier"), 0.2
+            ),
+        }
     if require_near_break and not result.near_break:
         return {"allowed": False, "reason": "CHUA_GAN_BREAK"}
 
@@ -85,7 +113,9 @@ def signal_gate(
     weekly_ok = bool(weekly.get("weekly_uptrend") or weekly.get("weekly_above_ema13"))
 
     structure_threshold = 4 if overall_state == "CAUTION" else 0
-    effective_min_score = min_score + structure_threshold
+    effective_min_score = (
+        min_score + structure_threshold + systemic_adjustment + sector_adjustment
+    )
     if regime == "BULL":
         allowed = score >= effective_min_score
         reason = "BULL full signal" if allowed else "BULL score chua du"
@@ -96,7 +126,7 @@ def signal_gate(
         allowed = score >= max(74, effective_min_score) and rs_score >= 55 and (rr >= 1.5 or weekly_ok)
         reason = "CHOPPY chi nhan RS/RR tot" if allowed else "CHOPPY chan signal yeu"
     elif regime == "BEAR":
-        allowed = deep_discount and score >= 76 and rs_score >= 60 and rr >= 1.5
+        allowed = deep_discount and score >= max(76, effective_min_score) and rs_score >= 60 and rr >= 1.5
         reason = "BEAR chi cho discount sau + RS manh" if allowed else "BEAR chan tin hieu mua"
     else:
         allowed = score >= effective_min_score and rs_score >= 50
@@ -110,6 +140,12 @@ def signal_gate(
         "rs_score": rs_score,
         "risk_reward": round(rr, 2) if rr else None,
         "deep_discount": deep_discount,
+        "effective_min_score": effective_min_score,
+        "systemic_state": systemic_state,
+        "sector_state": sector_state,
+        "position_size_multiplier": _safe_float(
+            systemic.get("position_size_multiplier"), 0.75
+        ),
         "market_state": overall_state,
         "breakout_state": breakout_state,
     }

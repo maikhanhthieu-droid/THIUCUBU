@@ -11,6 +11,9 @@ def test_published_schemas_are_valid_json() -> None:
         "candidate_book.v1.schema.json",
         "signal_tracker.v2.schema.json",
         "market_state_history.v1.schema.json",
+        "market_breadth.v1.schema.json",
+        "systemic_regime.v1.schema.json",
+        "sector_rotation.v2.schema.json",
     ):
         payload = json.loads((root / "schemas" / name).read_text(encoding="utf-8"))
         assert payload["$schema"].endswith("2020-12/schema")

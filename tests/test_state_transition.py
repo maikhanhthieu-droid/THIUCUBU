@@ -94,3 +94,30 @@ def test_primary_stream_change_is_reported_after_stream_state_has_been_seeded(tm
     assert len(stream_events) == 1
     assert stream_events[0]["from"] == "early"
     assert stream_events[0]["to"] == "opportunity"
+
+
+def test_new_pre_label_is_reported_once(tmp_path):
+    path = tmp_path / "states.json"
+    before = metrics(68, "ACCUMULATION", "NO_BREAKOUT")
+    before["AAA"]["technical_watch"] = {"pre_label": "NONE", "risk_label": "NONE"}
+    after = metrics(68, "ACCUMULATION", "NO_BREAKOUT")
+    after["AAA"]["technical_watch"] = {"pre_label": "PRE-DIV-3", "risk_label": "NONE"}
+
+    state_transition.update_transitions(
+        path=path,
+        results={"AAA": result("2026-01-02")},
+        metrics_by_symbol=before,
+    )
+    events = state_transition.update_transitions(
+        path=path,
+        results={"AAA": result("2026-01-05")},
+        metrics_by_symbol=after,
+    )
+    repeated = state_transition.update_transitions(
+        path=path,
+        results={"AAA": result("2026-01-05")},
+        metrics_by_symbol=after,
+    )
+
+    assert [item["kind"] for item in events] == ["PRE_SIGNAL"]
+    assert repeated == []

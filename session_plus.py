@@ -9,6 +9,8 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
+import filter_feed
+import market_breadth
 import market_intel as intel
 import market_probe
 import market_strategy
@@ -17,15 +19,25 @@ import report_streams
 import run_journal
 import scan
 import scan_safe
+import sector_rotation
 import session_scan as sess
 import source_router
 import state_manager
 import state_transition
+import technical_features
 import telegram_format as tf
-import filter_feed
 
 logger = logging.getLogger("thieucutoo.session_plus")
-_STATE: dict[str, Any] = {"started_at": time.time(), "results": {}, "metrics": {}, "regime": {}, "rotation": []}
+_STATE: dict[str, Any] = {
+    "started_at": time.time(),
+    "results": {},
+    "metrics": {},
+    "regime": {},
+    "breadth": {},
+    "systemic": {},
+    "sector_rotation": {},
+    "rotation": [],
+}
 _old_save_session_outputs = sess.save_session_outputs
 
 
@@ -142,16 +154,19 @@ def opportunity_action(result: scan.ScanResult, metrics: dict[str, dict[str, Any
 def early_accumulation_card(result: scan.ScanResult, metrics: dict[str, dict[str, Any]]) -> str:
     early = metrics.get(result.symbol, {}).get("early_accumulation", {})
     stage = str(early.get("stage") or "E1")
+    pre_label = str(early.get("pre_label") or "NONE")
+    pre_text = f" | PRE: {pre_label}" if pre_label != "NONE" else ""
     score = int(early.get("score") or 0)
     confidence = int(early.get("confidence") or 0)
     signals = "; ".join(tf.clean_text(item) for item in early.get("signals", [])[:4]) or "đang thu thập bằng chứng"
     missing = "; ".join(tf.clean_text(item) for item in early.get("missing", [])[:3]) or "chờ duy trì cấu trúc"
     return "\n".join(
         [
-            f"`{result.symbol}` *{stage} · {score}/97*  {tf.clean_text(early.get('label')).upper()}",
+            f"`{result.symbol}` *{stage} · {score}/97*  {tf.clean_text(early.get('label')).upper()}{pre_text}",
             f"Giá {tf.format_price(result.close)} | DD {result.discount_pct:.1f}% | Vol5/20 {float(early.get('vol_5_20') or 0):.2f}x | RSI {result.rsi:.0f} | Tin cậy {confidence}%",
             f"Có: {signals}",
             f"Còn thiếu: {missing} | Hành động: {tf.clean_text(early.get('action')).upper()}",
+            f"Kích hoạt {tf.format_price(early.get('trigger_price'))} | Vô hiệu {tf.format_price(early.get('invalidation_price'))}",
         ]
     )
 
@@ -161,13 +176,26 @@ def technical_watch_line(result: scan.ScanResult, metrics: dict[str, dict[str, A
     score = int(technical.get("score") or 0)
     confidence = int(technical.get("confidence") or 0)
     stage = tf.clean_text(technical.get("stage")).upper()
+    pre_label = str(technical.get("pre_label") or "NONE")
+    risk_label = str(technical.get("risk_label") or "NONE")
+    label = pre_label if pre_label != "NONE" else risk_label
+    label_text = f" | PRE: {label}" if label != "NONE" else ""
+    bottoms = int(technical.get("bottom_count") or 0)
+    pattern_text = (
+        f"{int(technical.get('top_count') or 0)} đỉnh"
+        if technical.get("risk_dominant")
+        else f"{bottoms} đáy"
+    )
     signals = "; ".join(tf.clean_text(item) for item in technical.get("signals", [])[:4]) or "động lượng đáy đang hình thành"
     return (
-        f"`{result.symbol}` *T · {score}/97* {stage} | Giá {tf.format_price(result.close)} | "
+        f"`{result.symbol}` *T · {score}/97* {stage}{label_text} | Giá {tf.format_price(result.close)} | "
         f"RSI {float(technical.get('rsi') or result.rsi):.0f} | "
         f"MACD Hist {float(technical.get('macd_hist_pct') or 0):+.3f}% | "
-        f"SMI {float(technical.get('smi') or 0):+.0f} | Tin cậy {confidence}%\n"
-        f"Tín hiệu: {signals} | Chỉ theo dõi, chưa phải lệnh mua"
+        f"SMI {float(technical.get('smi') or 0):+.0f} | {pattern_text} | Tin cậy {confidence}%\n"
+        f"Tín hiệu: {signals}\n"
+        f"Kích hoạt {tf.format_price(technical.get('trigger_price'))} | "
+        f"Vô hiệu {tf.format_price(technical.get('invalidation_price'))} | "
+        f"{tf.clean_text(technical.get('pre_action')).upper()} — chưa phải lệnh mua"
     )
 
 
@@ -216,6 +244,9 @@ def build_session_report(
     window = sess.SESSION_WINDOWS[mode]
     metrics = _STATE.get("metrics", {})
     regime = _STATE.get("regime", {})
+    breadth = _STATE.get("breadth", {})
+    systemic = _STATE.get("systemic", {})
+    sector_states = _STATE.get("sector_rotation", {})
     rotation_alerts = _STATE.get("rotation", [])
     transitions = _STATE.get("transitions", [])
     market = results.get("VNINDEX")
@@ -229,6 +260,8 @@ def build_session_report(
         f"{window['description']} Score v2 tối đa 97; tự xếp 5 luồng, không phải cam kết lợi nhuận.",
         market_status(market, regime),
         intel.format_regime(regime),
+        market_breadth.format_breadth(breadth),
+        market_breadth.format_systemic(systemic),
         "",
         *five_stream_summary(streams, metrics, watch_items),
     ]
@@ -296,7 +329,9 @@ def build_session_report(
     if transitions:
         lines += ["", "*CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý*"]
         lines += [state_transition.format_transition(item) for item in transitions[:10]]
-    lines += ["", "*NGÀNH DẪN DẮT / RỦI RO*"]
+    lines += ["", "*HEATMAP LUÂN CHUYỂN NGÀNH 1W / 1M / 3M*"]
+    lines += sector_rotation.format_heatmap(sector_states)
+    lines += ["", "*NGÀNH DẪN DẮT / RỦI RO — ĐIỂM SCANNER*"]
     lines += [tf.format_sector_line(x) for x in sectors] or ["Chua du du lieu nganh."]
     if rotation_alerts:
         lines += ["", "*LUÂN CHUYỂN NGÀNH*"]
@@ -319,6 +354,62 @@ def save_session_outputs(
 ) -> list[dict[str, Any]]:
     near_high_filter.annotate_results(results)
     metrics, regime = intel.build_market_metrics(results, history_store)
+    stocks = [item for item in results.values() if item.symbol != "VNINDEX"]
+    expected_symbols = {
+        *scan.ALL_TICKERS,
+        *focus_symbols,
+        *watch_items.keys(),
+        *(item.symbol for item in stocks),
+    }
+    breadth = market_breadth.calculate_snapshot(
+        history_store,
+        expected_universe_size=len(expected_symbols),
+    )
+    live_systemic = market_breadth.derive_systemic_regime(breadth, regime)
+    if mode == "eod":
+        _, systemic = market_breadth.persist_daily(breadth, live_systemic)
+    elif mode == "test":
+        systemic = live_systemic
+    else:
+        persisted_systemic = market_breadth.load_systemic_state()
+        if int(persisted_systemic.get("confidence") or 0) > 0:
+            systemic = dict(persisted_systemic)
+            systemic["live_raw_state"] = live_systemic.get("raw_state")
+            systemic["live_risk_score"] = live_systemic.get("risk_score")
+        else:
+            systemic = live_systemic
+
+    if mode == "test":
+        sector_states, rotation_alerts = sector_rotation.update_sector_rotation(
+            stocks,
+            history_store=history_store,
+            index_frame=intel.frame_from_history(history_store, "VNINDEX"),
+            persist=False,
+            path=sess.DATA_DIR / ".sector_rotation_test.json",
+        )
+    else:
+        sector_states, rotation_alerts = intel.update_sector_rotation(
+            stocks,
+            history_store=history_store,
+            index_frame=intel.frame_from_history(history_store, "VNINDEX"),
+            persist=mode == "eod",
+        )
+    for symbol, item in metrics.items():
+        result = results.get(symbol)
+        item["market_breadth_state"] = breadth.get("state")
+        item["market_breadth_score"] = breadth.get("score")
+        item["systemic_regime"] = systemic
+        item["sector_rotation"] = (
+            sector_states.get(str(result.sector or "Other"), {}) if result else {}
+        )
+        early, technical = technical_features.apply_market_context(
+            item.get("early_accumulation"),
+            item.get("technical_watch"),
+            systemic,
+            item.get("sector_rotation"),
+        )
+        item["early_accumulation"] = early
+        item["technical_watch"] = technical
     streams = report_streams.classify_streams(results, metrics, watch_items)
     primary_streams = report_streams.primary_stream_map(streams)
     for symbol, item in metrics.items():
@@ -328,12 +419,6 @@ def save_session_outputs(
         metrics,
         portfolio_symbols=list(watch_items),
     )
-    if mode == "test":
-        rotation_alerts: list[str] = []
-    else:
-        _, rotation_alerts = intel.update_sector_rotation(
-            [x for x in results.values() if x.symbol != "VNINDEX"]
-        )
     transitions = [] if mode == "test" else state_transition.update_transitions(
         path=sess.DATA_DIR / "market_state_history.json",
         results=results,
@@ -345,6 +430,9 @@ def save_session_outputs(
             "results": results,
             "metrics": metrics,
             "regime": regime,
+            "breadth": breadth,
+            "systemic": systemic,
+            "sector_rotation": sector_states,
             "rotation": rotation_alerts,
             "transitions": transitions,
             "streams": streams,
@@ -396,6 +484,9 @@ def save_session_outputs(
         "market_day": asdict(market_day) if market_day else None,
         "market_activity": asdict(activity_probe) if activity_probe else None,
         "market_regime": regime,
+        "market_breadth": breadth,
+        "systemic_regime": systemic,
+        "sector_rotation": sector_states,
         "market_horizon_strategy": market_strategy.horizon_strategy(results.get("VNINDEX"), regime),
         "intraday_pulse_day": sess.intraday_pulse_day_events(limit=30),
         "five_streams": stream_payload,
@@ -421,6 +512,9 @@ def save_session_outputs(
             market_activity=asdict(activity_probe) if activity_probe else None,
     )
     feed["five_streams"] = stream_payload
+    feed["market_breadth"] = breadth
+    feed["systemic_regime"] = systemic
+    feed["sector_rotation"] = sector_states
     feed["market_horizon_strategy"] = latest["market_horizon_strategy"]
     feed["intraday_pulse_day"] = latest["intraday_pulse_day"]
     for fact in feed.get("facts", []):

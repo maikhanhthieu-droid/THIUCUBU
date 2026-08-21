@@ -15,6 +15,8 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 - Vẫn gửi lại báo cáo đầy đủ mỗi phiên để người dùng không bỏ trôi tín hiệu.
 - Mỗi mã chỉ xuất hiện một lần trong một báo cáo, ở nhóm ưu tiên cao nhất.
 - Nhận diện nền giá, volume co hẹp, OBV/MFI, relative strength, near-break và failed-break.
+- Đo market breadth toàn universe, A/D, new-high/new-low, mức tham gia volume và tương quan giảm hệ thống.
+- Xếp ngành tự động thành `DẪN DẮT / ĐANG VÀO / ĐANG RA / TỤT HẬU` theo RS 1W/1M/3M.
 - Mã gần/vượt đỉnh 6 năm được gắn cảnh báo nhưng không bị loại khỏi lượt quét.
 - Điều chỉnh hành động theo trạng thái VNINDEX và R/R.
 - Khám phá universe động và quét xoay vòng các mã ngoài danh sách cốt lõi.
@@ -34,7 +36,7 @@ Mỗi báo cáo Telegram mở đầu bằng `TÓM TẮT 5 LUỒNG`, liệt kê m
 1. `PORTFOLIO`: mã đang nắm giữ hoặc có note; phân tích bắt buộc và quản trị vị thế.
 2. `OPPORTUNITY`: cơ hội/tích lũy đủ điều kiện để phân tích sâu.
 3. `EARLY`: gom sớm E1 cạn bán, E2 đang tạo đáy, E3 đã có xác nhận thăm dò.
-4. `TECHNICAL`: RSI/MACD/SMI phân kỳ, hội tụ hoặc gần giao cắt ở vùng đáy; chỉ là cảnh báo theo dõi.
+4. `TECHNICAL`: RSI/MACD/SMI phân kỳ, hội tụ hoặc gần giao cắt ở vùng đáy; cấu trúc 2–3 đáy có nhãn `PRE-*`, neckline, mức kích hoạt và mức vô hiệu. Phân kỳ đỉnh dùng `PRE-RISK-DIV-TOP`. Tất cả chỉ là cảnh báo theo dõi.
 5. `STRUCTURE`: break xịt, retest, reclaim hoặc tái tích lũy; hiển thị ngắn để tránh làm loãng báo cáo.
 
 Phân loại được tạo tự động sau mỗi lần quét. `session_alerts_latest.json` và feature feed đều có payload `five_streams`; mỗi fact có `classification.primary_stream`. Khi một mã đổi luồng, `market_state_history.json` ghi sự kiện `PRIMARY_STREAM` để mục chuyển pha có thể báo lại ở phiên sau.
@@ -121,7 +123,20 @@ Breakout không còn được kết luận chỉ từ một cây nến. Bộ ch�
 
 Mỗi stock card hiển thị dòng `TT ... | D ... | W ... | M ...`. Báo cáo phiên có thêm `BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M` và nhóm riêng `BREAK XỊT / RETEST / TÁI TÍCH LŨY` để không đánh đồng retest lành mạnh với phân phối.
 
-`data/market_state_history.json` giữ snapshot trước đó. Mục `CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý` chỉ xuất hiện khi cấu trúc đổi trạng thái hoặc điểm thay đổi ít nhất 8 điểm và vượt một mốc quan trọng; lần chạy đầu chỉ gieo trạng thái, không phát cảnh báo hàng loạt.
+`data/market_state_history.json` giữ snapshot trước đó. Mục `CHUYỂN PHA / ĐIỂM MỚI ĐÁNG CHÚ Ý` chỉ xuất hiện khi cấu trúc/luồng/PRE đổi trạng thái hoặc điểm thay đổi ít nhất 8 điểm và vượt một mốc quan trọng; lần chạy đầu chỉ gieo trạng thái, không phát cảnh báo hàng loạt.
+
+## Market breadth, luân chuyển ngành và systemic gate
+
+Sau lượt EOD, hệ thống chụp một snapshot cùng ngày cho toàn bộ mã lấy được dữ liệu. Dữ liệu stale hoặc khác ngày VNINDEX không được đưa vào mẫu. Breadth gồm tỷ lệ mã trên MA20/50/200, A/D ratio và A/D line, volume trên trung bình 20 phiên, new-high/new-low, tương quan 20/60 phiên, tương quan khi VNINDEX giảm và dispersion.
+
+- Mẫu mỏng làm giảm `confidence` và tuyệt đối không được tự khóa mua.
+- `FAVORABLE`: ngưỡng chuẩn, size tối đa x1.00.
+- `NEUTRAL`: siết nhẹ +2 điểm, size x0.75.
+- `HIGH_RISK`: siết +6 điểm, size x0.40.
+- `SYSTEMIC_RISK`: khi đủ độ phủ/tin cậy mới khóa **gom mới**, size tham chiếu x0.20. Scanner, portfolio, cảnh báo kỹ thuật và break/retest vẫn tiếp tục chạy.
+- Trạng thái hệ thống và ngành cần hai snapshot EOD liên tiếp để đổi pha, trừ tình huống rủi ro cực đoan. Chạy lại cùng ngày không được tính thành hai lần xác nhận.
+
+Nhãn `PRE-DIV-2/3`, `PRE-HIDDEN-2/3`, `PRE-BASE-2/3(-CROSS)` chỉ được tạo từ pivot đã có đủ nến bên phải, vì vậy không dùng pivot chưa xác nhận. PRE không phải lệnh bắt đáy: mã chỉ được nâng sang `EARLY` khi có thêm chiết khấu, cạn cung, ổn định giá và không bị cấu trúc/systemic gate chặn.
 
 ## Năm cửa của bộ lọc cuối tuần
 
@@ -132,6 +147,8 @@ Một mã chỉ có thể vào nhóm `ƯU TIÊN GOM` khi đồng thời vượt 
 3. `Weekly structure`: nền co hẹp, higher-low, volume cạn, CMF/OBV, EMA và RS so với VNINDEX.
 4. `Timing`: spring, reclaim, pocket pivot hoặc early break kèm momentum xác nhận.
 5. `Risk`: thanh khoản, failed-break, value trap, R/R và mức vô hiệu cấu trúc.
+
+Ngưỡng cuối tuần tự tăng theo systemic gate và trạng thái ngành. `SYSTEMIC_RISK` vẫn tạo watchlist nhưng không chọn conviction mới; vì vậy kết quả 0 mã là hành vi đúng, không phải lỗi scanner.
 
 Chiết khấu sâu so với đỉnh 104 tuần chỉ là một dữ kiện giá, không đồng nghĩa với định giá rẻ. EPS âm, cấu trúc gãy, dữ liệu stale hoặc R/R yếu sẽ chặn mã khỏi nhóm ưu tiên.
 
@@ -162,6 +179,9 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 | `data/intraday_pulse_state.json` | Baseline bảng giá để tính thay đổi giữa hai lần Pulse |
 | `data/intraday_universe_state.json` | Universe riêng của Pulse, tách khỏi cursor của scanner cố định |
 | `data/market_state_history.json` | Bộ nhớ chuyển pha và thay đổi điểm đáng kể |
+| `data/market_breadth_history.json` | Chuỗi breadth EOD để phát hiện phân kỳ VNINDEX/breadth |
+| `data/market_systemic_state.json` | Trạng thái rủi ro hệ thống, ngưỡng siết và hệ số size hiện hành |
+| `data/sector_rotation_history.json` | Heatmap RS ngành 1W/1M/3M và lịch sử chuyển 4 trạng thái |
 | `data/signal_tracker.json` | Episode tín hiệu v2 đo đúng T+5/T+10/T+20 phiên, MFE/MAE và excess so với VNINDEX |
 | `data/source_health.json` | Sức khỏe từng nguồn dữ liệu |
 | `data/source_routing.json` | Bản đồ phân luồng FiinQuant và VCI/KBS/DNSE, tự cập nhật theo trạng thái |

@@ -77,3 +77,38 @@ def test_unconfirmed_failed_break_and_distribution_are_blocked():
     assert failed_watch["reason"] == "BREAK_XIT_CHO_XAC_NHAN"
     assert distribution["allowed"] is False
     assert distribution["reason"] == "MTF_PHAN_PHOI"
+
+
+def test_systemic_risk_hard_lock_blocks_new_buy_but_not_symbol_analysis() -> None:
+    result = make_result()
+    metrics = {
+        "regime": {"regime": "BULL"},
+        "systemic_regime": {
+            "state": "SYSTEMIC_RISK",
+            "hard_lock_new_accumulation": True,
+            "min_score_adjustment": 10,
+            "position_size_multiplier": 0.2,
+        },
+        "sector_rotation": {"state": "LEADING"},
+    }
+
+    gate = regime_gate.signal_gate(result, metrics)
+
+    assert gate["allowed"] is False
+    assert gate["reason"] == "SYSTEMIC_RISK_KHOA_MUA_MOI"
+    assert gate["position_size_multiplier"] == 0.2
+
+
+def test_lagging_sector_raises_effective_threshold() -> None:
+    result = make_result()
+    metrics = {
+        "advanced_score": 74,
+        "regime": {"regime": "BULL"},
+        "systemic_regime": {"state": "NEUTRAL", "min_score_adjustment": 2},
+        "sector_rotation": {"state": "LAGGING"},
+    }
+
+    gate = regime_gate.signal_gate(result, metrics, min_score=70)
+
+    assert gate["effective_min_score"] == 76
+    assert gate["allowed"] is False

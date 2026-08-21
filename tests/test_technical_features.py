@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import numpy as np
 import pandas as pd
 
 import technical_features
@@ -76,4 +77,36 @@ def test_flat_oscillators_do_not_create_bottom_watch_noise() -> None:
 
     assert result["watch"] is False
     assert result["stage"] == "NONE"
+
+
+def test_confirmed_double_bottom_gets_pre_label_trigger_and_invalidation() -> None:
+    segments = [
+        np.linspace(18, 12, 65),
+        np.linspace(12, 14, 10)[1:],
+        np.linspace(14, 11.7, 12)[1:],
+        np.linspace(11.7, 13.7, 10)[1:],
+        np.linspace(13.7, 11.55, 22)[1:],
+        np.linspace(11.55, 13.2, 12)[1:],
+    ]
+    close = pd.Series(np.concatenate(segments))
+    frame = pd.DataFrame(
+        {
+            "time": pd.bdate_range("2026-01-02", periods=len(close)),
+            "open": close.shift(1).fillna(close.iloc[0]),
+            "high": close + 0.16,
+            "low": close - 0.16,
+            "close": close,
+            "volume": np.linspace(1_000_000, 400_000, len(close)),
+        }
+    )
+
+    result = technical_features.analyze_technical_watch(frame)
+
+    assert result["watch"] is True
+    assert result["bullish_watch"] is True
+    assert result["pre_label"] == "PRE-DIV-2"
+    assert result["bottom_count"] == 2
+    assert result["confirmed_at_bar"] <= len(frame) - 3
+    assert result["signal_age_bars"] <= 15
+    assert result["trigger_price"] > result["invalidation_price"]
 

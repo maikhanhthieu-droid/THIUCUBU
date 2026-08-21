@@ -16,10 +16,12 @@ from typing import Any
 import pandas as pd
 
 import fiinquant_provider
+import market_breadth
 import market_phase
 import scan
 import scan_safe
 import scoring
+import sector_rotation
 import source_router
 import weekly_sniper
 
@@ -180,6 +182,11 @@ class Opportunity:
     breakout_state: str = "NO_DATA"
     market_structure: dict[str, Any] | None = None
     fundamental_history_samples: int = 0
+    systemic_state: str = "NEUTRAL"
+    systemic_risk_score: int = 0
+    sector_rotation_state: str = "NO_DATA"
+    position_size_multiplier: float = 0.75
+    market_gate_reason: str = ""
 
 
 def clamp(value: float, low: float = 0.0, high: float = 100.0) -> float:
@@ -753,8 +760,27 @@ def build_bull_case(packet: dict[str, Any], sector: SectorSnapshot, pe_disc: flo
     return "; ".join(parts[:4]) or "dinh gia/ky thuat dang can theo doi"
 
 
+def load_weekend_market_context() -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    systemic = market_breadth.load_systemic_state()
+    raw_rotation = scan.json_load(sector_rotation.ROTATION_PATH, {})
+    current = raw_rotation.get("current", {}) if isinstance(raw_rotation, dict) else {}
+    if not isinstance(current, dict):
+        current = {}
+    return systemic, {
+        str(name): value
+        for name, value in current.items()
+        if isinstance(value, dict)
+    }
+
+
 def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, SectorSnapshot]) -> list[Opportunity]:
     opportunities: list[Opportunity] = []
+    systemic, sector_rotation_states = load_weekend_market_context()
+    systemic_state = str(systemic.get("state") or "NEUTRAL").upper()
+    systemic_adjustment = max(0, int(systemic.get("min_score_adjustment") or 0))
+    hard_lock = bool(systemic.get("hard_lock_new_accumulation"))
+    size_multiplier = float(systemic.get("position_size_multiplier") or 0.75)
+    systemic_risk_score = int(systemic.get("risk_score") or 0)
     for packet in packets:
         fund = packet["fundamental"]
         tech = packet["tech"]
@@ -804,10 +830,19 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
             score = min(score, 69)
         if risk > 38:
             score = min(score, 69)
-        if score < MIN_SCORE or sector.score < MIN_SECTOR_SCORE:
+        rotation = sector_rotation_states.get(packet["sector"], {})
+        rotation_state = str(rotation.get("state") or "NO_DATA").upper()
+        if int(rotation.get("confidence") or 0) < 55:
+            rotation_state = "NO_DATA"
+        rotation_adjustment = 4 if rotation_state == "LAGGING" else 2 if rotation_state == "EXITING" else 0
+        effective_min_score = MIN_SCORE + systemic_adjustment + rotation_adjustment
+        strict_min_score = 76 + systemic_adjustment + rotation_adjustment
+        if score < effective_min_score or sector.score < MIN_SECTOR_SCORE:
             continue
         strict_candidate = (
-            score >= 76
+            not hard_lock
+            and rotation_state not in {"LAGGING", "EXITING"}
+            and score >= strict_min_score
             and val_score >= 66
             and qual_score >= 56
             and weekly.score >= 72
@@ -840,6 +875,8 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
         )
         if strict_candidate:
             action = "UNG_VIEN_GOM"
+        elif hard_lock:
+            action = "THEO_DOI_SYSTEMIC_RISK"
         elif weekly.state in {"EARLY_MARKUP", "READY_TO_ACCUMULATE", "PREP_BASE"} and score >= 68:
             action = "CHO_DIEM_GOM"
         else:
@@ -897,6 +934,15 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
                 breakout_state=breakout_state,
                 market_structure=structure.to_dict() if structure else None,
                 fundamental_history_samples=int(packet.get("fundamental_history_samples") or 0),
+                systemic_state=systemic_state,
+                systemic_risk_score=systemic_risk_score,
+                sector_rotation_state=rotation_state,
+                position_size_multiplier=size_multiplier,
+                market_gate_reason=(
+                    "systemic risk khóa gom mới"
+                    if hard_lock
+                    else f"ngưỡng +{systemic_adjustment + rotation_adjustment} điểm"
+                ),
             )
         )
     ranked = sorted(
@@ -933,6 +979,7 @@ def opportunity_line(item: Opportunity) -> str:
         f"PB {fmt_num(item.pb, 2)} vs {fmt_num(item.sector_pb, 2)} ({fmt_pct(item.pb_discount_pct, signed=True)}) | "
         f"DD {item.discount_pct:.0f}/{item.target_discount_pct:.0f}% | "
         f"V/Q/T/S {item.valuation_score}/{item.quality_score}/{item.technical_score}/{item.sector_score} | "
+        f"SYS {item.systemic_state} · ngành {item.sector_rotation_state} · size x{item.position_size_multiplier:.2f} | "
         f"{item.bull_case} | risk: {item.bear_case}"
     )
 
@@ -955,6 +1002,7 @@ def build_report(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
     lines = [
         f"*THIEUCUBU WEEKLY CONVICTION* `{now}`",
         "Score v2 (tối đa 97): định giá + chất lượng + cấu trúc tuần + thời điểm + rủi ro. Không phải khuyến nghị mua bán.",
+        market_breadth.format_systemic(market_breadth.load_systemic_state()),
         "",
         "*💎 TỐI ĐA 2 MÃ ƯU TIÊN GOM*",
     ]
@@ -1011,14 +1059,19 @@ def update_investment_theses(opportunities: list[Opportunity], updated_at: str) 
 def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnapshot]) -> None:
     now = datetime.now(VN_TZ).isoformat(timespec="seconds")
     selected = [item for item in opportunities if item.selected][:2]
+    systemic, sector_states = load_weekend_market_context()
     latest = {
         "schema_version": "thieucubu.weekend_opportunities.v2",
         "score_version": scoring.SCORE_VERSION,
         "updated_at": now,
+        "systemic_regime": systemic,
+        "sector_rotation": sector_states,
         "selection_policy": {
             "max_convictions": 2,
             "may_return_zero": True,
             "requires": ["valuation", "business_quality", "weekly_structure", "timing", "risk_reward"],
+            "systemic_min_score_adjustment": int(systemic.get("min_score_adjustment") or 0),
+            "hard_lock_new_accumulation": bool(systemic.get("hard_lock_new_accumulation")),
         },
         "convictions": [asdict(item) for item in selected],
         "top": [asdict(item) for item in opportunities[:TOP_N]],
@@ -1030,6 +1083,7 @@ def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
         {
             "schema_version": "thieucubu.candidate_book.v1",
             "updated_at": now,
+            "systemic_regime": systemic,
             "convictions": latest["convictions"],
             "watchlist": [asdict(item) for item in opportunities if not item.selected][:TOP_N],
         },
@@ -1039,7 +1093,14 @@ def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
 
     history_path = DATA_DIR / "weekend_opportunities_history.json"
     history = scan.json_load(history_path, [])
-    history.append({"updated_at": now, "convictions": latest["convictions"], "top": latest["top"][:10]})
+    history.append(
+        {
+            "updated_at": now,
+            "systemic_state": systemic.get("state"),
+            "convictions": latest["convictions"],
+            "top": latest["top"][:10],
+        }
+    )
     history = history[-60:]
     scan.json_save(history_path, history, pretty=False)
 

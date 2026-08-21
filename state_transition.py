@@ -48,6 +48,7 @@ def _save(path: Path, payload: Mapping[str, Any]) -> None:
 def _state(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
     structure = metrics.get("market_structure") if isinstance(metrics.get("market_structure"), Mapping) else {}
     breakout = structure.get("breakout") if isinstance(structure.get("breakout"), Mapping) else {}
+    technical = metrics.get("technical_watch") if isinstance(metrics.get("technical_watch"), Mapping) else {}
     return {
         "as_of": getattr(result, "as_of", None),
         "score": int(metrics.get("advanced_score", getattr(result, "win_score", 0)) or 0),
@@ -57,6 +58,8 @@ def _state(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         "weekly_phase": str(getattr(result, "weekly_phase", "NO_DATA")),
         "monthly_phase": str(getattr(result, "monthly_phase", "NO_DATA")),
         "primary_stream": str(metrics.get("primary_stream") or "unclassified"),
+        "pre_label": str(technical.get("pre_label") or "NONE"),
+        "risk_label": str(technical.get("risk_label") or "NONE"),
     }
 
 
@@ -98,6 +101,19 @@ def _material_events(symbol: str, old: Mapping[str, Any], new: Mapping[str, Any]
     ):
         events.append(
             _event(symbol, "PRIMARY_STREAM", old_stream, new_stream, int(new["score"]), new.get("as_of"))
+        )
+
+    old_pre = str(old.get("pre_label") or "NONE")
+    new_pre = str(new.get("pre_label") or "NONE")
+    if old_pre != new_pre and new_pre != "NONE":
+        events.append(
+            _event(symbol, "PRE_SIGNAL", old_pre, new_pre, int(new["score"]), new.get("as_of"))
+        )
+    old_risk = str(old.get("risk_label") or "NONE")
+    new_risk = str(new.get("risk_label") or "NONE")
+    if old_risk != new_risk and new_risk != "NONE":
+        events.append(
+            _event(symbol, "PRE_RISK", old_risk, new_risk, int(new["score"]), new.get("as_of"))
         )
 
     old_score = int(old.get("score", 0) or 0)
@@ -161,4 +177,8 @@ def format_transition(event: Mapping[str, Any]) -> str:
         return f"`{symbol}` cấu trúc break: {old} → *{new}* | điểm {score}"
     if kind == "PRIMARY_STREAM":
         return f"`{symbol}` chuyển luồng: {old} → *{new}* | điểm {score}"
+    if kind == "PRE_SIGNAL":
+        return f"`{symbol}` có PRE mới: {old} → *{new}* | điểm {score}"
+    if kind == "PRE_RISK":
+        return f"`{symbol}` cảnh báo kỹ thuật mới: {old} → *{new}* | điểm {score}"
     return f"`{symbol}` trạng thái: {old} → *{new}* | điểm {score}"

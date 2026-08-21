@@ -16,6 +16,7 @@ import fetcher
 import market_phase
 import scan
 import scoring
+import sector_rotation
 import signal_tracker
 import technical_features
 
@@ -23,7 +24,6 @@ logger = logging.getLogger("thieucutoo.intel")
 DATA_DIR = scan.DATA_DIR
 VN_TZ = scan.VN_TZ
 TRACKER_PATH = DATA_DIR / "signal_tracker.json"
-ROTATION_PATH = DATA_DIR / "sector_rotation_history.json"
 PORTFOLIO_STATE_PATH = DATA_DIR / "portfolio_threshold_state.json"
 INDEX_ALIASES = {"VNINDEX": ["VNINDEX", "^VNINDEX", "VN-INDEX"]}
 
@@ -471,8 +471,19 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
             f"Early {early_accumulation.get('stage', 'E1')} {int(early_accumulation.get('score') or 0)}/97"
         )
     if technical_watch.get("watch"):
+        pre_label = str(technical_watch.get("pre_label") or "NONE")
+        if pre_label == "NONE":
+            pre_label = str(technical_watch.get("risk_label") or "NONE")
+        watch_kind = "KT cảnh báo đỉnh" if technical_watch.get("risk_watch") and not technical_watch.get("bullish_watch") else "KT đáy"
+        trigger_text = ""
+        if technical_watch.get("trigger_price") is not None:
+            trigger_text = (
+                f" · kích hoạt {fmt_price(technical_watch.get('trigger_price'))}"
+                f" · vô hiệu {fmt_price(technical_watch.get('invalidation_price'))}"
+            )
         secondary_labels.append(
-            f"KT đáy {int(technical_watch.get('score') or 0)}/97: "
+            f"{watch_kind} {int(technical_watch.get('score') or 0)}/97"
+            f" [{pre_label}]{trigger_text}: "
             + ", ".join(str(item) for item in technical_watch.get("signals", [])[:2])
         )
     if secondary_labels:
@@ -552,57 +563,22 @@ def build_performance_report() -> str:
 
 
 def sector_scores(results: list[scan.ScanResult]) -> dict[str, dict[str, Any]]:
-    by_symbol = {x.symbol: x for x in results}
-    out: dict[str, dict[str, Any]] = {}
-    for sector, symbols in scan.SECTORS.items():
-        rows = [by_symbol[s] for s in symbols if s in by_symbol]
-        if not rows:
-            continue
-        avg = sum(x.win_score for x in rows) / len(rows)
-        flow = sum(1 for x in rows if x.obv_up and x.mfi >= 50)
-        near = sum(1 for x in rows if x.near_break)
-        failed = sum(1 for x in rows if x.failed_break)
-        score = int(clamp(avg + flow / len(rows) * 10 + near / len(rows) * 5 - failed / len(rows) * 18))
-        out[sector] = {"sector": sector, "score": score, "avg_win_score": round(avg, 1), "flow_count": flow, "near_break_count": near, "failed_count": failed, "count": len(rows)}
-    return out
+    return sector_rotation.analyze_sectors(results)
 
 
-def previous_rotation_snapshot(history: list[Any]) -> dict[str, int]:
-    if not history:
-        return {}
-    today = datetime.now(VN_TZ).date()
-    fallback: dict[str, int] = {}
-    for item in reversed(history):
-        if not isinstance(item, dict):
-            continue
-        scores = {str(x.get("sector")): int(x.get("score", 50)) for x in item.get("sectors", []) if isinstance(x, dict)}
-        if scores and not fallback:
-            fallback = scores
-        try:
-            item_date = datetime.fromisoformat(str(item.get("updated_at"))).date()
-        except Exception:
-            continue
-        if scores and item_date <= today - timedelta(days=5):
-            return scores
-    return fallback
-
-
-def update_sector_rotation(results: list[scan.ScanResult]) -> tuple[dict[str, dict[str, Any]], list[str]]:
-    current = sector_scores(results)
-    history = scan.json_load(ROTATION_PATH, [])
-    if not isinstance(history, list):
-        history = []
-    prev = previous_rotation_snapshot(history)
-    alerts: list[str] = []
-    for sector, snap in sorted(current.items(), key=lambda x: x[1]["score"], reverse=True):
-        delta = int(snap["score"]) - int(prev.get(sector, 50))
-        if delta >= 12:
-            alerts.append(f"ROTATION IN `{sector}` +{delta} diem (vao tien)")
-        elif delta <= -12:
-            alerts.append(f"ROTATION OUT `{sector}` {delta} diem (ra tien)")
-    history.append({"updated_at": datetime.now(VN_TZ).isoformat(timespec="seconds"), "sectors": [current[k] for k in sorted(current)]})
-    scan.json_save(ROTATION_PATH, history[-80:], pretty=False)
-    return current, alerts
+def update_sector_rotation(
+    results: list[scan.ScanResult],
+    *,
+    history_store: dict[str, Any] | None = None,
+    index_frame: pd.DataFrame | None = None,
+    persist: bool = True,
+) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    return sector_rotation.update_sector_rotation(
+        results,
+        history_store=history_store,
+        index_frame=index_frame,
+        persist=persist,
+    )
 
 
 def auto_update_portfolio_thresholds(results: dict[str, scan.ScanResult]) -> bool:

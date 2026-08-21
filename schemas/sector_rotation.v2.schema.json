@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/sector_rotation.v2.schema.json",
+  "title": "THIEUCUBU Sector Rotation v2",
+  "type": "object",
+  "required": ["schema_version", "current", "history", "transitions"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.sector_rotation.v2"},
+    "updated_at": {"type": ["string", "null"]},
+    "current": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["sector", "score", "state"],
+        "properties": {
+          "sector": {"type": "string"},
+          "score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "state": {"enum": ["LEADING", "ENTERING", "EXITING", "LAGGING"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "history": {"type": "array"},
+    "transitions": {"type": "array"}
+  },
+  "additionalProperties": true
+}

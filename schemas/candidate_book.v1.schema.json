@@ -7,6 +7,7 @@
   "properties": {
     "schema_version": {"const": "thieucubu.candidate_book.v1"},
     "updated_at": {"type": ["string", "null"]},
+    "systemic_regime": {"type": "object"},
     "convictions": {
       "type": "array",
       "maxItems": 2,
@@ -33,6 +34,9 @@
         "market_state": {"enum": ["OPPORTUNITY", "ACCUMULATION", "CAUTION", "DISTRIBUTION", "NO_DATA"]},
         "breakout_state": {"type": "string"},
         "market_structure": {"type": ["object", "null"]},
+        "systemic_state": {"enum": ["FAVORABLE", "NEUTRAL", "HIGH_RISK", "SYSTEMIC_RISK"]},
+        "sector_rotation_state": {"enum": ["LEADING", "ENTERING", "EXITING", "LAGGING", "NO_DATA"]},
+        "position_size_multiplier": {"type": "number", "minimum": 0, "maximum": 1},
         "selected": {"type": "boolean"},
         "score_version": {"const": "thieucubu.score.v2"}
       },

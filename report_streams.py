@@ -86,6 +86,8 @@ def classify_streams(
 
         if getattr(result, "failed_break", False) or breakout_state in STRUCTURE_ALERT_STATES:
             streams[STRUCTURE].append(result)
+        elif bool(technical.get("risk_watch")) and technical.get("risk_dominant", True):
+            streams[TECHNICAL].append(result)
         elif (
             overall == "OPPORTUNITY"
             or (overall == "ACCUMULATION" and max(position, advanced) >= 55)
@@ -124,10 +126,18 @@ def symbol_summary(
         seen.add(symbol)
         score = stream_score(stream, row, metrics)
         if stream == EARLY:
-            stage = str((_metric(metrics, symbol).get("early_accumulation") or {}).get("stage", "E1"))
-            parts.append(f"`{symbol}` {stage}-{score}")
+            early = _metric(metrics, symbol).get("early_accumulation") or {}
+            stage = str(early.get("stage", "E1"))
+            pre = str(early.get("pre_label") or "NONE")
+            suffix = f"/{pre}" if pre != "NONE" else ""
+            parts.append(f"`{symbol}` {stage}-{score}{suffix}")
         elif stream == TECHNICAL:
-            parts.append(f"`{symbol}` T-{score}")
+            technical = _metric(metrics, symbol).get("technical_watch") or {}
+            pre = str(technical.get("pre_label") or "NONE")
+            if pre == "NONE":
+                pre = str(technical.get("risk_label") or "NONE")
+            suffix = f"/{pre}" if pre != "NONE" else ""
+            parts.append(f"`{symbol}` T-{score}{suffix}")
         else:
             parts.append(f"`{symbol}` {score}")
     for symbol in extra_symbols or []:
@@ -171,9 +181,17 @@ def serialize_streams(
             if stream == EARLY:
                 early = _metric(metrics, symbol).get("early_accumulation") or {}
                 item["stage"] = early.get("stage")
+                item["pre_label"] = early.get("pre_label")
+                item["trigger_price"] = early.get("trigger_price")
+                item["invalidation_price"] = early.get("invalidation_price")
             elif stream == TECHNICAL:
                 technical = _metric(metrics, symbol).get("technical_watch") or {}
                 item["stage"] = technical.get("stage")
+                item["pre_label"] = technical.get("pre_label")
+                item["risk_label"] = technical.get("risk_label")
+                item["bottom_count"] = technical.get("bottom_count")
+                item["trigger_price"] = technical.get("trigger_price")
+                item["invalidation_price"] = technical.get("invalidation_price")
             rows.append(item)
             seen.add(symbol)
         if stream == PORTFOLIO:

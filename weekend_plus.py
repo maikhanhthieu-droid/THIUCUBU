@@ -2,6 +2,7 @@
 import asyncio
 from datetime import datetime
 
+import market_breadth
 import market_intel as intel
 import scan_safe
 import weekend_opportunities as weekend
@@ -27,6 +28,7 @@ def build_report(opportunities: list[weekend.Opportunity], sectors: dict[str, we
     lines = [
         f"*THIEUCUBU WEEKLY CONVICTION* `{now}`",
         "Score v2 (tối đa 97): định giá + chất lượng + cấu trúc tuần + thời điểm + rủi ro. Không phải khuyến nghị mua bán.",
+        market_breadth.format_systemic(market_breadth.load_systemic_state()),
         "",
         "*💎 TỐI ĐA 2 MÃ ƯU TIÊN GOM*",
     ]

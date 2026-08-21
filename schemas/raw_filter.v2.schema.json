@@ -12,6 +12,10 @@
     "status": {"enum": ["ok", "degraded"]},
     "mode": {"type": "string"},
     "market": {"type": "object"},
+    "market_breadth": {"type": "object"},
+    "systemic_regime": {"type": "object"},
+    "sector_rotation": {"type": "object"},
+    "five_streams": {"type": "object"},
     "quality": {"type": "object"},
     "facts": {
       "type": "array",
@@ -33,6 +37,7 @@
           "market_structure": {"type": "object"},
           "technical_watch": {"type": "object"},
           "early_accumulation": {"type": "object"},
+          "market_context": {"type": "object"},
           "weekly": {"type": "object"},
           "volume": {"type": "object"},
           "relative_strength": {"type": "object"},

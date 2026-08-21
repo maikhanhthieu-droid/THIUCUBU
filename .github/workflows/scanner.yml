@@ -337,6 +337,8 @@ jobs:
             data/market_holidays.json
             data/signal_tracker.json
             data/sector_rotation_history.json
+            data/market_breadth_history.json
+            data/market_systemic_state.json
             data/portfolio_threshold_state.json
             data/near_high_skiplist.json
             data/market_state_history.json
@@ -363,6 +365,8 @@ jobs:
             data/failed_breaks.json \
             data/signal_tracker.json \
             data/sector_rotation_history.json \
+            data/market_breadth_history.json \
+            data/market_systemic_state.json \
             data/portfolio_threshold_state.json \
             data/near_high_skiplist.json \
             data/market_state_history.json \

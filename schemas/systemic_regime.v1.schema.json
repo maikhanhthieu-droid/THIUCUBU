@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/systemic_regime.v1.schema.json",
+  "title": "THIEUCUBU Systemic Regime v1",
+  "type": "object",
+  "required": ["schema_version", "state", "risk_score", "confidence", "hard_lock_new_accumulation"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.systemic_regime.v1"},
+    "state": {"enum": ["FAVORABLE", "NEUTRAL", "HIGH_RISK", "SYSTEMIC_RISK"]},
+    "risk_score": {"type": "integer", "minimum": 0, "maximum": 97},
+    "confidence": {"type": "integer", "minimum": 0, "maximum": 95},
+    "min_score_adjustment": {"type": "integer", "minimum": 0},
+    "position_size_multiplier": {"type": "number", "minimum": 0, "maximum": 1},
+    "hard_lock_new_accumulation": {"type": "boolean"},
+    "transitions": {"type": "array"}
+  },
+  "additionalProperties": true
+}

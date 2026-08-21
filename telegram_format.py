@@ -149,6 +149,7 @@ def format_opportunity_card(item: Any) -> str:
         "UNG_VIEN_GOM": "ỨNG VIÊN GOM",
         "CHO_DIEM_GOM": "CHỜ ĐIỂM GOM",
         "THEO_DOI_DINH_GIA": "THEO DÕI ĐỊNH GIÁ",
+        "THEO_DOI_SYSTEMIC_RISK": "CHỈ THEO DÕI — RỦI RO HỆ THỐNG",
     }.get(action_key, clean_text(action_key).upper())
     symbol = getattr(item, "symbol", "")
     score = int(getattr(item, "opportunity_score", 0))
@@ -192,6 +193,15 @@ def format_opportunity_card(item: Any) -> str:
             f"Case: {clean_text(getattr(item, 'bull_case', ''))}",
             f"Risk: {clean_text(getattr(item, 'bear_case', ''))}",
     ]
+    systemic_state = clean_text(getattr(item, "systemic_state", "NEUTRAL")).upper()
+    sector_rotation_state = clean_text(
+        getattr(item, "sector_rotation_state", "NO_DATA")
+    ).upper()
+    size_multiplier = float(getattr(item, "position_size_multiplier", 0.75) or 0.75)
+    lines.insert(
+        2,
+        f"Systemic {systemic_state} | Ngành {sector_rotation_state} | Size x{size_multiplier:.2f}",
+    )
     market_state = str(getattr(item, "market_state", "NO_DATA"))
     breakout_state = str(getattr(item, "breakout_state", "NO_DATA"))
     if market_state != "NO_DATA":

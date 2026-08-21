@@ -144,3 +144,33 @@ def test_own_valuation_history_requires_enough_independent_snapshots(monkeypatch
         {"captured_at": "2026-01-24", "pe": 14.0}
     )
     assert weekend.historical_multiple("AAA", "pe") == 11.0
+
+
+def test_systemic_hard_lock_keeps_weekend_candidate_as_watch_only(monkeypatch) -> None:
+    monkeypatch.setattr(weekend, "valuation_score", lambda packet, sector: (95, 35.0, 35.0))
+    monkeypatch.setattr(weekend, "quality_score", lambda packet: 95)
+    monkeypatch.setattr(weekend, "technical_score", lambda packet: 95)
+    monkeypatch.setattr(weekend, "risk_score", lambda *args: (0, []))
+    monkeypatch.setattr(weekend, "build_bull_case", lambda *args: "great")
+    monkeypatch.setattr(
+        weekend,
+        "load_weekend_market_context",
+        lambda: (
+            {
+                "state": "SYSTEMIC_RISK",
+                "risk_score": 80,
+                "min_score_adjustment": 10,
+                "position_size_multiplier": 0.2,
+                "hard_lock_new_accumulation": True,
+            },
+            {"Test": {"state": "LEADING"}},
+        ),
+    )
+    sector = weekend.SectorSnapshot("Test", 90, 90, 10, 1.5, 15, 0, 4)
+
+    results = weekend.build_opportunities([packet("AAA")], {"Test": sector})
+
+    assert results
+    assert results[0].selected is False
+    assert results[0].action == "THEO_DOI_SYSTEMIC_RISK"
+    assert results[0].systemic_state == "SYSTEMIC_RISK"

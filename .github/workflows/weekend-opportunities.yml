@@ -148,6 +148,9 @@ jobs:
             data/run_journal.json
             data/source_health.json
             data/source_routing.json
+            data/market_breadth_history.json
+            data/market_systemic_state.json
+            data/sector_rotation_history.json
           retention-days: 60
 
       - name: Commit weekend data

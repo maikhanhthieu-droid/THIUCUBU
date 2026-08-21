@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/market_breadth.v1.schema.json",
+  "title": "THIEUCUBU Market Breadth History v1",
+  "type": "object",
+  "required": ["schema_version", "snapshots"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.market_breadth.v1"},
+    "updated_at": {"type": ["string", "null"]},
+    "snapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["trading_date", "state", "score", "confidence", "valid_symbols"],
+        "properties": {
+          "trading_date": {"type": "string"},
+          "state": {"enum": ["STRONG", "NEUTRAL", "WEAK", "RISK_OFF", "NO_DATA"]},
+          "score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "confidence": {"type": "integer", "minimum": 0, "maximum": 95},
+          "valid_symbols": {"type": "integer", "minimum": 0},
+          "correlation": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

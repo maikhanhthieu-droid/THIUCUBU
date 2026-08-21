@@ -40,6 +40,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
     structure = intel.get("market_structure") if isinstance(intel.get("market_structure"), Mapping) else {}
     technical_watch = intel.get("technical_watch") if isinstance(intel.get("technical_watch"), Mapping) else {}
     early_accumulation = intel.get("early_accumulation") if isinstance(intel.get("early_accumulation"), Mapping) else {}
+    systemic = intel.get("systemic_regime") if isinstance(intel.get("systemic_regime"), Mapping) else {}
+    sector_rotation = intel.get("sector_rotation") if isinstance(intel.get("sector_rotation"), Mapping) else {}
     as_of = raw.get("as_of") or raw.get("date") or raw.get("as_of_date")
     data_source = raw.get("data_source")
     cache_status = str(raw.get("cache_status") or "unknown")
@@ -72,6 +74,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
             "horizon": raw.get("horizon"),
             "market_state": structure.get("overall_state") or raw.get("market_state"),
             "market_state_label": structure.get("label"),
+            "pre_label": technical_watch.get("pre_label"),
+            "risk_label": technical_watch.get("risk_label"),
         },
         "near_break": bool(raw.get("near_break")),
         "failed_break": bool(raw.get("failed_break")),
@@ -95,6 +99,16 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         },
         "technical_watch": dict(technical_watch),
         "early_accumulation": dict(early_accumulation),
+        "market_context": {
+            "breadth_state": intel.get("market_breadth_state"),
+            "breadth_score": intel.get("market_breadth_score"),
+            "systemic_state": systemic.get("state"),
+            "systemic_risk_score": systemic.get("risk_score"),
+            "position_size_multiplier": systemic.get("position_size_multiplier"),
+            "sector_state": sector_rotation.get("state"),
+            "sector_score": sector_rotation.get("score"),
+            "sector_rank": sector_rotation.get("rank"),
+        },
         "weekly": {
             "uptrend": bool(weekly.get("weekly_uptrend")),
             "above_ema13": bool(weekly.get("weekly_above_ema13")),
@@ -121,6 +135,9 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
             "allowed": gate.get("allowed"),
             "reason": gate.get("reason"),
             "regime": gate.get("regime"),
+            "effective_min_score": gate.get("effective_min_score"),
+            "systemic_state": gate.get("systemic_state"),
+            "sector_state": gate.get("sector_state"),
         },
         "data_quality": {
             "known_data_only": attributable,
