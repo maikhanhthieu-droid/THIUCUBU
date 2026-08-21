@@ -9,6 +9,7 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 ### Trong tuần
 
 - Quét rộng vào buổi sáng, buổi chiều và sau ATC.
+- Giữa các phiên cố định, radar `Pulse 30P` quét bảng giá toàn thị trường mỗi 30 phút để tìm giá/dòng tiền đột biến.
 - Luôn ưu tiên danh mục và mã đã ghi chú.
 - Tách riêng điểm `Lướt` và điểm `Gom`.
 - Vẫn gửi lại báo cáo đầy đủ mỗi phiên để người dùng không bỏ trôi tín hiệu.
@@ -38,13 +39,32 @@ Mỗi báo cáo Telegram mở đầu bằng `TÓM TẮT 5 LUỒNG`, liệt kê m
 
 Phân loại được tạo tự động sau mỗi lần quét. `session_alerts_latest.json` và feature feed đều có payload `five_streams`; mỗi fact có `classification.primary_stream`. Khi một mã đổi luồng, `market_state_history.json` ghi sự kiện `PRIMARY_STREAM` để mục chuyển pha có thể báo lại ở phiên sau.
 
+### Radar đột biến trong phiên 30 phút
+
+`intraday_pulse.py` là radar nhẹ chạy độc lập với các phiên quét cố định. Radar dùng bảng giá bulk của KBS, tự fallback sang VCI cho mã thiếu và đối chiếu VCI cho các sự kiện nổi bật khi nguồn thứ hai sẵn sàng. Vì đây là dữ liệu bảng giá ngắn hạn, FiinQuant/VCI/KBS/DNSE của scanner ngày vẫn được giữ nguyên và không bị Pulse thay thế.
+
+- Chạy mỗi 30 phút trong phiên sáng và chiều; lượt `09:00` và `13:00` gieo baseline mới.
+- Tìm biến động giá 30 phút, giá trị giao dịch tăng nhanh, bám đỉnh/đáy phiên và mất cân bằng mua/bán.
+- Vẫn gửi heartbeat khi không có mã vượt ngưỡng, để biết radar đang hoạt động.
+- Pulse không tạo Luồng 6 và không tự phát lệnh mua. Mã đột biến được lưu vào `top_symbols`, rồi tự được ưu tiên trong lượt quét sâu cố định kế tiếp để xếp vào đúng một trong 5 luồng.
+- Nếu KBS lỗi, VCI tiếp quản theo batch; nếu nguồn xác minh lỗi thì sự kiện vẫn được giữ với nhãn `1 nguồn`, không làm hỏng toàn bộ lượt quét.
+- Pulse và scanner có workflow, concurrency group và file universe riêng; một bên lỗi hoặc xếp hàng không chặn bên còn lại. Cơ chế safe-commit tự hợp nhất snapshot khi hai workflow cùng đẩy dữ liệu.
+
+Báo cáo EOD ghép VNINDEX với tóm tắt 5 luồng và xuất riêng bốn trạng thái hành động: `LƯỚT`, `CẦM`, `GOM`, `RỦI RO`. Trạng thái thị trường chỉ điều chỉnh mức độ thận trọng; mọi bộ quét vẫn tiếp tục chạy và thông báo.
+
+### Sửa nhanh Luồng 1
+
+Luồng 1 lấy trực tiếp từ `data/portfolio.json`. Hiện `NVL` và `SMC` đã được thêm ở trạng thái `watch`. Muốn thêm mã, chỉ cần sao chép một object, đổi `symbol` và `note`; có thể chỉnh `buy_more_score`, `sell_score`, `position` nhưng không cần tự xếp lại luồng. Hệ thống luôn ưu tiên portfolio/note và tự phân loại các mã còn lại.
+
 ## Kiến trúc
 
 ```text
-VCI / KBS / DNSE
+FiinQuant / VCI / KBS / DNSE
         │
         ▼
 Safe fetch + chuẩn hóa nghìn VND + provenance + cache + source health
+        │
+        ├── Pulse 30P ─────► radar đột biến, nâng mã vào lượt quét sâu
         │
         ├── Daily scanner ──► Telegram mua/bán, lướt/gom
         │
@@ -138,6 +158,9 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 | `data/investment_theses.json` | Sổ luận điểm bền vững qua nhiều tuần |
 | `data/fundamental_history.json` | Snapshot PE/PB/chất lượng để xây lịch sử riêng |
 | `data/session_alerts_latest.json` | Snapshot báo cáo phiên gần nhất |
+| `data/intraday_pulse_latest.json` | Mã đột biến và snapshot Pulse 30 phút gần nhất |
+| `data/intraday_pulse_state.json` | Baseline bảng giá để tính thay đổi giữa hai lần Pulse |
+| `data/intraday_universe_state.json` | Universe riêng của Pulse, tách khỏi cursor của scanner cố định |
 | `data/market_state_history.json` | Bộ nhớ chuyển pha và thay đổi điểm đáng kể |
 | `data/signal_tracker.json` | Episode tín hiệu v2 đo đúng T+5/T+10/T+20 phiên, MFE/MAE và excess so với VNINDEX |
 | `data/source_health.json` | Sức khỏe từng nguồn dữ liệu |
@@ -160,12 +183,13 @@ Danh sách cốt lõi được quét thường xuyên. Ngoài ra hệ thống t�
 
 ## Lịch chạy mặc định
 
+- `09:00–11:30` và `13:00–14:30`: Pulse toàn thị trường mỗi 30 phút; không thay đổi các phiên chính.
 - `10:31` giờ Việt Nam: quét rộng buổi sáng.
 - `13:31`: quét phần rộng chưa ưu tiên; sau `14:00` quét lại focus.
 - `15:05`: tổng kết EOD sau ATC.
 - `08:30` và `14:30` thứ Bảy: quét cơ hội cuối tuần.
 
-GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard timeout và run journal ngăn nhiều run chồng nhau hoặc treo vô hạn.
+GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard timeout và run journal ngăn các phiên cố định trùng hoặc treo; Pulse chạy độc lập để lỗi radar không làm mất báo cáo chính.
 
 ## Nguồn dữ liệu và khả năng tự phục hồi
 

@@ -1,0 +1,103 @@
+name: THIEUCUBU Intraday Pulse 30P
+
+permissions:
+  contents: write
+
+concurrency:
+  # Pulse is isolated from the fixed scanner: failure or queueing here cannot
+  # stop morning/afternoon/EOD scans.
+  group: thieucutoo-intraday-pulse-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/intraday-pulse.yml"
+  schedule:
+    # UTC = Vietnam time - 7 hours. Baselines: 09:00 and 13:00 VN.
+    - cron: "0,30 2-4 * * 1-5" # 09:00–11:30 VN, every 30 minutes
+    - cron: "0,30 6-7 * * 1-5" # 13:00–14:30 VN, every 30 minutes
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run outside the normal intraday window for diagnostics"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  pulse:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip uninstall vnstock3 -y || true
+          python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Run 30-minute anomaly radar
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
+          PULSE_BOARD_SOURCES: "KBS,VCI"
+          PULSE_BATCH_SIZE: "100"
+          PULSE_BATCH_DELAY_SEC: "0.25"
+          PULSE_MAX_SYMBOLS: "1800"
+          PULSE_MIN_INTERVAL_MINUTES: "20"
+        run: |
+          EXTRA_ARGS=()
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
+            EXTRA_ARGS+=(--force)
+          fi
+          python intraday_pulse.py "${EXTRA_ARGS[@]}"
+
+      - name: Upload Pulse artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: intraday-pulse-${{ github.run_number }}
+          path: |
+            data/intraday_pulse_state.json
+            data/intraday_pulse_latest.json
+            data/intraday_universe_state.json
+          retention-days: 14
+
+      - name: Commit Pulse snapshot
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          python scripts/safe_commit_data.py \
+            --message "chore: update intraday pulse [skip ci]" \
+            --paths \
+            data/intraday_pulse_state.json \
+            data/intraday_pulse_latest.json \
+            data/intraday_universe_state.json
+
+      - name: Notify workflow failure
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "Telegram secrets not configured; cannot send failure notice."
+            exit 0
+          fi
+          TEXT="THIEUCUBU Pulse failed: run ${GITHUB_RUN_ID} - ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${TEXT}" || true

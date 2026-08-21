@@ -11,6 +11,7 @@ from typing import Any
 
 import market_intel as intel
 import market_probe
+import market_strategy
 import near_high_filter
 import report_streams
 import run_journal
@@ -190,6 +191,18 @@ def five_stream_summary(
     return lines
 
 
+def pulse_day_summary(limit: int = 20) -> str:
+    events = sess.intraday_pulse_day_events(limit=limit)
+    if not events:
+        return "Không có mã Pulse vượt ngưỡng trong ngày."
+    labels: list[str] = []
+    for item in events:
+        direction = str(item.get("direction") or "NEUTRAL").upper()
+        arrow = "↑" if direction == "UP" else "↓" if direction == "DOWN" else "•"
+        labels.append(f"`{item['symbol']}` {arrow}{int(item.get('score') or 0)}")
+    return ", ".join(labels)
+
+
 def build_session_report(
     mode: str,
     results: dict[str, scan.ScanResult],
@@ -218,6 +231,14 @@ def build_session_report(
         intel.format_regime(regime),
         "",
         *five_stream_summary(streams, metrics, watch_items),
+    ]
+    if mode == "eod":
+        lines += [
+            "",
+            "*RADAR 30P TRONG NGÀY*: " + pulse_day_summary(),
+            *market_strategy.format_lines(market_strategy.horizon_strategy(market, regime)),
+        ]
+    lines += [
         "",
         "*BẢN ĐỒ TRẠNG THÁI 1D / 1W / 1M*",
         *intel.structure_map_lines(stocks, metrics),
@@ -375,6 +396,8 @@ def save_session_outputs(
         "market_day": asdict(market_day) if market_day else None,
         "market_activity": asdict(activity_probe) if activity_probe else None,
         "market_regime": regime,
+        "market_horizon_strategy": market_strategy.horizon_strategy(results.get("VNINDEX"), regime),
+        "intraday_pulse_day": sess.intraday_pulse_day_events(limit=30),
         "five_streams": stream_payload,
         "new_signals": new_signals,
         "state_transitions": transitions,
@@ -398,6 +421,8 @@ def save_session_outputs(
             market_activity=asdict(activity_probe) if activity_probe else None,
     )
     feed["five_streams"] = stream_payload
+    feed["market_horizon_strategy"] = latest["market_horizon_strategy"]
+    feed["intraday_pulse_day"] = latest["intraday_pulse_day"]
     for fact in feed.get("facts", []):
         symbol = str(fact.get("symbol") or "")
         fact.setdefault("classification", {})["primary_stream"] = primary_streams.get(

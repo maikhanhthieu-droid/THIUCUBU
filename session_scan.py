@@ -271,6 +271,54 @@ def load_watch_items() -> dict[str, dict[str, Any]]:
     return items
 
 
+def intraday_pulse_day_events(limit: int = 30, now: datetime | None = None) -> list[dict[str, Any]]:
+    """Aggregate each symbol's strongest Pulse event from the current trading day."""
+
+    current = (now or datetime.now(VN_TZ)).astimezone(VN_TZ)
+    trading_date = current.date().isoformat()
+    latest = scan.json_load(DATA_DIR / "intraday_pulse_latest.json", {})
+    state = scan.json_load(DATA_DIR / "intraday_pulse_state.json", {})
+    strongest: dict[str, dict[str, Any]] = {}
+
+    def accept(item: Any) -> None:
+        if not isinstance(item, dict):
+            return
+        symbol = normalize_symbol(item.get("symbol"))
+        if not symbol or symbol == "VNINDEX" or not symbol.isalnum() or not 3 <= len(symbol) <= 12:
+            return
+        try:
+            score = max(0, min(97, int(float(item.get("score") or 0))))
+        except (TypeError, ValueError):
+            score = 0
+        candidate = dict(item)
+        candidate["symbol"] = symbol
+        candidate["score"] = score
+        if score >= int(strongest.get(symbol, {}).get("score") or -1):
+            strongest[symbol] = candidate
+
+    if isinstance(state, dict) and str(state.get("trading_date") or "") == trading_date:
+        for snapshot in state.get("events", []):
+            if isinstance(snapshot, dict):
+                for item in snapshot.get("items", []):
+                    accept(item)
+    if isinstance(latest, dict) and str(latest.get("trading_date") or "") == trading_date:
+        for item in latest.get("events", []):
+            accept(item)
+        for rank, symbol in enumerate(latest.get("top_symbols", [])):
+            accept({"symbol": symbol, "score": max(1, 30 - rank), "event_type": "ANOMALY"})
+    return sorted(
+        strongest.values(),
+        key=lambda item: (int(item.get("score") or 0), str(item.get("symbol") or "")),
+        reverse=True,
+    )[: max(0, limit)]
+
+
+def intraday_pulse_symbols(limit: int = 30, now: datetime | None = None) -> list[str]:
+    """Return today's anomalies so the next fixed scan can inspect them deeply."""
+
+    return [item["symbol"] for item in intraday_pulse_day_events(limit=limit, now=now)]
+
+
 def all_universe_symbols(mode: str, watch_items: dict[str, dict[str, Any]]) -> list[str]:
     if mode == "test":
         symbols = ["VCB", "FPT", "HPG", "TCB", "SSI", "DIG", "VIX", "VNM", "PVD", "KDH"]
@@ -278,8 +326,8 @@ def all_universe_symbols(mode: str, watch_items: dict[str, dict[str, Any]]) -> l
         core = list(scan.ALL_TICKERS)
         rotation = market_universe.rotating_batch(core + list(watch_items))
         # Priority order matters because broad scans have a hard deadline.
-        # Personal watch items and the rotating discovery slice go first.
-        symbols = list(watch_items) + rotation + core
+        # Personal watch items and today's 30-minute anomalies go first.
+        symbols = list(watch_items) + intraday_pulse_symbols() + rotation + core
     return list(dict.fromkeys(symbols))
 
 
@@ -287,7 +335,7 @@ def add_symbol_once(target: list[str], seen: set[str], symbol: Any) -> None:
     normalized = normalize_symbol(symbol)
     if not normalized or normalized == "VNINDEX" or normalized in seen:
         return
-    if len(normalized) < 3 or len(normalized) > 12:
+    if len(normalized) < 3 or len(normalized) > 12 or not normalized.isalnum():
         return
     target.append(normalized)
     seen.add(normalized)
@@ -300,6 +348,11 @@ def previous_focus_symbols(watch_items: dict[str, dict[str, Any]], limit: int | 
     signal_symbols: list[str] = []
     note_symbols: list[str] = []
     seen: set[str] = set()
+
+    for symbol in intraday_pulse_symbols(limit=signal_limit):
+        add_symbol_once(signal_symbols, seen, symbol)
+        if len(signal_symbols) >= signal_limit:
+            break
 
     for symbol in state_manager.memory_focus_symbols(limit=signal_limit):
         add_symbol_once(signal_symbols, seen, symbol)

@@ -5,8 +5,10 @@ permissions:
   actions: read
 
 concurrency:
-  group: thieucutoo-scanner-${{ github.ref }}-${{ github.event_name }}-${{ github.event.schedule || github.event.inputs.mode || github.run_id }}
-  cancel-in-progress: true
+  # Keep fixed scanner backups from running at the same time. Pulse has its own
+  # independent group and files, so a Pulse failure never blocks this workflow.
+  group: thieucutoo-scanner-${{ github.ref }}
+  cancel-in-progress: false
 
 on:
   push:

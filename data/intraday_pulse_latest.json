@@ -1,0 +1,8 @@
+{
+  "schema_version": "thieucubu.intraday_pulse.v1",
+  "updated_at": null,
+  "trading_date": null,
+  "status": "waiting_for_first_pulse",
+  "top_symbols": [],
+  "events": []
+}

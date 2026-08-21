@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "symbol": "NVL",
+    "note": "Theo dõi thử ở Luồng 1; cập nhật giá vốn và tỷ trọng khi thực sự nắm giữ.",
+    "buy_more_score": 78,
+    "sell_score": 45,
+    "position": "watch"
+  },
+  {
+    "symbol": "SMC",
+    "note": "Theo dõi thử ở Luồng 1; cập nhật giá vốn và tỷ trọng khi thực sự nắm giữ.",
+    "buy_more_score": 78,
+    "sell_score": 45,
+    "position": "watch"
+  }
+]
