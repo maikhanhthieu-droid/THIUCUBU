@@ -2,15 +2,19 @@
   {
     "symbol": "NVL",
     "note": "Theo dõi thử ở Luồng 1; cập nhật giá vốn và tỷ trọng khi thực sự nắm giữ.",
-    "buy_more_score": 78,
-    "sell_score": 45,
-    "position": "watch"
+    "buy_more_score": 73,
+    "sell_score": 40,
+    "position": "watch",
+    "base_buy_more_score": 78,
+    "base_sell_score": 45
   },
   {
     "symbol": "SMC",
     "note": "Theo dõi thử ở Luồng 1; cập nhật giá vốn và tỷ trọng khi thực sự nắm giữ.",
-    "buy_more_score": 78,
-    "sell_score": 45,
-    "position": "watch"
+    "buy_more_score": 73,
+    "sell_score": 40,
+    "position": "watch",
+    "base_buy_more_score": 78,
+    "base_sell_score": 45
   }
 ]
