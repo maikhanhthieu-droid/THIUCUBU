@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-08-21T14:14:36+07:00",
-  "last_mode": "afternoon_split",
+  "last_updated": "2026-08-21T15:39:37+07:00",
+  "last_mode": "morning_broad",
   "strong_stocks": [],
   "watchlist": [
     {
@@ -9,8 +9,8 @@
       "category": "watchlist",
       "first_detected": "2026-08-21",
       "last_seen": "2026-08-21",
-      "last_updated": "2026-08-21T14:14:36+07:00",
-      "last_mode": "afternoon_split",
+      "last_updated": "2026-08-21T15:39:37+07:00",
+      "last_mode": "morning_broad",
       "score": 71,
       "win_score": 89,
       "close": 74.7,
@@ -27,8 +27,8 @@
       "breakout_level": 76.1,
       "reaccumulation": false,
       "rsi": 62.3,
-      "mfi": 69.3,
-      "vol_ratio": 0.48,
+      "mfi": 69.7,
+      "vol_ratio": 0.67,
       "consolidation_days": 1,
       "last_signal": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF CƠ HỘI; GẦN ĐIỂM BREAK",
       "flags": [
@@ -39,7 +39,7 @@
         "near_break"
       ],
       "note": "",
-      "rs_score": 69,
+      "rs_score": 68,
       "risk_reward": 4.31
     },
     {
@@ -47,11 +47,11 @@
       "category": "watchlist",
       "first_detected": "2026-08-21",
       "last_seen": "2026-08-21",
-      "last_updated": "2026-08-21T14:14:36+07:00",
-      "last_mode": "afternoon_split",
+      "last_updated": "2026-08-21T15:39:37+07:00",
+      "last_mode": "morning_broad",
       "score": 64,
       "win_score": 84,
-      "close": 22.5,
+      "close": 22.75,
       "sector": "Bank",
       "setup": "VCP_BREAK",
       "near_break": true,
@@ -64,9 +64,9 @@
       "breakout_state": "NEAR_BREAK",
       "breakout_level": 22.8,
       "reaccumulation": false,
-      "rsi": 49.2,
-      "mfi": 54.0,
-      "vol_ratio": 0.87,
+      "rsi": 53.1,
+      "mfi": 55.0,
+      "vol_ratio": 1.13,
       "consolidation_days": 1,
       "last_signal": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF TÍCH LŨY; GẦN ĐIỂM BREAK",
       "flags": [
@@ -77,16 +77,16 @@
         "near_break"
       ],
       "note": "",
-      "rs_score": 63,
-      "risk_reward": 14.75
+      "rs_score": 65,
+      "risk_reward": 7.81
     },
     {
       "symbol": "VNM",
       "category": "watchlist",
       "first_detected": "2026-08-21",
       "last_seen": "2026-08-21",
-      "last_updated": "2026-08-21T14:14:36+07:00",
-      "last_mode": "afternoon_split",
+      "last_updated": "2026-08-21T15:39:37+07:00",
+      "last_mode": "morning_broad",
       "score": 63,
       "win_score": 80,
       "close": 64.0,
@@ -120,13 +120,16 @@
     }
   ],
   "session_focus": [
-    "VNM",
-    "BAF",
+    "ACB",
     "BSR",
     "DPM",
+    "FPT",
+    "MWG",
+    "STB",
+    "VNM",
+    "BAF",
     "HDB",
     "MCH",
-    "STB",
     "SAB",
     "VEA",
     "DHA",
@@ -153,11 +156,8 @@
     "HCM",
     "VIC",
     "PVD",
-    "MWG",
-    "ACB",
     "DGC",
     "FCN",
-    "FPT",
     "HPG",
     "KHG"
   ],
