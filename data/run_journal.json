@@ -3,14 +3,6 @@
   "runs": [
     {
       "run_id": "20260810120105-b17905ec",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-08-10T12:01:05+07:00",
-      "updated_at": "2026-08-10T12:01:05+07:00"
-    },
-    {
-      "run_id": "20260810120105-b17905ec",
       "mode": "morning_broad",
       "status": "failed",
       "finished_at": "2026-08-10T12:03:23+07:00",
@@ -825,7 +817,15 @@
       "elapsed_sec": 526.9,
       "telegram_sent": true,
       "updated_at": "2026-08-21T19:47:25+07:00"
+    },
+    {
+      "run_id": "20260822024040-0aa0f4f4",
+      "mode": "eod",
+      "trigger": "workflow_dispatch",
+      "status": "started",
+      "started_at": "2026-08-22T02:40:40+07:00",
+      "updated_at": "2026-08-22T02:40:40+07:00"
     }
   ],
-  "last_updated": "2026-08-21T19:47:25+07:00"
+  "last_updated": "2026-08-22T02:40:40+07:00"
 }
