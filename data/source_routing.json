@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-08-21T15:39:37+07:00",
-  "last_mode": "morning_broad",
+  "updated_at": "2026-08-21T15:40:16+07:00",
+  "last_mode": "afternoon_split",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -48,7 +48,7 @@
       "last_price": 71.7,
       "as_of": "2026-08-21",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     },
     {
@@ -192,7 +192,7 @@
       "last_price": 77.4,
       "as_of": "2026-08-21",
       "first_promoted_at": "2026-08-20T15:12:55+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     },
     {
@@ -336,7 +336,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     },
     {
@@ -359,7 +359,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     },
     {
@@ -590,7 +590,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 1
     },
     {
@@ -614,7 +614,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 1
     },
     {
@@ -638,7 +638,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 1
     },
     {
@@ -662,7 +662,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 1
     },
     {
@@ -686,7 +686,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 1
     },
     {
@@ -711,7 +711,7 @@
       "last_price": 27.0,
       "as_of": "2026-08-21",
       "first_promoted_at": "2026-08-21T11:13:03+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 1
     },
     {
@@ -734,8 +734,8 @@
       "breakout_state": "HEALTHY_RETEST",
       "last_price": 143.5,
       "as_of": "2026-08-21",
-      "first_promoted_at": "2026-08-21T15:39:37+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "first_promoted_at": "2026-08-21T15:40:16+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     },
     {
@@ -761,7 +761,7 @@
       "last_price": 74.7,
       "as_of": "2026-08-21",
       "first_promoted_at": "2026-08-21T14:14:36+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     },
     {
@@ -787,7 +787,7 @@
       "last_price": 64.0,
       "as_of": "2026-08-20",
       "first_promoted_at": "2026-08-20T15:29:40+07:00",
-      "last_evaluated_at": "2026-08-21T15:39:37+07:00",
+      "last_evaluated_at": "2026-08-21T15:40:16+07:00",
       "consecutive_misses": 0
     }
   ],
