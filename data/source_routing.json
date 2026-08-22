@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-08-21T19:47:12+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-08-22T09:55:56+07:00",
+  "last_mode": "weekend",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -958,7 +958,7 @@
       "KBS": 55,
       "DNSE": 50
     },
-    "evaluated_symbols": 175,
+    "evaluated_symbols": 0,
     "demote_after_scans": 3
   }
 }
