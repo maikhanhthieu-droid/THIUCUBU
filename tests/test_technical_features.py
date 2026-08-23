@@ -110,3 +110,50 @@ def test_confirmed_double_bottom_gets_pre_label_trigger_and_invalidation() -> No
     assert result["signal_age_bars"] <= 15
     assert result["trigger_price"] > result["invalidation_price"]
 
+
+def test_weekly_oscillator_detector_counts_three_distinct_smi_bottoms(monkeypatch) -> None:
+    periods = 120
+    close = pd.Series(np.linspace(20.0, 13.0, periods))
+    frame = pd.DataFrame(
+        {
+            "time": pd.date_range("2024-01-05", periods=periods, freq="W-FRI"),
+            "open": close + 0.05,
+            "high": close + 0.25,
+            "low": close - 0.25,
+            "close": close,
+            "volume": np.linspace(1_500_000, 800_000, periods),
+        }
+    )
+    smi = pd.Series([20.0] * periods)
+    smi.iloc[65] = -62.0
+    smi.iloc[88] = -56.0
+    smi.iloc[112] = -50.0
+    smi.iloc[113:120] = [-43.0, -35.0, -27.0, -20.0, -15.0, -10.0, -5.0]
+    signal = smi + 5.0
+    signal.iloc[-3:] = smi.iloc[-3:] + pd.Series([10.0, 6.0, 3.0], index=signal.index[-3:])
+    monkeypatch.setattr(technical_features, "_smi", lambda prepared: (smi, signal))
+
+    result = technical_features.analyze_oscillator_bottoms(frame, timeframe="1W")
+
+    assert result["smi_bottom_count"] == 3
+    assert result["smi_state"] == "CURLING_UP_BELOW_SIGNAL"
+    assert result["momentum_ready"] is True
+    assert len(result["smi_pivot_dates"]) == 3
+
+
+def test_flat_smi_is_not_counted_as_one_or_more_bottoms() -> None:
+    close = pd.Series([10.0] * 100)
+    frame = pd.DataFrame(
+        {
+            "open": close,
+            "high": close + 0.1,
+            "low": close - 0.1,
+            "close": close,
+            "volume": [1_000_000.0] * 100,
+        }
+    )
+
+    result = technical_features.analyze_oscillator_bottoms(frame, timeframe="1D")
+
+    assert result["smi_bottom_count"] == 0
+

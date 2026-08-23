@@ -136,6 +136,290 @@ def _pivot_date(frame: pd.DataFrame, index: int) -> str | None:
     return value.date().isoformat() if pd.notna(value) else None
 
 
+def _recent_cross(spread: pd.Series, *, bullish: bool, lookback: int = 3) -> bool:
+    """Return a recent confirmed cross using only closed bars."""
+
+    values = pd.to_numeric(spread, errors="coerce").to_numpy(dtype=float)
+    start = max(1, len(values) - max(lookback, 1))
+    for index in range(start, len(values)):
+        previous, current = values[index - 1], values[index]
+        if not (np.isfinite(previous) and np.isfinite(current)):
+            continue
+        if bullish and previous < 0 <= current:
+            return True
+        if not bullish and previous >= 0 > current:
+            return True
+    return False
+
+
+def _select_oscillator_bottoms(
+    frame: pd.DataFrame,
+    oscillator: pd.Series,
+    *,
+    lookback: int,
+    zone_ceiling: float,
+    min_gap: int,
+    max_gap: int,
+    max_age: int,
+    min_rebound: float,
+) -> list[int]:
+    """Select one to three distinct oscillator lows without look-ahead.
+
+    A low is confirmed by one closed bar on its right.  Requiring a rebound on
+    both sides prevents a flat oscillator from being counted as repeated lows.
+    """
+
+    values = pd.to_numeric(oscillator, errors="coerce")
+    pivots = _pivot_lows(values, lookback=lookback, left=2, right=1)
+    shaped: list[int] = []
+    for index in pivots:
+        value = _safe(values.iloc[index], 101.0)
+        if value > zone_ceiling:
+            continue
+        left_peak = _safe(values.iloc[max(0, index - 4) : index].max(), value)
+        right_peak = _safe(
+            values.iloc[index + 1 : min(len(values), index + 5)].max(),
+            value,
+        )
+        if left_peak < value + min_rebound * 0.45:
+            continue
+        if right_peak < value + min_rebound * 0.30:
+            continue
+        shaped.append(index)
+    if not shaped:
+        return []
+
+    latest = shaped[-1]
+    confirmed_age = len(values) - 1 - (latest + 1)
+    if confirmed_age > max_age:
+        return []
+
+    selected = [latest]
+    for candidate in reversed(shaped[:-1]):
+        following = selected[0]
+        gap = following - candidate
+        if gap < min_gap:
+            continue
+        if gap > max_gap:
+            break
+        middle = values.iloc[candidate + 1 : following]
+        rebound = _safe(middle.max(), -101.0)
+        higher_low = max(_safe(values.iloc[candidate]), _safe(values.iloc[following]))
+        price_before = max(_safe(frame["close"].iloc[candidate]), 1e-9)
+        price_change = _safe(frame["close"].iloc[following]) / price_before - 1.0
+        if rebound < higher_low + min_rebound:
+            continue
+        if not -0.25 <= price_change <= 0.30:
+            continue
+        selected.insert(0, candidate)
+        if len(selected) == 3:
+            break
+    return selected
+
+
+def analyze_oscillator_bottoms(
+    df: pd.DataFrame | None,
+    *,
+    timeframe: str = "1D",
+) -> dict[str, Any]:
+    """Describe SMI bottoms and MACD/RSI timing for one closed timeframe.
+
+    This is evidence for an early-watch list, not a trade signal.  Weekly and
+    daily results are intentionally returned separately so callers can assign
+    different weights without mixing them into the main 97-point score.
+    """
+
+    timeframe = str(timeframe).upper()
+    empty = {
+        "timeframe": timeframe,
+        "smi_bottom_count": 0,
+        "smi_state": "NO_DATA",
+        "smi_value": None,
+        "smi_signal": None,
+        "smi_spread": None,
+        "smi_pivot_indices": [],
+        "smi_pivot_dates": [],
+        "smi_pivot_values": [],
+        "smi_pivot_prices": [],
+        "smi_signal_age_bars": None,
+        "macd_state": "NO_DATA",
+        "macd_zone": "NO_DATA",
+        "macd_hist_pct": None,
+        "macd_bullish_divergence": False,
+        "macd_divergence_state": "NONE",
+        "rsi_bullish_divergence": False,
+        "rsi": None,
+        "momentum_ready": False,
+        "signals": [],
+    }
+    frame = _prepare(df)
+    if frame is None or len(frame) < 80:
+        return empty
+
+    close = frame["close"]
+    rsi = _rsi(close)
+    macd, macd_signal, histogram = _macd(close)
+    smi, smi_signal = _smi(frame)
+    smi_spread = smi - smi_signal
+    macd_spread = macd - macd_signal
+    weekly = timeframe == "1W"
+    selected = _select_oscillator_bottoms(
+        frame,
+        smi,
+        lookback=130 if weekly else 100,
+        zone_ceiling=25.0 if weekly else 30.0,
+        min_gap=3 if weekly else 5,
+        max_gap=42 if weekly else 45,
+        max_age=18 if weekly else 22,
+        min_rebound=10.0 if weekly else 8.0,
+    )
+
+    smi_rising = bool(smi.iloc[-1] > smi.iloc[-2])
+    smi_spread_improving = bool(
+        smi_spread.iloc[-1] > smi_spread.iloc[-2]
+        and smi_spread.iloc[-2] >= smi_spread.iloc[-3]
+    )
+    smi_bull_cross = bool(
+        smi_spread.iloc[-1] >= 0
+        and _recent_cross(smi_spread, bullish=True)
+    )
+    smi_bear_cross = bool(
+        smi_spread.iloc[-1] < 0
+        and _recent_cross(smi_spread, bullish=False)
+    )
+    if smi_bull_cross:
+        smi_state = "BULL_CROSS_NEGATIVE" if smi.iloc[-1] < 0 else "BULL_CROSS_POSITIVE"
+    elif smi_spread.iloc[-1] < 0 and smi_rising and smi_spread_improving and smi.iloc[-1] <= 25:
+        smi_state = "CURLING_UP_BELOW_SIGNAL"
+    elif smi_spread.iloc[-1] >= 0 and smi_rising and smi.iloc[-1] < 0:
+        smi_state = "RISING_NEGATIVE"
+    elif smi_bear_cross:
+        smi_state = "BEAR_CROSS"
+    elif smi_spread.iloc[-1] >= 0 and smi_rising:
+        smi_state = "RISING_POSITIVE"
+    elif smi_rising:
+        smi_state = "RISING_UNCONFIRMED"
+    else:
+        smi_state = "FALLING"
+
+    hist_rising = bool(
+        histogram.iloc[-1] > histogram.iloc[-2]
+        and histogram.iloc[-2] >= histogram.iloc[-3]
+    )
+    macd_bull_cross = bool(
+        macd_spread.iloc[-1] >= 0
+        and _recent_cross(macd_spread, bullish=True)
+    )
+    macd_bear_cross = bool(
+        macd_spread.iloc[-1] < 0
+        and _recent_cross(macd_spread, bullish=False)
+    )
+    macd_zone = "NEGATIVE" if macd.iloc[-1] < 0 else "POSITIVE"
+    if macd_bull_cross:
+        macd_state = f"BULL_CROSS_{macd_zone}"
+    elif macd_spread.iloc[-1] < 0 and hist_rising and macd_zone == "NEGATIVE":
+        macd_state = "CONVERGING_NEGATIVE"
+    elif macd_spread.iloc[-1] >= 0 and hist_rising and macd_zone == "NEGATIVE":
+        macd_state = "RECOVERING_NEGATIVE"
+    elif macd_bear_cross:
+        macd_state = f"BEAR_CROSS_{macd_zone}"
+    elif macd_spread.iloc[-1] >= 0 and hist_rising:
+        macd_state = "BULLISH_POSITIVE"
+    elif hist_rising:
+        macd_state = f"IMPROVING_{macd_zone}"
+    else:
+        macd_state = f"WEAKENING_{macd_zone}"
+
+    macd_divergence = _bullish_divergence(
+        close,
+        macd,
+        indicator_floor=max(_safe(close.iloc[-1]) * 0.0008, 1e-6),
+    )
+    rsi_divergence = _bullish_divergence(close, rsi, indicator_floor=2.0)
+    if len(selected) >= 2:
+        first, second = selected[-2], selected[-1]
+        price_change = _safe(close.iloc[second]) / max(_safe(close.iloc[first]), 1e-9) - 1.0
+        macd_scale = max(_safe(macd.tail(100).std()) * 0.12, _safe(close.iloc[-1]) * 0.0003)
+        rsi_scale = max(_safe(rsi.tail(100).std()) * 0.15, 1.5)
+        macd_divergence = bool(
+            macd_divergence
+            or (
+                price_change <= 0.005
+                and _safe(macd.iloc[second]) >= _safe(macd.iloc[first]) + macd_scale
+            )
+        )
+        rsi_divergence = bool(
+            rsi_divergence
+            or (
+                price_change <= 0.005
+                and _safe(rsi.iloc[second]) >= _safe(rsi.iloc[first]) + rsi_scale
+            )
+        )
+    divergence_state = (
+        f"BULLISH_{macd_zone}" if macd_divergence else "NONE"
+    )
+    ready_states = {
+        "BULL_CROSS_NEGATIVE",
+        "BULL_CROSS_POSITIVE",
+        "CURLING_UP_BELOW_SIGNAL",
+        "RISING_NEGATIVE",
+        "RECOVERING_NEGATIVE",
+        "CONVERGING_NEGATIVE",
+    }
+    momentum_ready = bool(
+        smi_state in ready_states
+        or macd_state in ready_states
+        or macd_divergence
+        or rsi_divergence
+    )
+    signals: list[str] = []
+    if selected:
+        signals.append(f"SMI {len(selected)} đáy {timeframe}")
+    if smi_state == "CURLING_UP_BELOW_SIGNAL":
+        signals.append(f"SMI {timeframe} còn dưới signal nhưng đang cong lên")
+    elif smi_state.startswith("BULL_CROSS"):
+        signals.append(f"SMI {timeframe} vừa giao cắt lên")
+    if macd_state == "CONVERGING_NEGATIVE":
+        signals.append(f"MACD {timeframe} âm, đang hội tụ")
+    elif macd_state.startswith("BULL_CROSS"):
+        signals.append(f"MACD {timeframe} giao cắt lên vùng {macd_zone.lower()}")
+    if macd_divergence:
+        signals.append(f"MACD {timeframe} phân kỳ tăng ({macd_zone.lower()})")
+    if rsi_divergence:
+        signals.append(f"RSI {timeframe} phân kỳ tăng")
+
+    signal_age = (
+        len(frame) - 1 - (selected[-1] + 1)
+        if selected
+        else None
+    )
+    return {
+        **empty,
+        "smi_bottom_count": len(selected),
+        "smi_state": smi_state,
+        "smi_value": round(_safe(smi.iloc[-1]), 2),
+        "smi_signal": round(_safe(smi_signal.iloc[-1]), 2),
+        "smi_spread": round(_safe(smi_spread.iloc[-1]), 2),
+        "smi_pivot_indices": selected,
+        "smi_pivot_dates": [_pivot_date(frame, index) for index in selected],
+        "smi_pivot_values": [round(_safe(smi.iloc[index]), 2) for index in selected],
+        "smi_pivot_prices": [round(_safe(close.iloc[index]), 2) for index in selected],
+        "smi_signal_age_bars": signal_age,
+        "macd_state": macd_state,
+        "macd_zone": macd_zone,
+        "macd_hist_pct": round(
+            _safe(histogram.iloc[-1] / max(_safe(close.iloc[-1]), 1e-9) * 100),
+            3,
+        ),
+        "macd_bullish_divergence": macd_divergence,
+        "macd_divergence_state": divergence_state,
+        "rsi_bullish_divergence": rsi_divergence,
+        "rsi": round(_safe(rsi.iloc[-1]), 1),
+        "momentum_ready": momentum_ready,
+        "signals": signals[:6],
+    }
+
+
 def _bottom_pattern(
     frame: pd.DataFrame,
     rsi: pd.Series,

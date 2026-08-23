@@ -1,19 +1,23 @@
 {
-  "schema_version": "thieucubu.weekly_bottom_watch.v1",
+  "schema_version": "thieucubu.weekly_bottom_watch.v2",
+  "score_version": "thieucubu.weekly_bottom_watch.score.v2",
   "updated_at": null,
   "policy": {
     "advisory_only": true,
     "max_candidates": 5,
     "requires": [
-      "weekly_2_or_3_bottoms",
+      "weekly_SMI_2_or_3_bottoms",
       "deep_discount",
-      "MACD_RSI_SMI_bottom_momentum"
+      "weekly_momentum_turning_or_divergence"
     ],
-    "flow_is_bonus": [
-      "OBV",
-      "CMF",
-      "MFI"
-    ],
+    "score_100": {
+      "weekly_SMI_bottoms": "2=40, 3=50",
+      "daily_SMI_bottoms": "1=5, 2_or_3=10",
+      "momentum_divergence": 15,
+      "money_flow_divergence": 15,
+      "discount_structure": 10
+    },
+    "money_flow_divergence": "price_lower_low_with_OBV_CMF_MFI_flat_or_rising",
     "never_average_below_invalidation": true
   },
   "candidates": []

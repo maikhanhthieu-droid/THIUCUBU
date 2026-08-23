@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/weekly_bottom_watch.v2.schema.json",
+  "title": "THIEUCUBU Weekly Multi-Timeframe Bottom Watch v2",
+  "type": "object",
+  "required": ["schema_version", "score_version", "updated_at", "policy", "candidates"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.weekly_bottom_watch.v2"},
+    "score_version": {"const": "thieucubu.weekly_bottom_watch.score.v2"},
+    "updated_at": {"type": ["string", "null"]},
+    "policy": {
+      "type": "object",
+      "required": ["advisory_only", "max_candidates", "score_100", "never_average_below_invalidation"],
+      "properties": {
+        "advisory_only": {"const": true},
+        "max_candidates": {"type": "integer", "minimum": 1, "maximum": 5},
+        "score_100": {"type": "object"},
+        "never_average_below_invalidation": {"const": true}
+      },
+      "additionalProperties": true
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "symbol", "score", "score_version", "score_components", "label", "action",
+          "bottom_count", "weekly_smi_bottom_count", "daily_smi_bottom_count",
+          "weekly_smi_state", "daily_smi_state", "weekly_macd_state", "macd_zone",
+          "discount_104w_pct", "technical_score", "flow_score", "flow_divergence_score",
+          "structure_score", "trigger_price", "invalidation_price"
+        ],
+        "properties": {
+          "symbol": {"type": "string"},
+          "score": {"type": "integer", "minimum": 0, "maximum": 100},
+          "score_version": {"const": "thieucubu.weekly_bottom_watch.score.v2"},
+          "score_components": {
+            "type": "object",
+            "required": [
+              "weekly_smi_bottoms", "daily_smi_bottoms", "momentum_divergence",
+              "money_flow_divergence", "discount_structure"
+            ],
+            "properties": {
+              "weekly_smi_bottoms": {"enum": [40, 50]},
+              "daily_smi_bottoms": {"enum": [0, 5, 10]},
+              "momentum_divergence": {"type": "integer", "minimum": 0, "maximum": 15},
+              "money_flow_divergence": {"type": "integer", "minimum": 0, "maximum": 15},
+              "discount_structure": {"type": "integer", "minimum": 0, "maximum": 10}
+            },
+            "additionalProperties": false
+          },
+          "label": {"type": "string", "pattern": "^W-PRE-SMI-[23]$"},
+          "bottom_count": {"type": "integer", "minimum": 2, "maximum": 3},
+          "weekly_smi_bottom_count": {"type": "integer", "minimum": 2, "maximum": 3},
+          "daily_smi_bottom_count": {"type": "integer", "minimum": 0, "maximum": 3},
+          "price_bottom_count": {"type": "integer", "minimum": 0, "maximum": 3},
+          "probe_fraction": {"type": "number", "minimum": 0, "maximum": 0.2},
+          "discount_104w_pct": {"type": "number", "minimum": 0},
+          "technical_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "flow_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "flow_divergence_score": {"type": "integer", "minimum": 0, "maximum": 15},
+          "structure_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "weekly_smi_state": {"type": "string"},
+          "daily_smi_state": {"type": "string"},
+          "weekly_macd_state": {"type": "string"},
+          "daily_macd_state": {"type": "string"},
+          "macd_zone": {"enum": ["NEGATIVE", "POSITIVE", "NO_DATA"]},
+          "trigger_price": {"type": ["number", "null"]},
+          "invalidation_price": {"type": ["number", "null"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
