@@ -38,9 +38,9 @@ def build_report(
         "*💎 TỐI ĐA 2 MÃ ƯU TIÊN GOM*",
     ]
     lines += [opportunity_line(item) for item in high_confidence] or ["Tuần này chưa có mã đồng thời đủ 5 cửa; không ép chọn."]
-    lines += ["", "*🎯 CANH GOM SỚM — SMI ĐA KHUNG 1W + 1D (100Đ)*"]
+    lines += ["", "*🎯 CANH GOM SỚM — SMIIO ĐA KHUNG 1W + 1D (100Đ)*"]
     lines += [weekend.weekly_bottom_watch.format_line(item) for item in (weekly_watch or [])] or [
-        "Chưa có mã đủ 2 đáy SMI tuần, chiết khấu và động lượng quay lên."
+        "Chưa có mã đủ 2 đáy SMIIO tuần, chiết khấu và động lượng quay lên."
     ]
     lines += ["", "*🟢 CẤU TRÚC ĐANG CHUẨN BỊ*"]
     lines += [opportunity_line(item) for item in prep[:8]] or ["Chưa có mã chuẩn bị đủ rõ."]

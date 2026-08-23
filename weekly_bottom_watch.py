@@ -19,8 +19,8 @@ import technical_features
 import weekly_sniper
 
 
-SCHEMA_VERSION = "thieucubu.weekly_bottom_watch.v2"
-SCORE_VERSION = "thieucubu.weekly_bottom_watch.score.v2"
+SCHEMA_VERSION = "thieucubu.weekly_bottom_watch.v3"
+SCORE_VERSION = "thieucubu.weekly_bottom_watch.score.v3"
 MAX_SCORE = 100
 
 
@@ -170,19 +170,19 @@ def _one_week_state(packet: Mapping[str, Any]) -> str:
 
 def calculate_watch_score(
     *,
-    weekly_smi_bottom_count: int,
-    daily_smi_bottom_count: int,
+    weekly_smiio_bottom_count: int,
+    daily_smiio_bottom_count: int,
     momentum_points: int,
     flow_divergence_points: int,
     discount_structure_points: int,
 ) -> tuple[int, dict[str, int]]:
     """Return the explicit 100-point early-bottom score and its components."""
 
-    weekly_points = 50 if weekly_smi_bottom_count >= 3 else 40 if weekly_smi_bottom_count == 2 else 0
-    daily_points = 10 if daily_smi_bottom_count >= 2 else 5 if daily_smi_bottom_count == 1 else 0
+    weekly_points = 50 if weekly_smiio_bottom_count >= 3 else 40 if weekly_smiio_bottom_count == 2 else 0
+    daily_points = 10 if daily_smiio_bottom_count >= 2 else 5 if daily_smiio_bottom_count == 1 else 0
     components = {
-        "weekly_smi_bottoms": weekly_points,
-        "daily_smi_bottoms": daily_points,
+        "weekly_smiio_bottoms": weekly_points,
+        "daily_smiio_bottoms": daily_points,
         "momentum_divergence": int(_clamp(momentum_points, 0, 15)),
         "money_flow_divergence": int(_clamp(flow_divergence_points, 0, 15)),
         "discount_structure": int(_clamp(discount_structure_points, 0, 10)),
@@ -197,26 +197,30 @@ def _momentum_score(
     score = 0
     signals: list[str] = []
     macd_state = str(weekly.get("macd_state") or "NO_DATA")
-    smi_state = str(weekly.get("smi_state") or "NO_DATA")
+    smiio_state = str(weekly.get("smiio_state") or "NO_DATA")
     macd_points = {
         "BULL_CROSS_NEGATIVE": 6,
-        "CONVERGING_NEGATIVE": 5,
+        "PRE_CROSS_NEGATIVE": 5,
+        "EARLY_TURN_NEGATIVE": 4,
         "RECOVERING_NEGATIVE": 5,
         "BULL_CROSS_POSITIVE": 3,
-        "IMPROVING_NEGATIVE": 3,
+        "PRE_CROSS_POSITIVE": 3,
+        "IMPROVING_NEGATIVE": 2,
     }.get(macd_state, 0)
-    smi_points = {
-        "BULL_CROSS_NEGATIVE": 4,
-        "CURLING_UP_BELOW_SIGNAL": 4,
-        "RISING_NEGATIVE": 3,
-        "BULL_CROSS_POSITIVE": 2,
-        "RISING_UNCONFIRMED": 1,
-    }.get(smi_state, 0)
-    score += macd_points + smi_points
+    smiio_points = {
+        "ZERO_CROSS_UP": 4,
+        "TURNING_UP_NEGATIVE": 5,
+        "EARLY_TURN_NEGATIVE": 4,
+        "ACCELERATING_POSITIVE": 2,
+    }.get(smiio_state, 0)
+    score += macd_points + smiio_points
     if macd_points:
         signals.append(f"MACD tuần {macd_state}")
-    if smi_points:
-        signals.append(f"SMI tuần {smi_state}")
+    if smiio_points:
+        signals.append(f"SMIIO tuần {smiio_state}")
+    if weekly.get("smiio_bullish_divergence"):
+        score += 3
+        signals.append("SMIIO tuần phân kỳ tăng")
     if weekly.get("macd_bullish_divergence"):
         score += 3
         signals.append(f"MACD phân kỳ tăng {weekly.get('macd_zone', 'NO_DATA')}")
@@ -224,9 +228,10 @@ def _momentum_score(
         score += 2
         signals.append("RSI tuần phân kỳ tăng")
     daily_state = str(daily.get("macd_state") or "NO_DATA")
-    if int(daily.get("smi_bottom_count") or 0) > 0 and daily_state in {
+    if int(daily.get("smiio_bottom_count") or 0) > 0 and daily_state in {
         "BULL_CROSS_NEGATIVE",
-        "CONVERGING_NEGATIVE",
+        "PRE_CROSS_NEGATIVE",
+        "EARLY_TURN_NEGATIVE",
         "RECOVERING_NEGATIVE",
     }:
         score += 1
@@ -258,7 +263,7 @@ def _discount_structure_score(
     return int(_clamp(discount_points + structure_points, 0, 10))
 
 
-def _smi_levels(
+def _oscillator_levels(
     frame: pd.DataFrame,
     pivot_indices: Iterable[int],
 ) -> tuple[float | None, float | None]:
@@ -300,6 +305,11 @@ class WeeklyBottomCandidate:
     action: str
     probe_fraction: float
     bottom_count: int
+    oscillator_type: str
+    weekly_smiio_bottom_count: int
+    daily_smiio_bottom_count: int
+    weekly_smiio_profile: dict[str, int]
+    daily_smiio_profile: dict[str, int]
     weekly_smi_bottom_count: int
     daily_smi_bottom_count: int
     price_bottom_count: int
@@ -313,12 +323,19 @@ class WeeklyBottomCandidate:
     rsi: float | None
     macd_hist_pct: float | None
     smi: float | None
+    smiio: float | None
+    ergodic: float | None
+    ergodic_signal: float | None
+    weekly_smiio_state: str
+    daily_smiio_state: str
     weekly_smi_state: str
     daily_smi_state: str
     weekly_macd_state: str
     daily_macd_state: str
     macd_zone: str
     macd_divergence_state: str
+    smiio_zone: str
+    smiio_divergence_state: str
     obv_state: str
     cmf20: float
     mfi14: float
@@ -327,6 +344,9 @@ class WeeklyBottomCandidate:
     risk_to_invalidation_pct: float | None
     pivot_dates: list[str]
     pivot_prices: list[float]
+    weekly_smiio_pivot_dates: list[str]
+    weekly_smiio_pivot_values: list[float]
+    daily_smiio_pivot_dates: list[str]
     weekly_smi_pivot_dates: list[str]
     weekly_smi_pivot_values: list[float]
     daily_smi_pivot_dates: list[str]
@@ -347,16 +367,16 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
     if not symbol or weekly is None or len(weekly) < 80:
         return None
     technical = technical_features.analyze_technical_watch(weekly)
-    weekly_osc = technical_features.analyze_oscillator_bottoms(
+    weekly_osc = technical_features.analyze_smiio_bottoms(
         weekly,
         timeframe="1W",
     )
-    daily_osc = technical_features.analyze_oscillator_bottoms(
+    daily_osc = technical_features.analyze_smiio_bottoms(
         daily_frame,
         timeframe="1D",
     )
-    bottom_count = min(3, int(weekly_osc.get("smi_bottom_count") or 0))
-    daily_bottom_count = min(3, int(daily_osc.get("smi_bottom_count") or 0))
+    bottom_count = min(3, int(weekly_osc.get("smiio_bottom_count") or 0))
+    daily_bottom_count = min(3, int(daily_osc.get("smiio_bottom_count") or 0))
     if (
         bottom_count < 2
         or not weekly_osc.get("momentum_ready")
@@ -384,8 +404,8 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
     if discount < minimum_discount:
         return None
 
-    smi_indices = list(weekly_osc.get("smi_pivot_indices") or [])
-    flow = _weekly_flow(weekly, smi_indices)
+    smiio_indices = list(weekly_osc.get("smiio_pivot_indices") or [])
+    flow = _weekly_flow(weekly, smiio_indices)
     technical_score = int(technical.get("score") or 0)
     flow_score = int(flow["score"])
     flow_divergence_score = int(flow.get("divergence_score") or 0)
@@ -396,8 +416,8 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
         structure_state,
     )
     score, score_components = calculate_watch_score(
-        weekly_smi_bottom_count=bottom_count,
-        daily_smi_bottom_count=daily_bottom_count,
+        weekly_smiio_bottom_count=bottom_count,
+        daily_smiio_bottom_count=daily_bottom_count,
         momentum_points=momentum_score,
         flow_divergence_points=flow_divergence_score,
         discount_structure_points=discount_structure_score,
@@ -405,9 +425,9 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
     if score < 58:
         return None
 
-    smi_trigger, smi_invalidation = _smi_levels(weekly, smi_indices)
-    trigger = technical.get("trigger_price") or smi_trigger
-    invalidation = technical.get("invalidation_price") or smi_invalidation
+    smiio_trigger, smiio_invalidation = _oscillator_levels(weekly, smiio_indices)
+    trigger = technical.get("trigger_price") or smiio_trigger
+    invalidation = technical.get("invalidation_price") or smiio_invalidation
     risk_pct = None
     if close > 0 and _safe(invalidation) > 0 and close > _safe(invalidation):
         risk_pct = (close - _safe(invalidation)) / close * 100.0
@@ -463,15 +483,16 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
         score_version=SCORE_VERSION,
         score_components=score_components,
         confidence=confidence,
-        label=f"W-PRE-SMI-{bottom_count}",
+        label=f"W-PRE-SMIIO-{bottom_count}",
         stage=(
             "CONFIRMED"
-            if str(weekly_osc.get("smi_state")).startswith("BULL_CROSS")
+            if str(weekly_osc.get("smiio_state")) == "ZERO_CROSS_UP"
             and str(weekly_osc.get("macd_state"))
             in {"BULL_CROSS_NEGATIVE", "RECOVERING_NEGATIVE"}
             and daily_bottom_count >= 1
             else "FORMING_STRONG"
             if bottom_count >= 3
+            or weekly_osc.get("smiio_bullish_divergence")
             or weekly_osc.get("macd_bullish_divergence")
             or weekly_osc.get("rsi_bullish_divergence")
             else "FORMING"
@@ -479,6 +500,18 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
         action=action,
         probe_fraction=probe_fraction,
         bottom_count=bottom_count,
+        oscillator_type="SMI_ERGODIC_OSCILLATOR",
+        weekly_smiio_bottom_count=bottom_count,
+        daily_smiio_bottom_count=daily_bottom_count,
+        weekly_smiio_profile={
+            str(key): int(value)
+            for key, value in dict(weekly_osc.get("profile") or {}).items()
+        },
+        daily_smiio_profile={
+            str(key): int(value)
+            for key, value in dict(daily_osc.get("profile") or {}).items()
+        },
+        # Compatibility aliases retained for downstream readers of v2.
         weekly_smi_bottom_count=bottom_count,
         daily_smi_bottom_count=daily_bottom_count,
         price_bottom_count=int(technical.get("bottom_count") or 0),
@@ -495,14 +528,39 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
             if weekly_osc.get("macd_hist_pct") is not None
             else None
         ),
-        smi=_safe(weekly_osc.get("smi_value")) if weekly_osc.get("smi_value") is not None else None,
-        weekly_smi_state=str(weekly_osc.get("smi_state") or "NO_DATA"),
-        daily_smi_state=str(daily_osc.get("smi_state") or "NO_DATA"),
+        smi=(
+            _safe(technical.get("smi"))
+            if technical.get("smi") is not None
+            else None
+        ),
+        smiio=(
+            _safe(weekly_osc.get("smiio_value"))
+            if weekly_osc.get("smiio_value") is not None
+            else None
+        ),
+        ergodic=(
+            _safe(weekly_osc.get("ergodic_value"))
+            if weekly_osc.get("ergodic_value") is not None
+            else None
+        ),
+        ergodic_signal=(
+            _safe(weekly_osc.get("ergodic_signal"))
+            if weekly_osc.get("ergodic_signal") is not None
+            else None
+        ),
+        weekly_smiio_state=str(weekly_osc.get("smiio_state") or "NO_DATA"),
+        daily_smiio_state=str(daily_osc.get("smiio_state") or "NO_DATA"),
+        weekly_smi_state=str(weekly_osc.get("smiio_state") or "NO_DATA"),
+        daily_smi_state=str(daily_osc.get("smiio_state") or "NO_DATA"),
         weekly_macd_state=str(weekly_osc.get("macd_state") or "NO_DATA"),
         daily_macd_state=str(daily_osc.get("macd_state") or "NO_DATA"),
         macd_zone=str(weekly_osc.get("macd_zone") or "NO_DATA"),
         macd_divergence_state=str(
             weekly_osc.get("macd_divergence_state") or "NONE"
+        ),
+        smiio_zone=str(weekly_osc.get("smiio_zone") or "NO_DATA"),
+        smiio_divergence_state=str(
+            weekly_osc.get("smiio_divergence_state") or "NONE"
         ),
         obv_state=str(flow["obv_state"]),
         cmf20=float(flow["cmf20"]),
@@ -511,21 +569,39 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
         invalidation_price=round(_safe(invalidation), 2) if invalidation is not None else None,
         risk_to_invalidation_pct=round(risk_pct, 2) if risk_pct is not None else None,
         pivot_dates=[
-            str(value) for value in weekly_osc.get("smi_pivot_dates", []) if value
+            str(value) for value in weekly_osc.get("smiio_pivot_dates", []) if value
         ],
         pivot_prices=[
             round(_safe(value), 2)
-            for value in weekly_osc.get("smi_pivot_prices", [])
+            for value in weekly_osc.get("smiio_pivot_prices", [])
+        ],
+        weekly_smiio_pivot_dates=[
+            str(value)
+            for value in weekly_osc.get("smiio_pivot_dates", [])
+            if value
+        ],
+        weekly_smiio_pivot_values=[
+            round(_safe(value), 3)
+            for value in weekly_osc.get("smiio_pivot_values", [])
+        ],
+        daily_smiio_pivot_dates=[
+            str(value)
+            for value in daily_osc.get("smiio_pivot_dates", [])
+            if value
         ],
         weekly_smi_pivot_dates=[
-            str(value) for value in weekly_osc.get("smi_pivot_dates", []) if value
+            str(value)
+            for value in weekly_osc.get("smiio_pivot_dates", [])
+            if value
         ],
         weekly_smi_pivot_values=[
-            round(_safe(value), 2)
-            for value in weekly_osc.get("smi_pivot_values", [])
+            round(_safe(value), 3)
+            for value in weekly_osc.get("smiio_pivot_values", [])
         ],
         daily_smi_pivot_dates=[
-            str(value) for value in daily_osc.get("smi_pivot_dates", []) if value
+            str(value)
+            for value in daily_osc.get("smiio_pivot_dates", [])
+            if value
         ],
         flow_divergence_signals=[
             str(value) for value in flow.get("divergence_signals", [])
@@ -547,7 +623,7 @@ def rank_packets(
         key=lambda item: (
             item.score,
             item.flow_divergence_score,
-            item.daily_smi_bottom_count,
+            item.daily_smiio_bottom_count,
             item.confidence,
             item.discount_104w_pct,
         ),
@@ -560,6 +636,9 @@ _STATE_LABELS = {
     "BULL_CROSS_NEGATIVE": "âm vừa cắt lên",
     "BULL_CROSS_POSITIVE": "dương vừa cắt lên",
     "CONVERGING_NEGATIVE": "âm đang hội tụ",
+    "PRE_CROSS_NEGATIVE": "âm, gap co — sắp cắt",
+    "PRE_CROSS_POSITIVE": "dương, gap co — sắp cắt",
+    "EARLY_TURN_NEGATIVE": "âm vừa ngóc lên",
     "RECOVERING_NEGATIVE": "âm đã cắt, đang hồi",
     "CURLING_UP_BELOW_SIGNAL": "dưới signal, cong lên",
     "RISING_NEGATIVE": "âm đang hướng lên",
@@ -573,6 +652,12 @@ _STATE_LABELS = {
     "WEAKENING_NEGATIVE": "âm còn yếu",
     "WEAKENING_POSITIVE": "dương đang yếu",
     "FALLING": "đang giảm",
+    "ZERO_CROSS_UP": "vừa cắt lên 0",
+    "TURNING_UP_NEGATIVE": "âm, cong lên 2 nhịp",
+    "ACCELERATING_POSITIVE": "dương đang tăng tốc",
+    "FADING_POSITIVE": "dương đang chậm lại",
+    "ZERO_CROSS_DOWN": "vừa cắt xuống 0",
+    "FALLING_NEGATIVE": "âm còn giảm",
     "NO_DATA": "chưa đủ dữ liệu",
 }
 
@@ -585,16 +670,20 @@ def format_line(item: WeeklyBottomCandidate) -> str:
     trigger = f"KT {item.trigger_price:.2f}" if item.trigger_price is not None else "KT chờ"
     invalidation = f"HV {item.invalidation_price:.2f}" if item.invalidation_price is not None else "HV chưa rõ"
     rsi = f"{item.rsi:.0f}" if item.rsi is not None else "-"
-    smi = f"{item.smi:.0f}" if item.smi is not None else "-"
+    smiio = f"{item.smiio:+.3f}" if item.smiio is not None else "-"
     macd = f"{item.macd_hist_pct:+.3f}%" if item.macd_hist_pct is not None else "-"
     divergence = {
         "BULLISH_NEGATIVE": " · PK MACD tăng vùng âm",
         "BULLISH_POSITIVE": " · PK MACD tăng vùng dương",
     }.get(item.macd_divergence_state, "")
+    smiio_divergence = {
+        "BULLISH_NEGATIVE": " · PK SMIIO tăng vùng âm",
+        "BULLISH_POSITIVE": " · PK SMIIO tăng vùng dương",
+    }.get(item.smiio_divergence_state, "")
     parts = item.score_components
     breakdown = (
-        f"W-SMI {parts.get('weekly_smi_bottoms', 0)}/50 · "
-        f"D-SMI {parts.get('daily_smi_bottoms', 0)}/10 · "
+        f"W-SMIIO {parts.get('weekly_smiio_bottoms', 0)}/50 · "
+        f"D-SMIIO {parts.get('daily_smiio_bottoms', 0)}/10 · "
         f"ĐL {parts.get('momentum_divergence', 0)}/15 · "
         f"DT {parts.get('money_flow_divergence', 0)}/15 · "
         f"CK/CT {parts.get('discount_structure', 0)}/10"
@@ -603,9 +692,10 @@ def format_line(item: WeeklyBottomCandidate) -> str:
         f"`{item.symbol}` {item.label} · {item.score}/100 | {item.action} | Giá {item.close:.2f}\n"
         f"{breakdown} | MACD W {_state_label(item.weekly_macd_state)} / "
         f"D {_state_label(item.daily_macd_state)}{divergence} · "
-        f"SMI W {_state_label(item.weekly_smi_state)} / D {_state_label(item.daily_smi_state)}\n"
+        f"SMIIO W {_state_label(item.weekly_smiio_state)} / "
+        f"D {_state_label(item.daily_smiio_state)}{smiio_divergence}\n"
         f"DD104W {item.discount_104w_pct:.1f}/{item.target_discount_pct:.0f}% | "
-        f"RSI {rsi} · SMI {smi} · MACDh {macd} | "
+        f"RSI {rsi} · SMIIO {smiio} · MACDh {macd} | "
         f"OBV {item.obv_state} · CMF {item.cmf20:+.2f} · MFI {item.mfi14:.0f} | "
         f"{trigger} · {invalidation}"
     )
@@ -622,16 +712,20 @@ def payload(candidates: Iterable[WeeklyBottomCandidate], updated_at: str) -> dic
             "advisory_only": True,
             "max_candidates": maximum,
             "requires": [
-                "weekly_SMI_2_or_3_bottoms",
+                "weekly_SMIIO_2_or_3_bottoms",
                 "deep_discount",
                 "weekly_momentum_turning_or_divergence",
             ],
             "score_100": {
-                "weekly_SMI_bottoms": "2=40, 3=50",
-                "daily_SMI_bottoms": "1=5, 2_or_3=10",
+                "weekly_SMIIO_bottoms": "2=40, 3=50",
+                "daily_SMIIO_bottoms": "1=5, 2_or_3=10",
                 "momentum_divergence": 15,
                 "money_flow_divergence": 15,
                 "discount_structure": 10,
+            },
+            "smiio_profiles": {
+                "1W": "5/20/5_standard",
+                "1D": "3/13/3_sensitive",
             },
             "money_flow_divergence": "price_lower_low_with_OBV_CMF_MFI_flat_or_rising",
             "never_average_below_invalidation": True,

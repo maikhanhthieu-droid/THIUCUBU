@@ -26,7 +26,7 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 - Kết hợp định giá, chất lượng doanh nghiệp, cấu trúc tuần, thời điểm, ngành và rủi ro.
 - Dùng cấu trúc từ Pine Weekly Accumulation Sniper v3.1 làm lớp price/volume, không dùng Pine thay cho định giá.
 - Chỉ chọn tối đa 2 mã `ƯU TIÊN GOM`; hệ thống được phép chọn 0 mã nếu thị trường không có cơ hội đủ tốt.
-- Chạy thêm radar `W-PRE-SMI-*` tối đa 5 mã với điểm riêng 100: SMI tuần 2 đáy = 40 điểm, 3 đáy = 50; SMI ngày xác nhận 0/5/10; MACD/RSI, phân kỳ dòng tiền và chiết khấu–cấu trúc chiếm 40 điểm còn lại. Điểm này chỉ để canh thăm dò sớm, không thay điểm conviction 97.
+- Chạy thêm radar `W-PRE-SMIIO-*` tối đa 5 mã với điểm riêng 100. Radar dùng đúng SMI Ergodic Oscillator (TSI trừ signal): tuần `5/20/5` có 2 đáy = 40 điểm, 3 đáy = 50; ngày dùng bản nhạy `3/13/3` xác nhận 0/5/10; MACD pre-cross/RSI, phân kỳ dòng tiền và chiết khấu–cấu trúc chiếm 40 điểm còn lại. Điểm này chỉ để canh thăm dò sớm, không thay điểm conviction 97.
 - Lưu vùng gom, vùng breakout, mức vô hiệu luận điểm, bull case và rủi ro.
 - Ghi nhớ luận điểm qua nhiều tuần để một cổ phiếu tốt không biến mất chỉ vì nhiễu một phiên.
 
@@ -78,7 +78,7 @@ Safe fetch + chuẩn hóa nghìn VND + provenance + cache + source health
         └── Weekend engine
              ├── định giá và chất lượng
              ├── weekly_sniper.py
-             ├── weekly_bottom_watch.py ─► W-PRE-SMI 1W+1D, điểm sớm 100
+             ├── weekly_bottom_watch.py ─► W-PRE-SMIIO 1W+1D, điểm sớm 100
              ├── sector + risk gate
              └── 0–2 mã ưu tiên gom
 ```
@@ -93,7 +93,7 @@ Phiên bản cũ cộng nhiều bonus nhị phân rồi cắt tại 100, khiến
 - `confidence`: độ đầy đủ và đồng thuận của dữ liệu, không phải xác suất chắc chắn tăng giá.
 - `grade`: cấp độ đọc nhanh.
 
-Radar cuối tuần `W-PRE-SMI-*` có thang bằng chứng riêng `0–100` theo công thức cố định 50+10+15+15+10. Đây không phải điểm hành động/conviction và không được dùng để biến một mã thành khuyến nghị mua tự động.
+Radar cuối tuần `W-PRE-SMIIO-*` có thang bằng chứng riêng `0–100` theo công thức cố định 50+10+15+15+10. Đây không phải điểm hành động/conviction và không được dùng để biến một mã thành khuyến nghị mua tự động.
 
 | Grade | Điểm | Ý nghĩa |
 |---|---:|---|
@@ -186,7 +186,7 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 | `data/intraday_pulse_latest.json` | Mã đột biến và snapshot Pulse 30 phút gần nhất |
 | `data/intraday_pulse_state.json` | Baseline bảng giá để tính thay đổi giữa hai lần Pulse |
 | `data/intraday_universe_state.json` | Universe riêng của Pulse, tách khỏi cursor của scanner cố định |
-| `data/weekly_bottom_watch_latest.json` | Tối đa 5 mã W-PRE-SMI: 2/3 đáy tuần + timing ngày, MACD/RSI và phân kỳ dòng tiền |
+| `data/weekly_bottom_watch_latest.json` | Tối đa 5 mã W-PRE-SMIIO: 2/3 đáy tuần + timing ngày, MACD/RSI và phân kỳ dòng tiền |
 | `data/market_state_history.json` | Bộ nhớ chuyển pha và thay đổi điểm đáng kể |
 | `data/market_breadth_history.json` | Chuỗi breadth EOD để phát hiện phân kỳ VNINDEX/breadth |
 | `data/market_systemic_state.json` | Trạng thái rủi ro hệ thống, ngưỡng siết và hệ số size hiện hành |

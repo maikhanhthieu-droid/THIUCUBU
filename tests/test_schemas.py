@@ -17,6 +17,7 @@ def test_published_schemas_are_valid_json() -> None:
         "intraday_pulse.v2.schema.json",
         "weekly_bottom_watch.v1.schema.json",
         "weekly_bottom_watch.v2.schema.json",
+        "weekly_bottom_watch.v3.schema.json",
     ):
         payload = json.loads((root / "schemas" / name).read_text(encoding="utf-8"))
         assert payload["$schema"].endswith("2020-12/schema")

@@ -157,3 +157,62 @@ def test_flat_smi_is_not_counted_as_one_or_more_bottoms() -> None:
 
     assert result["smi_bottom_count"] == 0
 
+
+def test_smiio_is_ergodic_minus_signal_with_tradingview_default_profile() -> None:
+    close = pd.Series(np.linspace(10.0, 13.0, 120) + np.sin(np.arange(120) / 4) * 0.4)
+
+    ergodic, signal, oscillator = technical_features._smiio(close)
+
+    np.testing.assert_allclose(oscillator, ergodic - signal)
+    assert oscillator.abs().sum() > 0
+    assert ergodic.between(-100, 100).all()
+
+
+def test_smiio_weekly_detector_is_sensitive_before_zero_cross(monkeypatch) -> None:
+    periods = 120
+    close = pd.Series(np.linspace(20.0, 13.0, periods))
+    frame = pd.DataFrame(
+        {
+            "time": pd.date_range("2024-01-05", periods=periods, freq="W-FRI"),
+            "open": close + 0.05,
+            "high": close + 0.25,
+            "low": close - 0.25,
+            "close": close,
+            "volume": np.linspace(1_500_000, 800_000, periods),
+        }
+    )
+    oscillator = pd.Series([2.0] * periods)
+    oscillator.iloc[65] = -7.0
+    oscillator.iloc[88] = -6.0
+    oscillator.iloc[112] = -5.0
+    oscillator.iloc[113:120] = [-4.4, -3.8, -3.1, -2.5, -1.9, -1.3, -0.8]
+    ergodic = pd.Series([-12.0] * periods) + oscillator
+    signal = ergodic - oscillator
+    macd = pd.Series(np.linspace(-2.0, -1.0, periods))
+    histogram = pd.Series([-0.5] * periods)
+    histogram.iloc[-3:] = [-0.30, -0.20, -0.10]
+    macd_signal = macd - histogram
+    monkeypatch.setattr(
+        technical_features,
+        "_smiio",
+        lambda prepared, **kwargs: (ergodic, signal, oscillator),
+    )
+    monkeypatch.setattr(
+        technical_features,
+        "_macd",
+        lambda prepared: (macd, macd_signal, histogram),
+    )
+
+    result = technical_features.analyze_smiio_bottoms(frame, timeframe="1W")
+
+    assert result["oscillator_type"] == "SMI_ERGODIC_OSCILLATOR"
+    assert result["profile"] == {
+        "short_period": 5,
+        "long_period": 20,
+        "signal_period": 5,
+    }
+    assert result["smiio_bottom_count"] == 3
+    assert result["smiio_state"] == "TURNING_UP_NEGATIVE"
+    assert result["macd_state"] == "PRE_CROSS_NEGATIVE"
+    assert result["momentum_ready"] is True
+

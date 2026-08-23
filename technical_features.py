@@ -76,6 +76,32 @@ def _smi(frame: pd.DataFrame, period: int = 14, smooth: int = 3) -> tuple[pd.Ser
     return smi.clip(-100, 100), smi.ewm(span=3, adjust=False).mean().clip(-100, 100)
 
 
+def _smiio(
+    close: pd.Series,
+    *,
+    short_period: int = 5,
+    long_period: int = 20,
+    signal_period: int = 5,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """TradingView-style SMI Ergodic Indicator and Oscillator.
+
+    The ergodic line is the double-smoothed price change divided by the
+    double-smoothed absolute price change (TSI family).  SMIIO/SMIEO is the
+    faster histogram: ergodic minus its EMA signal line.
+    """
+
+    change = pd.to_numeric(close, errors="coerce").diff().fillna(0.0)
+    absolute_change = change.abs()
+    smoothed_change = change.ewm(span=short_period, adjust=False).mean()
+    smoothed_change = smoothed_change.ewm(span=long_period, adjust=False).mean()
+    smoothed_absolute = absolute_change.ewm(span=short_period, adjust=False).mean()
+    smoothed_absolute = smoothed_absolute.ewm(span=long_period, adjust=False).mean()
+    ergodic = (100.0 * smoothed_change / smoothed_absolute.replace(0, np.nan)).fillna(0.0)
+    signal = ergodic.ewm(span=signal_period, adjust=False).mean()
+    oscillator = ergodic - signal
+    return ergodic.clip(-100, 100), signal.clip(-100, 100), oscillator
+
+
 def _pivot_lows(series: pd.Series, *, lookback: int = 65, left: int = 3, right: int = 2) -> list[int]:
     values = pd.to_numeric(series, errors="coerce").to_numpy(dtype=float)
     start = max(left, len(values) - lookback)
@@ -702,6 +728,247 @@ def _bullish_divergence(
     i1, i2 = _safe(indicator.iloc[first]), _safe(indicator.iloc[second])
     scale = max(_safe(indicator.tail(65).std()), abs(i1) * 0.08, indicator_floor)
     return p2 <= p1 * 0.995 and i2 >= i1 + scale
+
+
+def analyze_smiio_bottoms(
+    df: pd.DataFrame | None,
+    *,
+    timeframe: str = "1D",
+) -> dict[str, Any]:
+    """Detect sensitive SMI Ergodic Oscillator bottoms on closed bars.
+
+    The weekly profile matches the common TradingView 5/20/5 setup.  Daily
+    timing deliberately uses 3/13/3 because this radar is followed by separate
+    price-structure, discount and money-flow filters.
+    """
+
+    timeframe = str(timeframe).upper()
+    weekly = timeframe == "1W"
+    short_period, long_period, signal_period = (5, 20, 5) if weekly else (3, 13, 3)
+    profile = {
+        "short_period": short_period,
+        "long_period": long_period,
+        "signal_period": signal_period,
+    }
+    empty = {
+        "timeframe": timeframe,
+        "oscillator_type": "SMI_ERGODIC_OSCILLATOR",
+        "profile": profile,
+        "smiio_bottom_count": 0,
+        "smiio_state": "NO_DATA",
+        "smiio_zone": "NO_DATA",
+        "smiio_value": None,
+        "ergodic_value": None,
+        "ergodic_signal": None,
+        "smiio_pivot_indices": [],
+        "smiio_pivot_dates": [],
+        "smiio_pivot_values": [],
+        "smiio_pivot_prices": [],
+        "smiio_signal_age_bars": None,
+        "smiio_bullish_divergence": False,
+        "smiio_divergence_state": "NONE",
+        "macd_state": "NO_DATA",
+        "macd_zone": "NO_DATA",
+        "macd_hist_pct": None,
+        "macd_bullish_divergence": False,
+        "macd_divergence_state": "NONE",
+        "rsi_bullish_divergence": False,
+        "rsi": None,
+        "momentum_ready": False,
+        "signals": [],
+    }
+    frame = _prepare(df)
+    if frame is None or len(frame) < 80:
+        return empty
+
+    close = frame["close"]
+    ergodic, ergodic_signal, smiio = _smiio(
+        close,
+        short_period=short_period,
+        long_period=long_period,
+        signal_period=signal_period,
+    )
+    rebound = max(_safe(smiio.tail(120).std()) * 0.22, 0.35)
+    selected = _select_oscillator_bottoms(
+        frame,
+        smiio,
+        lookback=130 if weekly else 100,
+        zone_ceiling=0.5 if weekly else 1.5,
+        min_gap=3 if weekly else 5,
+        max_gap=42 if weekly else 45,
+        max_age=18 if weekly else 22,
+        min_rebound=rebound,
+    )
+
+    smiio_zone = "NEGATIVE" if smiio.iloc[-1] < 0 else "POSITIVE"
+    smiio_rising = bool(smiio.iloc[-1] > smiio.iloc[-2])
+    smiio_rising_two = bool(
+        smiio_rising and smiio.iloc[-2] >= smiio.iloc[-3]
+    )
+    smiio_cross_up = bool(
+        smiio.iloc[-1] >= 0 and _recent_cross(smiio, bullish=True)
+    )
+    smiio_cross_down = bool(
+        smiio.iloc[-1] < 0 and _recent_cross(smiio, bullish=False)
+    )
+    if smiio_cross_up:
+        smiio_state = "ZERO_CROSS_UP"
+    elif smiio.iloc[-1] < 0 and smiio_rising_two:
+        smiio_state = "TURNING_UP_NEGATIVE"
+    elif smiio.iloc[-1] < 0 and smiio_rising:
+        smiio_state = "EARLY_TURN_NEGATIVE"
+    elif smiio_cross_down:
+        smiio_state = "ZERO_CROSS_DOWN"
+    elif smiio.iloc[-1] >= 0 and smiio_rising:
+        smiio_state = "ACCELERATING_POSITIVE"
+    elif smiio.iloc[-1] >= 0:
+        smiio_state = "FADING_POSITIVE"
+    else:
+        smiio_state = "FALLING_NEGATIVE"
+
+    rsi = _rsi(close)
+    macd, macd_signal, histogram = _macd(close)
+    macd_spread = macd - macd_signal
+    close_now = max(_safe(close.iloc[-1]), 1e-9)
+    hist_pct = histogram / close.replace(0, np.nan) * 100
+    macd_zone = "NEGATIVE" if macd.iloc[-1] < 0 else "POSITIVE"
+    hist_rising = bool(histogram.iloc[-1] > histogram.iloc[-2])
+    hist_rising_two = bool(hist_rising and histogram.iloc[-2] >= histogram.iloc[-3])
+    macd_line_rising = bool(macd.iloc[-1] > macd.iloc[-2])
+    macd_cross_up = bool(
+        macd_spread.iloc[-1] >= 0 and _recent_cross(macd_spread, bullish=True)
+    )
+    macd_cross_down = bool(
+        macd_spread.iloc[-1] < 0 and _recent_cross(macd_spread, bullish=False)
+    )
+    if macd_cross_up:
+        macd_state = f"BULL_CROSS_{macd_zone}"
+    elif histogram.iloc[-1] < 0 and hist_rising and macd_line_rising:
+        near_cross = _safe(hist_pct.iloc[-1]) >= -0.65
+        macd_state = (
+            f"PRE_CROSS_{macd_zone}"
+            if near_cross or hist_rising_two
+            else f"EARLY_TURN_{macd_zone}"
+        )
+    elif histogram.iloc[-1] >= 0 and hist_rising and macd_zone == "NEGATIVE":
+        macd_state = "RECOVERING_NEGATIVE"
+    elif macd_cross_down:
+        macd_state = f"BEAR_CROSS_{macd_zone}"
+    elif hist_rising:
+        macd_state = f"IMPROVING_{macd_zone}"
+    else:
+        macd_state = f"WEAKENING_{macd_zone}"
+
+    smiio_divergence = False
+    macd_divergence = _bullish_divergence(
+        close,
+        macd,
+        indicator_floor=max(close_now * 0.0008, 1e-6),
+    )
+    rsi_divergence = _bullish_divergence(close, rsi, indicator_floor=2.0)
+    if len(selected) >= 2:
+        first, second = selected[-2], selected[-1]
+        price_change = _safe(close.iloc[second]) / max(_safe(close.iloc[first]), 1e-9) - 1.0
+        smiio_scale = max(_safe(smiio.tail(120).std()) * 0.12, 0.20)
+        macd_scale = max(_safe(macd.tail(100).std()) * 0.12, close_now * 0.0003)
+        rsi_scale = max(_safe(rsi.tail(100).std()) * 0.15, 1.5)
+        smiio_divergence = bool(
+            price_change <= 0.005
+            and _safe(smiio.iloc[second])
+            >= _safe(smiio.iloc[first]) + smiio_scale
+        )
+        macd_divergence = bool(
+            macd_divergence
+            or (
+                price_change <= 0.005
+                and _safe(macd.iloc[second])
+                >= _safe(macd.iloc[first]) + macd_scale
+            )
+        )
+        rsi_divergence = bool(
+            rsi_divergence
+            or (
+                price_change <= 0.005
+                and _safe(rsi.iloc[second])
+                >= _safe(rsi.iloc[first]) + rsi_scale
+            )
+        )
+
+    smiio_divergence_state = (
+        f"BULLISH_{smiio_zone}" if smiio_divergence else "NONE"
+    )
+    macd_divergence_state = (
+        f"BULLISH_{macd_zone}" if macd_divergence else "NONE"
+    )
+    smiio_ready = smiio_state in {
+        "ZERO_CROSS_UP",
+        "TURNING_UP_NEGATIVE",
+        "EARLY_TURN_NEGATIVE",
+        "ACCELERATING_POSITIVE",
+    }
+    macd_ready = macd_state in {
+        "BULL_CROSS_NEGATIVE",
+        "BULL_CROSS_POSITIVE",
+        "PRE_CROSS_NEGATIVE",
+        "PRE_CROSS_POSITIVE",
+        "EARLY_TURN_NEGATIVE",
+        "RECOVERING_NEGATIVE",
+    }
+    momentum_ready = bool(
+        smiio_ready
+        or macd_ready
+        or smiio_divergence
+        or macd_divergence
+        or rsi_divergence
+    )
+    signals: list[str] = []
+    if selected:
+        signals.append(f"SMIIO {len(selected)} đáy {timeframe}")
+    if smiio_state == "EARLY_TURN_NEGATIVE":
+        signals.append(f"SMIIO {timeframe} vừa ngóc lên dưới 0")
+    elif smiio_state == "TURNING_UP_NEGATIVE":
+        signals.append(f"SMIIO {timeframe} tạo nhịp cong lên dưới 0")
+    elif smiio_state == "ZERO_CROSS_UP":
+        signals.append(f"SMIIO {timeframe} vừa cắt lên 0")
+    if smiio_divergence:
+        signals.append(f"SMIIO {timeframe} phân kỳ tăng")
+    if macd_state.startswith("PRE_CROSS"):
+        signals.append(f"MACD {timeframe} chưa cắt nhưng gap đang co")
+    elif macd_state.startswith("EARLY_TURN"):
+        signals.append(f"MACD {timeframe} vừa ngóc lên sớm")
+    elif macd_state.startswith("BULL_CROSS"):
+        signals.append(f"MACD {timeframe} vừa giao cắt lên")
+    if macd_divergence:
+        signals.append(f"MACD {timeframe} phân kỳ tăng ({macd_zone.lower()})")
+    if rsi_divergence:
+        signals.append(f"RSI {timeframe} phân kỳ tăng")
+
+    signal_age = len(frame) - 1 - (selected[-1] + 1) if selected else None
+    return {
+        **empty,
+        "smiio_bottom_count": len(selected),
+        "smiio_state": smiio_state,
+        "smiio_zone": smiio_zone,
+        "smiio_value": round(_safe(smiio.iloc[-1]), 3),
+        "ergodic_value": round(_safe(ergodic.iloc[-1]), 3),
+        "ergodic_signal": round(_safe(ergodic_signal.iloc[-1]), 3),
+        "smiio_pivot_indices": selected,
+        "smiio_pivot_dates": [_pivot_date(frame, index) for index in selected],
+        "smiio_pivot_values": [round(_safe(smiio.iloc[index]), 3) for index in selected],
+        "smiio_pivot_prices": [round(_safe(close.iloc[index]), 2) for index in selected],
+        "smiio_signal_age_bars": signal_age,
+        "smiio_bullish_divergence": smiio_divergence,
+        "smiio_divergence_state": smiio_divergence_state,
+        "macd_state": macd_state,
+        "macd_zone": macd_zone,
+        "macd_hist_pct": round(_safe(hist_pct.iloc[-1]), 3),
+        "macd_bullish_divergence": macd_divergence,
+        "macd_divergence_state": macd_divergence_state,
+        "rsi_bullish_divergence": rsi_divergence,
+        "rsi": round(_safe(rsi.iloc[-1]), 1),
+        "momentum_ready": momentum_ready,
+        "signals": signals[:8],
+    }
 
 
 def analyze_technical_watch(df: pd.DataFrame | None) -> dict[str, Any]:

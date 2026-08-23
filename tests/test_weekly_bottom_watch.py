@@ -50,18 +50,27 @@ def strong_technical() -> dict:
 def oscillator(timeframe: str, bottoms: int = 2) -> dict:
     weekly = timeframe == "1W"
     dates = ["2024-10-04", "2025-04-04", "2026-02-06"]
-    values = [-55.0, -48.0, -35.0]
     prices = [18.4, 18.2, 18.0]
     return {
-        "smi_bottom_count": bottoms,
-        "smi_state": "CURLING_UP_BELOW_SIGNAL" if weekly else "BULL_CROSS_NEGATIVE",
-        "smi_value": -22.0 if weekly else -18.0,
-        "smi_signal": -18.0 if weekly else -20.0,
-        "smi_pivot_indices": [78, 104] if bottoms == 2 else [55, 78, 104] if bottoms >= 3 else [104],
-        "smi_pivot_dates": dates[-bottoms:],
-        "smi_pivot_values": values[-bottoms:],
-        "smi_pivot_prices": prices[-bottoms:],
-        "macd_state": "BULL_CROSS_NEGATIVE",
+        "oscillator_type": "SMI_ERGODIC_OSCILLATOR",
+        "profile": {
+            "short_period": 5 if weekly else 3,
+            "long_period": 20 if weekly else 13,
+            "signal_period": 5 if weekly else 3,
+        },
+        "smiio_bottom_count": bottoms,
+        "smiio_state": "TURNING_UP_NEGATIVE" if weekly else "ZERO_CROSS_UP",
+        "smiio_zone": "NEGATIVE" if weekly else "POSITIVE",
+        "smiio_value": -2.2 if weekly else 0.4,
+        "ergodic_value": -18.0,
+        "ergodic_signal": -15.8,
+        "smiio_pivot_indices": [78, 104] if bottoms == 2 else [55, 78, 104] if bottoms >= 3 else [104],
+        "smiio_pivot_dates": dates[-bottoms:],
+        "smiio_pivot_values": [-6.2, -4.8, -3.5][-bottoms:],
+        "smiio_pivot_prices": prices[-bottoms:],
+        "smiio_bullish_divergence": True,
+        "smiio_divergence_state": "BULLISH_NEGATIVE",
+        "macd_state": "PRE_CROSS_NEGATIVE",
         "macd_zone": "NEGATIVE",
         "macd_hist_pct": -0.08,
         "macd_bullish_divergence": True,
@@ -76,7 +85,7 @@ def oscillator(timeframe: str, bottoms: int = 2) -> dict:
 def patch_oscillators(monkeypatch, *, weekly_bottoms: int = 2, daily_bottoms: int = 2) -> None:
     monkeypatch.setattr(
         watch.technical_features,
-        "analyze_oscillator_bottoms",
+        "analyze_smiio_bottoms",
         lambda frame, *, timeframe: oscillator(
             timeframe,
             weekly_bottoms if timeframe == "1W" else daily_bottoms,
@@ -109,17 +118,29 @@ def test_weekly_two_bottom_candidate_combines_discount_momentum_and_flow(monkeyp
     candidate = watch.analyze_packet(packet())
 
     assert candidate is not None
-    assert candidate.label == "W-PRE-SMI-2"
+    assert candidate.label == "W-PRE-SMIIO-2"
     assert candidate.bottom_count == 2
+    assert candidate.oscillator_type == "SMI_ERGODIC_OSCILLATOR"
+    assert candidate.weekly_smiio_profile == {
+        "short_period": 5,
+        "long_period": 20,
+        "signal_period": 5,
+    }
+    assert candidate.daily_smiio_profile == {
+        "short_period": 3,
+        "long_period": 13,
+        "signal_period": 3,
+    }
     assert candidate.daily_smi_bottom_count == 2
     assert candidate.score == 75
     assert candidate.score_components == {
-        "weekly_smi_bottoms": 40,
-        "daily_smi_bottoms": 10,
+        "weekly_smiio_bottoms": 40,
+        "daily_smiio_bottoms": 10,
         "momentum_divergence": 15,
         "money_flow_divergence": 0,
         "discount_structure": 10,
     }
+    assert candidate.score == sum(candidate.score_components.values())
     assert candidate.discount_104w_pct == 35
     assert candidate.obv_state in {"TĂNG", "CẢI THIỆN"}
     assert candidate.probe_fraction in {0.15, 0.20}
@@ -155,34 +176,34 @@ def test_weekly_watch_payload_is_explicitly_advisory(monkeypatch) -> None:
 
     assert payload["policy"]["advisory_only"] is True
     assert payload["policy"]["never_average_below_invalidation"] is True
-    assert payload["schema_version"] == "thieucubu.weekly_bottom_watch.v2"
-    assert payload["score_version"] == "thieucubu.weekly_bottom_watch.score.v2"
+    assert payload["schema_version"] == "thieucubu.weekly_bottom_watch.v3"
+    assert payload["score_version"] == "thieucubu.weekly_bottom_watch.score.v3"
     assert payload["candidates"][0]["symbol"] == "AAA"
-    assert "W-PRE-SMI-2" in watch.format_line(candidate)
+    assert "W-PRE-SMIIO-2" in watch.format_line(candidate)
     assert "/100" in watch.format_line(candidate)
 
 
 def test_score_matrix_uses_exact_weekly_and_daily_bottom_weights() -> None:
     two_score, two = watch.calculate_watch_score(
-        weekly_smi_bottom_count=2,
-        daily_smi_bottom_count=1,
+        weekly_smiio_bottom_count=2,
+        daily_smiio_bottom_count=1,
         momentum_points=15,
         flow_divergence_points=15,
         discount_structure_points=10,
     )
     three_score, three = watch.calculate_watch_score(
-        weekly_smi_bottom_count=3,
-        daily_smi_bottom_count=2,
+        weekly_smiio_bottom_count=3,
+        daily_smiio_bottom_count=2,
         momentum_points=15,
         flow_divergence_points=15,
         discount_structure_points=10,
     )
 
-    assert two["weekly_smi_bottoms"] == 40
-    assert two["daily_smi_bottoms"] == 5
+    assert two["weekly_smiio_bottoms"] == 40
+    assert two["daily_smiio_bottoms"] == 5
     assert two_score == 85
-    assert three["weekly_smi_bottoms"] == 50
-    assert three["daily_smi_bottoms"] == 10
+    assert three["weekly_smiio_bottoms"] == 50
+    assert three["daily_smiio_bottoms"] == 10
     assert three_score == 100
 
 
