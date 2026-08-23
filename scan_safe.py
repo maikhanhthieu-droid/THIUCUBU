@@ -409,6 +409,7 @@ def with_provenance(
     *,
     source: str | None,
     cache_status: str,
+    history_backfill_source: str | None = None,
 ) -> pd.DataFrame:
     result = df.copy().reset_index(drop=True)
     metadata = {
@@ -421,6 +422,8 @@ def with_provenance(
         "unit_scale_applied": float(df.attrs.get("unit_scale_applied", 1.0)),
         "unit_repaired_from_cache": bool(df.attrs.get("unit_repaired_from_cache", False)),
     }
+    if history_backfill_source:
+        metadata["history_backfill_source"] = history_backfill_source
     result.attrs.update(metadata)
     FETCH_PROVENANCE[symbol.upper()] = metadata
     return result
@@ -429,6 +432,16 @@ def with_provenance(
 def load_cache_metadata(path: Path) -> dict[str, Any]:
     raw = scan.json_load(cache_metadata_path(path), {})
     return raw if isinstance(raw, dict) else {}
+
+
+def merge_recent_history(history: pd.DataFrame, recent: pd.DataFrame) -> pd.DataFrame | None:
+    """Overlay recent validated bars on a deeper cache, preferring recent data."""
+
+    recent_attrs = dict(recent.attrs)
+    merged = intel.validate_ohlcv(pd.concat([history, recent], ignore_index=True))
+    if merged is not None:
+        merged.attrs.update(recent_attrs)
+    return merged
 
 
 def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:
@@ -452,6 +465,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     end = datetime.now().strftime("%Y-%m-%d")
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
     reference = None
+    old_metadata: dict[str, Any] = {}
     if path.exists():
         reference = intel.validate_ohlcv(scan.read_cache_frame(path))
         if reference is not None:
@@ -475,6 +489,22 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                         if df is None:
                             continue
                         df, repaired = fetcher.harmonize_with_reference(df, reference, symbol)
+                        history_backfill_source = None
+                        if source == "FIINQUANT" and raw_attrs.get("history_partial"):
+                            if reference is None:
+                                limiter.record_success()
+                                logger.info(
+                                    "[FIINQUANT] %s recent data OK; using a standard source for deep-history backfill",
+                                    symbol,
+                                )
+                                continue
+                            merged = merge_recent_history(reference, df)
+                            if merged is None:
+                                continue
+                            df = merged
+                            history_backfill_source = str(
+                                old_metadata.get("data_source") or "VALIDATED_CACHE"
+                            )
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
                         scan.write_cache_frame(path, df)
@@ -483,6 +513,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             {
                                 "symbol": symbol.upper(),
                                 "data_source": source,
+                                "history_backfill_source": history_backfill_source,
                                 "as_of": dataframe_as_of(df),
                                 "cached_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
                                 "price_unit": df.attrs.get("price_unit"),
@@ -496,8 +527,12 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             df,
                             source=source,
                             cache_status="live",
+                            history_backfill_source=history_backfill_source,
                         )
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
+                    if source == "FIINQUANT":
+                        limiter.record_failure()
+                        limiter.disable("unavailable for this run; fallback sources remain active")
                 except SystemExit as exc:
                     logger.warning("[%s] %s/%s stopped by vnstock quota: %s", source, symbol, alias, str(exc).splitlines()[0])
                     if is_rate_limit_error(exc):
@@ -512,6 +547,12 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                         limiter.disable(str(exc)[:180])
                     elif is_invalid_symbol_error(exc):
                         logger.warning("[%s] %s/%s invalid symbol, skipping source penalty", source, symbol, alias)
+                    elif source == "FIINQUANT":
+                        limiter.record_failure(
+                            is_rate_limit=is_rate_limit_error(exc),
+                            retry_after_seconds=extract_retry_after_seconds(exc),
+                        )
+                        limiter.disable("unavailable for this run; fallback sources remain active")
                     else:
                         limiter.record_failure(
                             is_rate_limit=is_rate_limit_error(exc),

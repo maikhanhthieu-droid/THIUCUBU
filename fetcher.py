@@ -7,6 +7,7 @@ Keep vendor-specific import paths and direct HTTP fallbacks out of scanner logic
 from __future__ import annotations
 
 import logging
+import os
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -279,9 +280,33 @@ def fetch_dnse_direct(symbol: str, start: str, end: str) -> pd.DataFrame:
 
 
 def fetch_fiinquant(symbol: str, start: str, end: str) -> pd.DataFrame:
-    df = normalize_ohlcv(fiinquant_provider.fetch_history(symbol, start, end))
+    requested_start = start
+    try:
+        recent_days = int(os.getenv("FIINQUANT_RECENT_HISTORY_DAYS", "180"))
+    except ValueError:
+        recent_days = 180
+    recent_days = max(30, min(recent_days, 365))
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+        recent_start = end_dt - timedelta(days=recent_days - 1)
+        if recent_start > start_dt:
+            start = recent_start.strftime("%Y-%m-%d")
+    except ValueError:
+        pass
+    raw = fiinquant_provider.fetch_history(symbol, start, end)
+    raw_attrs = dict(getattr(raw, "attrs", {}))
+    df = normalize_ohlcv(raw)
     if df is None or df.empty:
         raise ValueError(f"FiinQuantX returned no OHLCV for {symbol}")
+    df.attrs.update(raw_attrs)
+    df.attrs.update(
+        {
+            "history_partial": start != requested_start,
+            "history_requested_start": requested_start,
+            "history_actual_start": start,
+        }
+    )
     return df
 
 
