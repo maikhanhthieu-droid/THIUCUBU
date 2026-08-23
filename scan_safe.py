@@ -377,6 +377,12 @@ def source_health_payload() -> dict[str, Any]:
     return {
         "updated_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
         "sources": {source: limiter.health_dict() for source, limiter in API_LIMITERS.items()},
+        # Per-symbol provenance makes workflow artifacts auditable without
+        # exposing credentials: recent-price source and optional deep backfill.
+        "symbol_provenance": {
+            symbol: dict(metadata)
+            for symbol, metadata in sorted(FETCH_PROVENANCE.items())
+        },
     }
 
 
@@ -465,6 +471,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                 cached.tail(bars),
                 source=metadata.get("data_source"),
                 cache_status="fresh_cache",
+                history_backfill_source=metadata.get("history_backfill_source"),
             )
 
     days_back = max(300, int(bars * 1.7))
@@ -597,6 +604,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             cached.tail(bars),
             source=metadata.get("data_source"),
             cache_status="stale_cache",
+            history_backfill_source=metadata.get("history_backfill_source"),
         )
     return None
 

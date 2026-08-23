@@ -51,6 +51,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         "symbol": str(raw.get("symbol") or "").upper(),
         "as_of": as_of,
         "data_source": data_source,
+        "history_backfill_source": raw.get("history_backfill_source"),
         "cache_status": cache_status,
         "close": _float(raw.get("close")),
         "price_unit": raw.get("price_unit"),

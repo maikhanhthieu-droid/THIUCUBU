@@ -162,6 +162,9 @@ class Opportunity:
     bull_case: str
     bear_case: str
     data_source: str
+    price_data_source: str | None = None
+    history_backfill_source: str | None = None
+    fundamental_data_source: str | None = None
     grade: str = "D"
     confidence: int = 0
     structure_score: int = 0
@@ -518,6 +521,12 @@ def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
     if close is None and tech is not None:
         close = tech.close
     as_of = (str(df.attrs.get("as_of") or "") or None) if df is not None else None
+    price_data_source = (
+        str(df.attrs.get("data_source") or "") or None
+    ) if df is not None else None
+    history_backfill_source = (
+        str(df.attrs.get("history_backfill_source") or "") or None
+    ) if df is not None else None
     cache_status = str(df.attrs.get("cache_status") or "unknown") if df is not None else "missing"
     return {
         "symbol": symbol,
@@ -531,6 +540,8 @@ def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
         "weekly": weekly,
         "market_structure": market_structure,
         "as_of": as_of,
+        "price_data_source": price_data_source,
+        "history_backfill_source": history_backfill_source,
         "cache_status": cache_status,
         "close": close,
     }
@@ -918,7 +929,12 @@ def build_opportunities(packets: list[dict[str, Any]], sectors: dict[str, Sector
                 setup=tech.setup if tech is not None else "NO_CHART",
                 bull_case=bull_case,
                 bear_case=bear_case,
-                data_source=fund.source,
+                # Keep the compatibility alias, but make its meaning explicit:
+                # price provenance is separate from the fundamental provider.
+                data_source=str(packet.get("price_data_source") or fund.source),
+                price_data_source=packet.get("price_data_source"),
+                history_backfill_source=packet.get("history_backfill_source"),
+                fundamental_data_source=fund.source,
                 grade=scoring.grade(score),
                 confidence=confidence,
                 structure_score=weekly.score,

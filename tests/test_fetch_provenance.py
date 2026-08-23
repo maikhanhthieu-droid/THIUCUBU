@@ -79,6 +79,10 @@ def test_provenance_records_hybrid_history_source() -> None:
     assert result.attrs["data_source"] == "FIINQUANT"
     assert result.attrs["history_backfill_source"] == "VCI"
 
+    health = scan_safe.source_health_payload()
+    assert health["symbol_provenance"]["AAA"]["data_source"] == "FIINQUANT"
+    assert health["symbol_provenance"]["AAA"]["history_backfill_source"] == "VCI"
+
 
 def test_safe_fetch_keeps_fiinquant_overlay_on_standard_backfill(monkeypatch, tmp_path) -> None:
     deep_dates = pd.bdate_range("2025-01-01", periods=300)

@@ -207,6 +207,7 @@ class ScanResult:
     reason: str
     as_of: str | None = None
     data_source: str | None = None
+    history_backfill_source: str | None = None
     cache_status: str = "unknown"
     price_unit: str = "unknown"
     unit_scale_applied: float = 1.0
@@ -952,6 +953,9 @@ def process_symbol(symbol: str, force_refresh: bool) -> tuple[str, pd.DataFrame 
         if result is not None:
             result.as_of = str(df.attrs.get("as_of") or "") or None
             result.data_source = str(df.attrs.get("data_source") or "") or None
+            result.history_backfill_source = (
+                str(df.attrs.get("history_backfill_source") or "") or None
+            )
             result.cache_status = str(df.attrs.get("cache_status") or "unknown")
             result.price_unit = str(df.attrs.get("price_unit") or ("index_points" if result.sector == "Index" else "thousand_vnd"))
             result.unit_scale_applied = float(df.attrs.get("unit_scale_applied", 1.0))

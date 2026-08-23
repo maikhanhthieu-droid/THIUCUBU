@@ -15,6 +15,7 @@ class Result:
     near_break: bool = True
     as_of: str | None = "2026-07-24"
     data_source: str | None = "VCI"
+    history_backfill_source: str | None = None
     cache_status: str = "live"
 
 
@@ -40,6 +41,7 @@ def test_filter_feed_is_facts_only_and_sorted() -> None:
     assert report["facts"][0]["relative_strength"]["score"] == 80.0
     assert report["facts"][0]["as_of"] == "2026-07-24"
     assert report["facts"][0]["data_source"] == "VCI"
+    assert report["facts"][0]["history_backfill_source"] is None
     assert report["facts"][0]["data_quality"]["status"] == "current"
     assert "scores" in report["facts"][0]
     assert "market_structure" in report["facts"][0]

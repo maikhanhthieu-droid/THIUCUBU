@@ -353,6 +353,9 @@ class WeeklyBottomCandidate:
     flow_divergence_signals: list[str]
     signals: list[str]
     risk_note: str
+    price_data_source: str | None = None
+    history_backfill_source: str | None = None
+    cache_status: str = "unknown"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -608,6 +611,13 @@ def analyze_packet(packet: Mapping[str, Any]) -> WeeklyBottomCandidate | None:
         ],
         signals=list(dict.fromkeys(signals))[:8],
         risk_note=risk_note,
+        price_data_source=(
+            str(packet.get("price_data_source") or "") or None
+        ),
+        history_backfill_source=(
+            str(packet.get("history_backfill_source") or "") or None
+        ),
+        cache_status=str(packet.get("cache_status") or "unknown"),
     )
 
 
