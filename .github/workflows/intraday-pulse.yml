@@ -26,6 +26,16 @@ on:
         required: false
         type: boolean
         default: false
+      notify:
+        description: "Send the diagnostic result to Telegram"
+        required: false
+        type: boolean
+        default: false
+      persist:
+        description: "Commit the diagnostic snapshot to main"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   pulse:
@@ -67,6 +77,9 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then
             EXTRA_ARGS+=(--force)
           fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.notify }}" != "true" ]; then
+            EXTRA_ARGS+=(--no-notify)
+          fi
           python intraday_pulse.py "${EXTRA_ARGS[@]}"
 
       - name: Upload Pulse artifact
@@ -81,7 +94,10 @@ jobs:
           retention-days: 14
 
       - name: Commit Pulse snapshot
-        if: always() && github.ref == 'refs/heads/main'
+        if: >-
+          always() && github.ref == 'refs/heads/main' &&
+          (github.event_name == 'schedule' ||
+          (github.event_name == 'workflow_dispatch' && inputs.persist == true))
         run: |
           python scripts/safe_commit_data.py \
             --message "chore: update intraday pulse [skip ci]" \

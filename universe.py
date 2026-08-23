@@ -52,22 +52,40 @@ def _fresh(updated_at: Any, days: int = 7) -> bool:
         return False
 
 
-def discover_symbols() -> list[str]:
-    try:
-        from vnstock import Listing
+def _listing_frame(source: str) -> Any:
+    """Call explorer implementations directly.
 
-        for source in ("kbs", "vci"):
-            try:
-                frame = Listing(source=source).all_symbols()
-                if frame is not None and "symbol" in frame.columns:
-                    symbols = sorted(_unique(frame["symbol"].tolist()))
-                    if len(symbols) >= 300:
-                        logger.info("Discovered %s stock symbols from %s", len(symbols), source.upper())
-                        return symbols
-            except Exception as exc:
-                logger.warning("Universe source %s failed: %s", source.upper(), exc)
-    except Exception as exc:
-        logger.warning("vnstock Listing unavailable: %s", exc)
+    vnstock 4.0.2's public ``Listing(source=...)`` wrapper can have an empty
+    provider registry even though the bundled KBS/VCI explorers are healthy.
+    Direct imports also keep the fallback deterministic when one upstream is
+    unavailable.
+    """
+
+    if source == "KBS":
+        from vnstock.explorer.kbs.listing import Listing
+    elif source == "VCI":
+        from vnstock.explorer.vci.listing import Listing
+    else:  # pragma: no cover - guarded by discover_symbols
+        raise ValueError(f"Unsupported listing source: {source}")
+    return Listing(show_log=False).all_symbols(show_log=False)
+
+
+def discover_symbols() -> list[str]:
+    for source in ("KBS", "VCI"):
+        try:
+            frame = _listing_frame(source)
+            if frame is not None and "symbol" in frame.columns:
+                symbols = sorted(_unique(frame["symbol"].tolist()))
+                if len(symbols) >= 300:
+                    logger.info("Discovered %s stock symbols from %s", len(symbols), source)
+                    return symbols
+                logger.warning(
+                    "Universe source %s returned only %s valid stock symbols",
+                    source,
+                    len(symbols),
+                )
+        except Exception as exc:
+            logger.warning("Universe source %s failed: %s", source, exc)
     return []
 
 
