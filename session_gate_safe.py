@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Safe session entrypoint with source fallbacks and compatibility guards."""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,7 +10,6 @@ from datetime import datetime
 from typing import Any
 
 import scan
-import near_high_filter
 import scan_safe
 
 _ORIGINAL_SAFE_FETCH = scan_safe.fetch_ohlcv_safe
@@ -189,19 +190,14 @@ def patch_scan_metadata() -> None:
     )
 
 
-def all_universe_symbols_with_near_high_filter(mode: str, watch_items: dict[str, dict[str, Any]]) -> list[str]:
+def all_universe_symbols_validated(mode: str, watch_items: dict[str, dict[str, Any]]) -> list[str]:
     symbols = _old_all_universe_symbols(mode, watch_items)
     valid_symbols = [s for s in symbols if 3 <= len(str(s).strip()) <= 12]
     dropped = sorted(set(symbols) - set(valid_symbols))
     if dropped:
         gate.plus.sess.logger.warning("Dropping invalid ticker(s): %s", ",".join(dropped))
     symbols = valid_symbols
-    if mode in {"test", "eod"}:
-        return symbols
-    kept, tagged = near_high_filter.filter_symbols(symbols, protected=set(watch_items))
-    if tagged:
-        gate.plus.sess.logger.info("Near-high context tagged %s symbols; none removed", len(tagged))
-    return kept
+    return symbols
 
 
 def build_session_report_compat(
@@ -217,7 +213,6 @@ def build_session_report_compat(
     market_day: Any | None = None,
     **kwargs: Any,
 ) -> str:
-    near_high_filter.annotate_results(results)
     try:
         return _old_build_session_report(
             mode,
@@ -245,7 +240,6 @@ def save_session_outputs_compat(
     market_day: Any | None = None,
     **kwargs: Any,
 ) -> list[dict[str, Any]]:
-    near_high_filter.annotate_results(results)
     try:
         failed_breaks = _old_save_session_outputs(
             mode,
@@ -267,7 +261,7 @@ def save_session_outputs_compat(
 
 
 patch_scan_metadata()
-gate.plus.sess.all_universe_symbols = all_universe_symbols_with_near_high_filter
+gate.plus.sess.all_universe_symbols = all_universe_symbols_validated
 gate.plus.sess.build_session_report = build_session_report_compat
 gate.plus.sess.save_session_outputs = save_session_outputs_compat
 

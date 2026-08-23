@@ -5,8 +5,8 @@ permissions:
   actions: read
 
 concurrency:
-  # Keep fixed scanner backups from running at the same time. Pulse has its own
-  # independent group and files, so a Pulse failure never blocks this workflow.
+  # Keep fixed scanner backups from running at the same time. The optional
+  # manual Pulse has its own group and never blocks this workflow.
   group: thieucutoo-scanner-${{ github.ref }}
   cancel-in-progress: false
 
@@ -241,7 +241,6 @@ jobs:
           SCAN_RETRY_FAILED_DELAY_MIN_SEC: "20"
           SCAN_RETRY_FAILED_DELAY_MAX_SEC: "60"
           SCAN_RETRY_FAILED_MAX_SYMBOLS: "24"
-          SCAN_SKIP_NEAR_HIGH_WEEKDAY: "0" # deprecated: near-high is now a soft warning tag
           MARKET_CLOSED_POLICY: "scan_old"
           MARKET_ACTIVITY_PROBE_ENABLED: "1"
           MARKET_ACTIVITY_PROBE_ACTION: "warn"
@@ -315,7 +314,7 @@ jobs:
             "eod") TIMEOUT_MIN="160" ;;
           esac
           echo "Scanner hard timeout ${TIMEOUT_MIN}m for mode=$MODE"
-          timeout --kill-after=120s "${TIMEOUT_MIN}m" python session_gate_near_high.py --mode "$MODE"
+          timeout --kill-after=120s "${TIMEOUT_MIN}m" python session_gate_safe.py --mode "$MODE"
 
       - name: Run optional VIMO support
         if: steps.scanner.outcome == 'success'
@@ -324,10 +323,10 @@ jobs:
           VIMO_API_KEY: ${{ secrets.VIMO_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          VIMO_REQUESTS_PER_MINUTE: "10"
+          VIMO_REQUESTS_PER_MINUTE: "5"
           VIMO_USAGE_RATIO: "0.70"
           VIMO_DAILY_REQUEST_BUDGET: "70"
-          VIMO_MAX_WORKERS: "2"
+          VIMO_MAX_WORKERS: "1"
           VIMO_DAILY_MAX_SYMBOLS: "8"
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'audit_full' && '1' || '0' }}
         run: |
@@ -362,7 +361,6 @@ jobs:
             data/market_breadth_history.json
             data/market_systemic_state.json
             data/portfolio_threshold_state.json
-            data/near_high_skiplist.json
             data/market_state_history.json
           retention-days: 30
 
@@ -390,7 +388,6 @@ jobs:
             data/market_breadth_history.json \
             data/market_systemic_state.json \
             data/portfolio_threshold_state.json \
-            data/near_high_skiplist.json \
             data/market_state_history.json \
             data/notes.json \
             data/portfolio.json

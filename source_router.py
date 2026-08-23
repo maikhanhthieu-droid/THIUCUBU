@@ -43,7 +43,10 @@ DEFAULT_POLICY: dict[str, Any] = {
     "strong_score_threshold": 72,
     "near_break_score_threshold": 62,
     "unhealthy_source_score": 40,
-    "standard_fiinquant_emergency_fallback": True,
+    # FiinQuant Free is capped at 33 distinct historical/realtime symbols.
+    # Keep it exclusive to the bounded priority tier; standard symbols must
+    # remain on the independent VCI/KBS/DNSE pool.
+    "standard_fiinquant_emergency_fallback": False,
     "priority_source_order": ["FIINQUANT", "VCI", "KBS", "DNSE"],
     "standard_sources": list(STANDARD_SOURCES),
 }
@@ -122,7 +125,7 @@ def default_routing() -> dict[str, Any]:
             "standard_count": 0,
             "description": (
                 "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua "
-                "VCI/KBS/DNSE; FiinQuant chỉ cứu hộ khi cả ba nguồn thường lỗi."
+                "VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant."
             ),
         },
     }
@@ -143,9 +146,9 @@ def normalize_routing(raw: Any) -> dict[str, Any]:
     policy["strong_score_threshold"] = _integer(policy.get("strong_score_threshold"), 72, 40, 97)
     policy["near_break_score_threshold"] = _integer(policy.get("near_break_score_threshold"), 62, 40, 97)
     policy["unhealthy_source_score"] = _integer(policy.get("unhealthy_source_score"), 40, 0, 100)
-    policy["standard_fiinquant_emergency_fallback"] = bool(
-        policy.get("standard_fiinquant_emergency_fallback", True)
-    )
+    # This is deliberately a hard safety rule, including for routing files
+    # created by older versions where emergency fallback was enabled.
+    policy["standard_fiinquant_emergency_fallback"] = False
     routing["policy"] = policy
 
     manual_raw = _mapping(raw.get("manual"))
@@ -233,9 +236,20 @@ def get_routing(path: Path | None = None) -> dict[str, Any]:
 def priority_symbols(routing: Mapping[str, Any] | None = None) -> set[str]:
     item = normalize_routing(routing) if routing is not None else get_routing()
     forced_standard = set(item["manual"]["force_standard"])
-    values = {entry["symbol"] for entry in item["fiinquant_priority"]}
-    values.update(item["manual"]["force_fiinquant"])
-    return values - forced_standard
+    limit = int(item["policy"]["priority_limit"])
+    forced = [
+        symbol
+        for symbol in item["manual"]["force_fiinquant"]
+        if symbol not in forced_standard
+    ]
+    generated = [
+        entry["symbol"]
+        for entry in item["fiinquant_priority"]
+        if entry["symbol"] not in forced_standard and entry["symbol"] not in forced
+    ]
+    # This cap applies while reading hand-edited/legacy routing files too, not
+    # only after the next automatic update has rewritten them.
+    return set((forced + generated)[:limit])
 
 
 def is_priority(symbol: str, routing: Mapping[str, Any] | None = None) -> bool:
@@ -300,10 +314,11 @@ def source_order(
 
     # Unknown future providers stay usable without silently moving ahead of the
     # configured tiers.
-    ordered += [source for source in available if source not in ordered]
-    if not ordered:
-        ordered = available
-
+    ordered += [
+        source
+        for source in available
+        if source not in ordered and (source != "FIINQUANT" or is_priority(symbol, item))
+    ]
     unhealthy_below = int(policy["unhealthy_source_score"])
     return sorted(
         ordered,
@@ -571,7 +586,7 @@ def update_routing(
             "demote_after_scans": demote_after,
             "description": (
                 "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua "
-                "VCI/KBS/DNSE; FiinQuant chỉ cứu hộ khi cả ba nguồn thường lỗi."
+                "VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant."
             ),
         },
     }

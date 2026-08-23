@@ -106,7 +106,7 @@ def test_healthy_fiinquant_is_first_only_for_priority_symbols(monkeypatch) -> No
     monkeypatch.setattr(source_router, "get_routing", lambda path=None: routing)
 
     assert scan_safe.source_order_for_symbol("VCB")[0] == "FIINQUANT"
-    assert scan_safe.source_order_for_symbol("HPG")[-1] == "FIINQUANT"
+    assert "FIINQUANT" not in scan_safe.source_order_for_symbol("HPG")
 
 
 def test_history_reuses_one_session_and_never_requests_realtime(monkeypatch) -> None:

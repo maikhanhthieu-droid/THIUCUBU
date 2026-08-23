@@ -14,7 +14,6 @@ import market_breadth
 import market_intel as intel
 import market_probe
 import market_strategy
-import near_high_filter
 import report_streams
 import run_journal
 import scan
@@ -240,7 +239,6 @@ def build_session_report(
     market_day: Any | None = None,
     **_: Any,
 ) -> str:
-    near_high_filter.annotate_results(results)
     window = sess.SESSION_WINDOWS[mode]
     metrics = _STATE.get("metrics", {})
     regime = _STATE.get("regime", {})
@@ -352,7 +350,6 @@ def save_session_outputs(
     market_day: Any | None = None,
     **_: Any,
 ) -> list[dict[str, Any]]:
-    near_high_filter.annotate_results(results)
     metrics, regime = intel.build_market_metrics(results, history_store)
     stocks = [item for item in results.values() if item.symbol != "VNINDEX"]
     expected_symbols = {

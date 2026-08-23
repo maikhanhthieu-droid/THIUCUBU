@@ -78,7 +78,6 @@ def build_report_compat(
     opportunities,
     sectors,
     mode,
-    near_high=None,
     missing_fundamental=None,
     weekly_watch=None,
 ) -> str:
@@ -168,10 +167,6 @@ async def main() -> None:
         sectors = plus.weekend.build_sector_snapshots(packets)
         opportunities = plus.weekend.build_opportunities(packets, sectors)
         weekly_watch = plus.weekend.weekly_bottom_watch.rank_packets(packets)
-        near_high = []
-        build_near_high = getattr(plus.weekend, "build_near_high_snapshots", None)
-        if callable(build_near_high) and plus.weekend.UPDATE_NEAR_HIGH and mode != "test":
-            near_high = build_near_high(packets)
         plus.weekend.save_outputs(opportunities, sectors, weekly_watch)
         if mode != "test":
             plus.weekend.source_router.update_from_weekend(
@@ -183,12 +178,12 @@ async def main() -> None:
             opportunities,
             sectors,
             mode,
-            near_high,
             missing_fundamental,
             weekly_watch,
         )
         telegram_sent = bool(await scan.send_chunks("*THIEUCUBU WEEKEND*", report)) and not scan.DRY_RUN
-        scan_safe.save_source_health()
+        fundamental_cache = plus.weekend.fundamental_cache_stats()
+        scan_safe.save_source_health(extra={"fundamental_cache": fundamental_cache})
         run_journal.finish_run(
             run_id,
             f"weekend_{mode}",
@@ -199,13 +194,13 @@ async def main() -> None:
             telegram_sent=telegram_sent,
         )
         plus.weekend.logger.info(
-            "Weekend opportunities found: %s weekly_bottom_watch=%s near_high_skip=%s",
+            "Weekend opportunities found: %s weekly_bottom_watch=%s fundamental_cache=%s",
             len(opportunities),
             len(weekly_watch),
-            len(near_high),
+            fundamental_cache,
         )
     except Exception as exc:
-        scan_safe.save_source_health()
+        scan_safe.save_source_health(extra={"fundamental_cache": plus.weekend.fundamental_cache_stats()})
         run_journal.fail_run(run_id, f"weekend_{mode}", exc, elapsed_sec=time.time() - started)
         raise
 

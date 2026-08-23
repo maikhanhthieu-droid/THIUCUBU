@@ -9,7 +9,7 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 ### Trong tuần
 
 - Quét rộng vào buổi sáng, buổi chiều và sau ATC.
-- Giữa các phiên cố định, radar `Pulse 30P` quét bảng giá toàn thị trường mỗi 30 phút để tìm giá/dòng tiền đột biến.
+- Radar `Pulse 30P` vẫn có thể chạy tay để chẩn đoán đột biến; lịch tự động đã tắt để tiết kiệm API.
 - Luôn ưu tiên danh mục và mã đã ghi chú.
 - Tách riêng điểm `Lướt` và điểm `Gom`.
 - Vẫn gửi lại báo cáo đầy đủ mỗi phiên để người dùng không bỏ trôi tín hiệu.
@@ -17,7 +17,6 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 - Nhận diện nền giá, volume co hẹp, OBV/MFI, relative strength, near-break và failed-break.
 - Đo market breadth toàn universe, A/D, new-high/new-low, mức tham gia volume và tương quan giảm hệ thống.
 - Xếp ngành tự động thành `DẪN DẮT / ĐANG VÀO / ĐANG RA / TỤT HẬU` theo RS 1W/1M/3M.
-- Mã gần/vượt đỉnh 6 năm được gắn cảnh báo nhưng không bị loại khỏi lượt quét.
 - Điều chỉnh hành động theo trạng thái VNINDEX và R/R.
 - Khám phá universe động và quét xoay vòng các mã ngoài danh sách cốt lõi.
 
@@ -42,11 +41,11 @@ Mỗi báo cáo Telegram mở đầu bằng `TÓM TẮT 5 LUỒNG`, liệt kê m
 
 Phân loại được tạo tự động sau mỗi lần quét. `session_alerts_latest.json` và feature feed đều có payload `five_streams`; mỗi fact có `classification.primary_stream`. Khi một mã đổi luồng, `market_state_history.json` ghi sự kiện `PRIMARY_STREAM` để mục chuyển pha có thể báo lại ở phiên sau.
 
-### Radar đột biến trong phiên 30 phút
+### Radar đột biến 30 phút (chỉ chạy tay)
 
 `intraday_pulse.py` là radar nhẹ chạy độc lập với các phiên quét cố định. Radar dùng bảng giá bulk của KBS, tự fallback sang VCI cho mã thiếu và đối chiếu VCI cho các sự kiện nổi bật khi nguồn thứ hai sẵn sàng. Vì đây là dữ liệu bảng giá ngắn hạn, FiinQuant/VCI/KBS/DNSE của scanner ngày vẫn được giữ nguyên và không bị Pulse thay thế.
 
-- Chạy mỗi 30 phút trong phiên sáng và chiều; lượt `09:00` và `13:00` gieo baseline mới.
+- Không còn cron tự động. Chỉ chạy từ **Actions → THIEUCUBU Intraday Pulse 30P → Run workflow** khi thật sự cần.
 - Tìm biến động giá 30 phút, giá trị giao dịch tăng nhanh, bám đỉnh/đáy phiên và mất cân bằng mua/bán.
 - Chỉ giữ tối đa 5 mã thuộc trạng thái `MẠNH / TÍCH LŨY / TRẠNG THÁI ĐẸP` của lần quét sâu gần nhất. Mã yếu hoặc phân phối bị loại khỏi thông báo 30P.
 - `OUT-BAND` là cú lệch khỏi dải biến động robust của toàn thị trường trong cùng 30 phút; OUT-BAND tăng đủ thanh khoản vẫn được giữ như ngoại lệ để phát hiện mã mới, còn OUT-BAND giảm chỉ báo khi đó là mã tốt trước đó hoặc mã danh mục.
@@ -212,34 +211,38 @@ Danh sách cốt lõi được quét thường xuyên. Ngoài ra hệ thống t�
 
 ## Lịch chạy mặc định
 
-- `09:00–11:30` và `13:00–14:30`: Pulse toàn thị trường mỗi 30 phút; không thay đổi các phiên chính.
 - `10:31` giờ Việt Nam: quét rộng buổi sáng.
 - `13:31`: quét phần rộng chưa ưu tiên; sau `14:00` quét lại focus.
 - `15:05`: tổng kết EOD sau ATC.
 - `08:30` và `14:30` thứ Bảy: quét cơ hội cuối tuần.
 
-GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard timeout và run journal ngăn các phiên cố định trùng hoặc treo; Pulse chạy độc lập để lỗi radar không làm mất báo cáo chính.
+GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard timeout và run journal ngăn các phiên cố định trùng hoặc treo; Pulse thủ công chạy độc lập nên không làm mất báo cáo chính.
 
 ## Nguồn dữ liệu và khả năng tự phục hồi
 
 - Mã cần chú ý trong `data/source_routing.json` ưu tiên `FIINQUANT`, sau đó tự fallback `VCI,KBS,DNSE`.
-- Mã bình thường được cân tải giữa `VCI/KBS/DNSE`; FiinQuant chỉ là cứu hộ cuối cùng khi cả ba nguồn thường cùng không lấy được dữ liệu.
+- Mã bình thường chỉ được cân tải giữa `VCI/KBS/DNSE`; tuyệt đối không fallback sang FiinQuant để không vượt giới hạn 33 mã của gói Free.
 - Khi chưa có đủ hai FiinQuant Secret, nguồn này tự bị loại khỏi lượt chạy; các luồng cũ vẫn hoạt động bình thường.
-- FiinQuantX chỉ chạy historical request, dùng chung một phiên đăng nhập trong mỗi process và không mở WebSocket realtime.
+- FiinQuantX chỉ chạy lịch sử 1D cho tối đa 32 mã ưu tiên, dùng chung một phiên đăng nhập trong mỗi process và không mở WebSocket real-time. Phần lịch sử sâu hơn một năm được backfill bằng nguồn chuẩn độc lập.
 - Mỗi mã có nguồn ưu tiên và fallback riêng.
 - Có jitter, rate limiter, `Retry-After`, cooldown và phục hồi nguồn trong cùng run.
-- Cache parquet được dùng khi phù hợp; stale cache luôn được gắn provenance.
+- Cache parquet được dùng theo nguyên tắc "cache dài phục vụ yêu cầu ngắn": một
+  lịch sử 1.560 phiên có thể cấp dữ liệu cho bộ lọc 520/780 phiên mà không gọi
+  API lại; stale cache luôn được gắn provenance.
 - Giá cổ phiếu từ mọi nguồn được chuẩn hóa về `thousand_vnd`; cache và nguồn mới còn được đối chiếu ngày trùng nhau để tự sửa sai lệch 1.000 lần.
 - Dữ liệu stale có thể xuất hiện trong báo cáo tham khảo nhưng không được chọn làm conviction cuối tuần.
 - Source health được lưu để lần chạy sau ưu tiên nguồn khỏe hơn.
 - Ngân sách mặc định giữ quanh 70%: FiinQuant tối đa 63 request/phút,
   70.000 request/tháng, một kết nối và tối đa 32 mã ưu tiên; VIMO tối đa
-  70 call/ngày. Khi chạm hard budget, nguồn đó dừng và các nguồn độc lập khác
-  vẫn tiếp tục.
+  3,5 call/phút và 70 call/ngày. Khi chạm hard budget, nguồn đó dừng và các
+  nguồn độc lập khác vẫn tiếp tục.
 - Scanner chỉ tải OHLCV ngày một lần; khung `1W` và `1M` được resample cục bộ,
   vì vậy phân tích đa khung không nhân ba số request API.
-- Pulse 30 phút dùng bulk board KBS làm chính, VCI xác minh; nó không tiêu quota
-  FiinQuant/VIMO và được giới hạn 70% tốc độ nội bộ đã đặt cho từng nguồn.
+- Cuối tuần dùng một cache 1.560 phiên chung cho phân tích 1D/1W/1M.
+  Fundamental có cache TTL 168 giờ; hết TTL mới làm mới ở mức tối đa 70% ngân
+  sách cấu hình.
+- Pulse 30 phút chỉ chạy tay, dùng bulk board KBS làm chính và VCI xác minh; nó
+  không tiêu quota FiinQuant/VIMO.
 
 ### Phân luồng tự động
 
@@ -294,19 +297,19 @@ Hai chế độ audit thủ công trên GitHub Actions gọi dữ liệu thật 
 Telegram và không commit snapshot thử nghiệm: Scanner `audit_full` quét toàn bộ
 universe theo pipeline EOD; Weekend `audit` quét toàn bộ pipeline cuối tuần.
 
-### VIMO support flow (optional)
+### Luồng VIMO hỗ trợ (độc lập, tùy chọn)
 
-VIMO is an independent confirmation layer, not an OHLCV dependency. Daily
-scans use `get_ta_signals` for a small top-candidate set; weekend scans use
-`get_bctc_profile`. A VIMO timeout, quota error, missing key, or malformed
-response is logged and skipped without changing the THIUCUBU score or failing
-the core scanner.
+VIMO không thay OHLCV lõi và chỉ xác nhận sau khi THIUCUBU đã lọc ra số ít mã.
+Phiên ngày dùng `get_ta_signals` cho tối đa 8 ứng viên; cuối tuần dùng
+`get_bctc_profile` cho tối đa 12 ứng viên. Giới hạn Free được đặt ở 5 call/phút
+× 70% = 3,5 call/phút, một worker và hard budget 70/100 call mỗi ngày. Timeout,
+hết quota, thiếu key hoặc payload lỗi đều chỉ bị bỏ qua, không đổi Score và
+không làm hỏng scanner chính.
 
-Configure `VIMO_API_KEY` only in `.env` locally or GitHub Actions Secrets. Raw
-VIMO responses and narratives are never committed; compact support state lives
-under the ignored `data/cache/vimo/` directory. The support message is sent
-only for a new confirmation/conflict, a changed VIMO signal, or a THIUCUBU
-score move of at least 7 points.
+Chỉ cấu hình `VIMO_API_KEY` trong `.env` local hoặc GitHub Actions Secrets. Raw
+response/narrative không được commit; state rút gọn nằm trong
+`data/cache/vimo/`. Tin hỗ trợ chỉ gửi khi có xác nhận/mâu thuẫn mới, tín hiệu
+VIMO thay đổi hoặc Score THIUCUBU đổi ít nhất 7 điểm.
 
 ```bash
 python scripts/check_vimo.py --symbol FPT
@@ -362,10 +365,15 @@ Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể c�
 - `FIINQUANT_MONTHLY_REQUEST_BUDGET=70000`
 - `FIINQUANT_MAX_CONCURRENCY=1`
 - `SCAN_SOURCE_USAGE_RATIO=0.70`
+- `VIMO_REQUESTS_PER_MINUTE=5`
+- `VIMO_USAGE_RATIO=0.70`
 - `VIMO_DAILY_REQUEST_BUDGET=70`
 - `PULSE_SOURCE_USAGE_RATIO=0.70`
 - `SCAN_ROTATING_UNIVERSE_SIZE=36`
-- `WEEKEND_HISTORY_BARS=780`
+- `WEEKEND_HISTORY_BARS=1560`
+- `WEEKEND_FUNDAMENTAL_REQUESTS_PER_MINUTE=15`
+- `WEEKEND_FUNDAMENTAL_USAGE_RATIO=0.70`
+- `WEEKEND_FUNDAMENTAL_CACHE_TTL_HOURS=168`
 - `WEEKEND_CONVICTION_LIMIT=2`
 - `WEEKEND_BOTTOM_WATCH_LIMIT=5`
 - `WEEKEND_MIN_SCORE=60`

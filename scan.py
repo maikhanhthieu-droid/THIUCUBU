@@ -226,9 +226,6 @@ class ScanResult:
     breakout_state: str = "NO_DATA"
     breakout_level: float | None = None
     reaccumulation: bool = False
-    near_6y_high: bool = False
-    distance_to_6y_high_pct: float | None = None
-    over_6y_high: bool = False
 
 
 def json_load(path: Path, default: Any) -> Any:

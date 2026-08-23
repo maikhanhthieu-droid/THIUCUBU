@@ -7,6 +7,7 @@ import math
 import os
 import random
 import sys
+import threading
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
@@ -37,7 +38,13 @@ VN_TZ = timezone(timedelta(hours=7))
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 FUNDAMENTAL_HISTORY_PATH = DATA_DIR / "fundamental_history.json"
+FUNDAMENTAL_CACHE_PATH = DATA_DIR / "cache" / "fundamental_latest.json"
+FUNDAMENTAL_CACHE_SCHEMA = 2
 _FUNDAMENTAL_HISTORY_CACHE: dict[str, list[dict[str, Any]]] | None = None
+_FUNDAMENTAL_LIVE_CACHE: dict[str, dict[str, Any]] | None = None
+_FUNDAMENTAL_CACHE_LOCK = threading.Lock()
+_FUNDAMENTAL_CACHE_HITS = 0
+_FUNDAMENTAL_CACHE_MISSES = 0
 _FIINQUANT_WARNING_LOGGED = False
 
 try:
@@ -90,6 +97,23 @@ FUNDAMENTAL_DELAY_MIN = env_float("WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC", 0.7, min_
 FUNDAMENTAL_DELAY_MAX = max(
     FUNDAMENTAL_DELAY_MIN,
     env_float("WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC", 2.2, min_value=0.0),
+)
+FUNDAMENTAL_CACHE_TTL_HOURS = env_int("WEEKEND_FUNDAMENTAL_CACHE_TTL_HOURS", 168, min_value=0)
+FUNDAMENTAL_REQUESTS_PER_MINUTE = env_int(
+    "WEEKEND_FUNDAMENTAL_REQUESTS_PER_MINUTE",
+    15,
+    min_value=1,
+)
+FUNDAMENTAL_USAGE_RATIO = env_float(
+    "WEEKEND_FUNDAMENTAL_USAGE_RATIO",
+    0.70,
+    min_value=0.05,
+    max_value=1.0,
+)
+FUNDAMENTAL_LIMITER = scan_safe.ApiSourceLimiter(
+    "FUNDAMENTAL",
+    FUNDAMENTAL_REQUESTS_PER_MINUTE,
+    FUNDAMENTAL_USAGE_RATIO,
 )
 RANDOM_START_MAX = env_int("WEEKEND_RANDOM_START_MAX_SEC", 600, min_value=0)
 WEEKLY_INDEX_DF: pd.DataFrame | None = None
@@ -281,12 +305,16 @@ def save_fundamental_history(packets: list[dict[str, Any]]) -> None:
         symbol = str(packet.get("symbol") or "").upper()
         rows = history.setdefault(symbol, [])
         record = {
+            "schema_version": FUNDAMENTAL_CACHE_SCHEMA,
             "captured_at": now,
             "period": fund.period,
             "pe": fund.pe,
             "pb": fund.pb,
             "roe": fund.roe,
             "roa": fund.roa,
+            "debt_to_equity": fund.debt_to_equity,
+            "current_ratio": fund.current_ratio,
+            "profit_margin": fund.profit_margin,
             "eps": fund.eps,
             "source": fund.source,
         }
@@ -298,6 +326,98 @@ def save_fundamental_history(packets: list[dict[str, Any]]) -> None:
         history[symbol] = rows[-104:]
     scan.json_save(FUNDAMENTAL_HISTORY_PATH, history, pretty=False)
     _FUNDAMENTAL_HISTORY_CACHE = history
+
+
+def _load_fundamental_live_cache_unlocked() -> dict[str, dict[str, Any]]:
+    global _FUNDAMENTAL_LIVE_CACHE
+    if _FUNDAMENTAL_LIVE_CACHE is None:
+        raw = scan.json_load(FUNDAMENTAL_CACHE_PATH, {})
+        _FUNDAMENTAL_LIVE_CACHE = {
+            str(symbol).upper(): row
+            for symbol, row in raw.items()
+            if isinstance(row, dict)
+        } if isinstance(raw, dict) else {}
+    return _FUNDAMENTAL_LIVE_CACHE
+
+
+def _record_fundamental_cache_result(*, hit: bool) -> None:
+    global _FUNDAMENTAL_CACHE_HITS, _FUNDAMENTAL_CACHE_MISSES
+    with _FUNDAMENTAL_CACHE_LOCK:
+        if hit:
+            _FUNDAMENTAL_CACHE_HITS += 1
+        else:
+            _FUNDAMENTAL_CACHE_MISSES += 1
+
+
+def fundamental_snapshot_from_cache(symbol: str) -> FundamentalSnapshot | None:
+    if FUNDAMENTAL_CACHE_TTL_HOURS <= 0:
+        return None
+    with _FUNDAMENTAL_CACHE_LOCK:
+        row = dict(_load_fundamental_live_cache_unlocked().get(symbol.upper(), {}))
+    if int(safe_float(row.get("schema_version")) or 0) != FUNDAMENTAL_CACHE_SCHEMA:
+        _record_fundamental_cache_result(hit=False)
+        return None
+    try:
+        captured_at = datetime.fromisoformat(str(row.get("captured_at") or ""))
+        if captured_at.tzinfo is None:
+            captured_at = captured_at.replace(tzinfo=VN_TZ)
+        age_hours = (datetime.now(VN_TZ) - captured_at.astimezone(VN_TZ)).total_seconds() / 3600
+    except (TypeError, ValueError):
+        _record_fundamental_cache_result(hit=False)
+        return None
+    if age_hours < 0 or age_hours > FUNDAMENTAL_CACHE_TTL_HOURS:
+        _record_fundamental_cache_result(hit=False)
+        return None
+    _record_fundamental_cache_result(hit=True)
+    return FundamentalSnapshot(
+        symbol=symbol.upper(),
+        pe=safe_float(row.get("pe")),
+        pb=safe_float(row.get("pb")),
+        roe=safe_float(row.get("roe")),
+        roa=safe_float(row.get("roa")),
+        debt_to_equity=safe_float(row.get("debt_to_equity")),
+        current_ratio=safe_float(row.get("current_ratio")),
+        profit_margin=safe_float(row.get("profit_margin")),
+        eps=safe_float(row.get("eps")),
+        period=str(row.get("period") or ""),
+        source=f"{row.get('source') or 'unknown'} [cache]",
+    )
+
+
+def save_fundamental_snapshot_cache(snapshot: FundamentalSnapshot) -> None:
+    record = {
+        "schema_version": FUNDAMENTAL_CACHE_SCHEMA,
+        "captured_at": datetime.now(VN_TZ).isoformat(timespec="seconds"),
+        "period": snapshot.period,
+        "pe": snapshot.pe,
+        "pb": snapshot.pb,
+        "roe": snapshot.roe,
+        "roa": snapshot.roa,
+        "debt_to_equity": snapshot.debt_to_equity,
+        "current_ratio": snapshot.current_ratio,
+        "profit_margin": snapshot.profit_margin,
+        "eps": snapshot.eps,
+        "source": snapshot.source.replace(" [cache]", ""),
+    }
+    with _FUNDAMENTAL_CACHE_LOCK:
+        cache = _load_fundamental_live_cache_unlocked()
+        cache[snapshot.symbol.upper()] = record
+        scan.json_save(FUNDAMENTAL_CACHE_PATH, cache, pretty=False)
+
+
+def fundamental_cache_stats() -> dict[str, Any]:
+    with _FUNDAMENTAL_CACHE_LOCK:
+        entries = len(_load_fundamental_live_cache_unlocked())
+        hits = _FUNDAMENTAL_CACHE_HITS
+        misses = _FUNDAMENTAL_CACHE_MISSES
+    return {
+        "schema_version": FUNDAMENTAL_CACHE_SCHEMA,
+        "ttl_hours": FUNDAMENTAL_CACHE_TTL_HOURS,
+        "entries": entries,
+        "hits": hits,
+        "misses": misses,
+        "api_limiter": FUNDAMENTAL_LIMITER.health_dict(),
+    }
 
 
 def fmt_num(value: float | None, digits: int = 1) -> str:
@@ -329,13 +449,16 @@ def set_weekly_index(df: pd.DataFrame | None) -> None:
 ALIASES = {
     "pe": ["pe", "p/e", "pe_ratio", "peratio", "priceToEarning", "priceToEarnings", "price_to_earning"],
     "pb": ["pb", "p/b", "pb_ratio", "pbratio", "priceToBook", "price_to_book", "priceToBookRatio"],
-    "roe": ["roe", "returnOnEquity", "return_on_equity"],
-    "roa": ["roa", "returnOnAssets", "return_on_assets"],
+    # Prefer trailing-twelve-month values. The plain vnstock ``roe``/``roa``
+    # fields are quarterly percentages and are not comparable with the annual
+    # quality thresholds used by this scanner.
+    "roe": ["roe_trailling", "roe_trailing", "roe", "returnOnEquity", "return_on_equity"],
+    "roa": ["roa_trailling", "roa_trailing", "roa", "returnOnAssets", "return_on_assets"],
     "debt": ["debt_to_equity", "debtToEquity", "debt/equity"],
     "current": ["current_ratio", "currentRatio"],
     "margin": ["profit_margin", "net_margin", "netMargin"],
-    "eps": ["eps", "earningPerShare", "earningsPerShare"],
-    "period": ["date", "year_report", "year", "quarter", "report_date"],
+    "eps": ["trailing_eps", "eps", "earningPerShare", "earningsPerShare"],
+    "period": ["period", "date", "year_report", "year", "quarter", "report_date"],
 }
 
 
@@ -374,11 +497,13 @@ def snapshot_from_df(symbol: str, df: pd.DataFrame, source: str) -> FundamentalS
         symbol=symbol,
         pe=pe,
         pb=pb,
-        roe=as_percent(value_from_row(row, ALIASES["roe"])),
-        roa=as_percent(value_from_row(row, ALIASES["roa"])),
+        # vnstock's normalized ratio tables already expose these columns in
+        # percentage points (for example ROA=1.60 means 1.60%, not 160%).
+        roe=safe_float(value_from_row(row, ALIASES["roe"])),
+        roa=safe_float(value_from_row(row, ALIASES["roa"])),
         debt_to_equity=safe_float(value_from_row(row, ALIASES["debt"])),
         current_ratio=safe_float(value_from_row(row, ALIASES["current"])),
-        profit_margin=as_percent(value_from_row(row, ALIASES["margin"])),
+        profit_margin=safe_float(value_from_row(row, ALIASES["margin"])),
         eps=safe_float(value_from_row(row, ALIASES["eps"])),
         period=str(period_raw) if period_raw is not None else "",
         source=source,
@@ -413,13 +538,22 @@ def call_ratio_method(method: Any, args: tuple[Any, ...], source: str, symbol: s
         {},
     )
     for kwargs in kwargs_options:
+        FUNDAMENTAL_LIMITER.wait_turn(symbol)
         try:
             df = method(*args, **kwargs)
         except TypeError:
             continue
         except Exception as exc:
+            FUNDAMENTAL_LIMITER.record_failure(
+                is_rate_limit=scan_safe.is_rate_limit_error(exc),
+                retry_after_seconds=scan_safe.extract_retry_after_seconds(exc),
+            )
             logger.debug("%s %s failed: %s", source, symbol, exc)
-            continue
+            # The call signature was accepted, so changing kwargs will not fix
+            # a provider timeout/5xx. Let the independent fallback run instead
+            # of repeating the same 20-second failure up to four times.
+            return None
+        FUNDAMENTAL_LIMITER.record_success()
         snap = snapshot_from_df(symbol, df, source)
         if snap:
             return snap
@@ -471,13 +605,31 @@ def fetch_fundamental(symbol: str) -> FundamentalSnapshot | None:
                 company = VnCompany(symbol=symbol, source=source)
                 method = getattr(company, "ratio_summary", None)
                 if callable(method):
+                    FUNDAMENTAL_LIMITER.wait_turn(symbol)
                     df = method()
+                    FUNDAMENTAL_LIMITER.record_success()
                     snap = snapshot_from_df(symbol, df, f"Company.ratio_summary({source})")
                     if snap:
                         return snap
             except Exception as exc:
+                FUNDAMENTAL_LIMITER.record_failure(
+                    is_rate_limit=scan_safe.is_rate_limit_error(exc),
+                    retry_after_seconds=scan_safe.extract_retry_after_seconds(exc),
+                )
                 logger.debug("Company %s %s failed: %s", source, symbol, exc)
     return None
+
+
+def resolve_fundamental(symbol: str, force_refresh: bool = False) -> FundamentalSnapshot | None:
+    if not force_refresh:
+        cached = fundamental_snapshot_from_cache(symbol)
+        if cached is not None:
+            return cached
+    time.sleep(random.uniform(FUNDAMENTAL_DELAY_MIN, FUNDAMENTAL_DELAY_MAX))
+    snapshot = fetch_fundamental(symbol)
+    if snapshot is not None:
+        save_fundamental_snapshot_cache(snapshot)
+    return snapshot
 
 
 def build_universe(mode: str) -> list[str]:
@@ -506,7 +658,13 @@ def build_universe(mode: str) -> list[str]:
                 continue
             if int(item.get("win_score") or 0) >= 60 or str(item.get("action")) in {"CANH_MUA", "CANH_GOM"}:
                 tickers.append(str(item.get("symbol") or "").upper())
-    return sorted({symbol for symbol in tickers if 3 <= len(symbol) <= 12 and symbol.isalnum()})
+    return sorted(
+        {
+            symbol
+            for symbol in tickers
+            if symbol != "VNINDEX" and 3 <= len(symbol) <= 12 and symbol.isalnum()
+        }
+    )
 
 
 def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
@@ -515,8 +673,7 @@ def fetch_symbol_packet(symbol: str, force_refresh: bool) -> dict[str, Any]:
     tech = scan.analyze_symbol(symbol, df) if df is not None else None
     market_structure = market_phase.analyze_market_structure(df)
     weekly = weekly_sniper.analyze_weekly_structure(df, WEEKLY_INDEX_DF)
-    time.sleep(random.uniform(FUNDAMENTAL_DELAY_MIN, FUNDAMENTAL_DELAY_MAX))
-    fundamental = fetch_fundamental(symbol)
+    fundamental = resolve_fundamental(symbol, force_refresh=force_refresh)
     close = safe_float(df["close"].iloc[-1]) if df is not None and not df.empty else None
     if close is None and tech is not None:
         close = tech.close

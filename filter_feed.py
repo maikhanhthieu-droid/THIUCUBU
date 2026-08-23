@@ -80,11 +80,6 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         },
         "near_break": bool(raw.get("near_break")),
         "failed_break": bool(raw.get("failed_break")),
-        "near_high_context": {
-            "near_6y_high": bool(raw.get("near_6y_high")),
-            "distance_to_6y_high_pct": _float(raw.get("distance_to_6y_high_pct")),
-            "over_6y_high": bool(raw.get("over_6y_high")),
-        },
         "market_structure": dict(structure) if structure else {
             "overall_state": raw.get("market_state"),
             "timeframes": {

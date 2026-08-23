@@ -130,7 +130,7 @@ def test_safe_fetch_keeps_fiinquant_overlay_on_standard_backfill(monkeypatch, tm
     monkeypatch.setattr(scan_safe.scan, "cache_path", lambda symbol, bars: tmp_path / "AAA.parquet")
     monkeypatch.setattr(scan_safe.scan, "write_cache_frame", lambda path, value: None)
     monkeypatch.setattr(scan_safe.scan, "json_save", lambda *args, **kwargs: None)
-    monkeypatch.setattr(scan_safe.scan, "read_stale_cache", lambda path: None)
+    monkeypatch.setattr(scan_safe.scan, "read_stale_cache", lambda *args, **kwargs: None)
 
     result = scan_safe.fetch_ohlcv_safe("AAA", bars=260, force_refresh=True)
 
@@ -196,7 +196,7 @@ def test_transient_fiinquant_failure_falls_back_without_disabling_run(monkeypatc
     )
     monkeypatch.setattr(scan_safe.scan, "write_cache_frame", lambda path, value: None)
     monkeypatch.setattr(scan_safe.scan, "json_save", lambda *args, **kwargs: None)
-    monkeypatch.setattr(scan_safe.scan, "read_stale_cache", lambda path: None)
+    monkeypatch.setattr(scan_safe.scan, "read_stale_cache", lambda *args, **kwargs: None)
 
     first = scan_safe.fetch_ohlcv_safe("AAA", bars=260, force_refresh=True)
     second = scan_safe.fetch_ohlcv_safe("BBB", bars=260, force_refresh=True)
@@ -207,3 +207,40 @@ def test_transient_fiinquant_failure_falls_back_without_disabling_run(monkeypatc
     assert fiinquant.failures == 1
     assert fiinquant.disable_calls == 0
     assert fiinquant.disabled is False
+
+
+def test_smaller_request_reuses_fresh_long_history_cache(monkeypatch, tmp_path) -> None:
+    dates = pd.bdate_range("2022-01-03", periods=900)
+    frame = pd.DataFrame(
+        {
+            "time": dates,
+            "open": 10.0,
+            "high": 10.5,
+            "low": 9.5,
+            "close": 10.0,
+            "volume": 1_000_000,
+        }
+    )
+    monkeypatch.setattr(
+        scan_safe.scan,
+        "cache_path",
+        lambda symbol, bars: tmp_path / f"{symbol}_D_{bars}.parquet",
+    )
+    long_path = tmp_path / "AAA_D_1560.parquet"
+    scan_safe.scan.write_cache_frame(long_path, frame)
+    scan_safe.scan.json_save(
+        scan_safe.cache_metadata_path(long_path),
+        {"data_source": "KBS", "history_backfill_source": None},
+        pretty=True,
+    )
+
+    def unexpected_fetch(*args, **kwargs):
+        raise AssertionError("fresh larger cache should avoid a provider call")
+
+    monkeypatch.setattr(scan_safe, "fetch_source_history", unexpected_fetch)
+    result = scan_safe.fetch_ohlcv_safe("AAA", bars=520, force_refresh=False)
+
+    assert result is not None
+    assert len(result) == 520
+    assert result.attrs["cache_status"] == "fresh_cache"
+    assert result.attrs["data_source"] == "KBS"

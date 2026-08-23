@@ -54,14 +54,6 @@ def format_stock_card(r: Any, action: str | None = None, note: str = "", timing:
         flags.append("gần break")
     if getattr(r, "failed_break", False):
         flags.append("failed-break")
-    if getattr(r, "near_6y_high", False):
-        distance = getattr(r, "distance_to_6y_high_pct", None)
-        if getattr(r, "over_6y_high", False):
-            flags.append("vượt đỉnh 6Y")
-        elif distance is not None:
-            flags.append(f"cách đỉnh 6Y {float(distance):.1f}%")
-        else:
-            flags.append("gần đỉnh 6Y")
     flag_text = f" | {', '.join(flags)}" if flags else ""
 
     score = max(0, min(int(getattr(r, "win_score", 0)), scoring.MAX_SCORE))

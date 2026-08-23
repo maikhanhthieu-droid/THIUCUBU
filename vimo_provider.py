@@ -151,10 +151,10 @@ def _safe_float(value: Any) -> float | None:
 
 def _request_interval() -> float:
     try:
-        rpm = max(1.0, float(os.getenv("VIMO_REQUESTS_PER_MINUTE", "10")))
+        rpm = max(1.0, float(os.getenv("VIMO_REQUESTS_PER_MINUTE", "5")))
         ratio = max(0.05, min(1.0, float(os.getenv("VIMO_USAGE_RATIO", "0.70"))))
     except ValueError:
-        rpm, ratio = 10.0, 0.70
+        rpm, ratio = 5.0, 0.70
     return 60.0 / (rpm * ratio)
 
 

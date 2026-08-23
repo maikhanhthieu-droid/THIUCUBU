@@ -10,15 +10,8 @@ concurrency:
   cancel-in-progress: false
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/intraday-pulse.yml"
-  schedule:
-    # UTC = Vietnam time - 7 hours. Baselines: 09:00 and 13:00 VN.
-    - cron: "0,30 2-4 * * 1-5" # 09:00–11:30 VN, every 30 minutes
-    - cron: "0,30 6-7 * * 1-5" # 13:00–14:30 VN, every 30 minutes
+  # Kept as a manual diagnostic only. Ten automatic runs per trading day used
+  # roughly 300 KBS/VCI bulk requests and duplicated the fixed session scans.
   workflow_dispatch:
     inputs:
       force:
@@ -39,7 +32,6 @@ on:
 
 jobs:
   pulse:
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -96,8 +88,7 @@ jobs:
       - name: Commit Pulse snapshot
         if: >-
           always() && github.ref == 'refs/heads/main' &&
-          (github.event_name == 'schedule' ||
-          (github.event_name == 'workflow_dispatch' && inputs.persist == true))
+          github.event_name == 'workflow_dispatch' && inputs.persist == true
         run: |
           python scripts/safe_commit_data.py \
             --message "chore: update intraday pulse [skip ci]" \

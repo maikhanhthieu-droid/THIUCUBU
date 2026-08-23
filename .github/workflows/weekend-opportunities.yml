@@ -84,7 +84,9 @@ jobs:
           WEEKEND_TOP_N: "20"
           WEEKEND_CONVICTION_LIMIT: "2"
           WEEKEND_BOTTOM_WATCH_LIMIT: "5"
-          WEEKEND_HISTORY_BARS: "780"
+          # One canonical long cache powers 1D plus local 1W/1M resampling.
+          # No separate six-year-high classification pass is performed.
+          WEEKEND_HISTORY_BARS: "1560"
           WEEKEND_MIN_SCORE: "60"
           WEEKEND_MIN_SECTOR_SCORE: "52"
           WEEKEND_MIN_OWN_HISTORY_OBSERVATIONS: "4"
@@ -92,11 +94,9 @@ jobs:
           WEEKEND_RANDOM_START_MAX_SEC: "600"
           WEEKEND_FUNDAMENTAL_REQUESTS_PER_MINUTE: "15"
           WEEKEND_FUNDAMENTAL_USAGE_RATIO: "0.70"
+          WEEKEND_FUNDAMENTAL_CACHE_TTL_HOURS: "168"
           WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "0.4"
           WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "1.4"
-          WEEKEND_UPDATE_NEAR_HIGH: "1"
-          WEEKEND_NEAR_HIGH_LOOKBACK_BARS: "1560"
-          WEEKEND_NEAR_HIGH_THRESHOLD_PCT: "7"
           SCAN_MAX_WORKERS: "3"
           SCAN_API_SOURCES: "FIINQUANT,VCI,KBS,DNSE"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
@@ -126,10 +126,7 @@ jobs:
             MODE="full"
             export WEEKEND_RANDOM_START_MAX_SEC="0"
           fi
-          python weekend_plus_safe.py --mode "$MODE"
-          if [ "$MODE" != "test" ]; then
-            python near_high_filter.py --mode full
-          fi
+          timeout --signal=TERM 180m python weekend_plus_safe.py --mode "$MODE"
 
       - name: Run optional VIMO weekend support
         if: steps.weekend-scanner.outcome == 'success'
@@ -138,10 +135,10 @@ jobs:
           VIMO_API_KEY: ${{ secrets.VIMO_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          VIMO_REQUESTS_PER_MINUTE: "10"
+          VIMO_REQUESTS_PER_MINUTE: "5"
           VIMO_USAGE_RATIO: "0.70"
           VIMO_DAILY_REQUEST_BUDGET: "70"
-          VIMO_MAX_WORKERS: "2"
+          VIMO_MAX_WORKERS: "1"
           VIMO_WEEKEND_MAX_SYMBOLS: "12"
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'audit' && '1' || '0' }}
         run: |
@@ -165,7 +162,6 @@ jobs:
             data/investment_theses.json
             data/fundamental_history.json
             data/signal_tracker.json
-            data/near_high_skiplist.json
             data/run_journal.json
             data/source_health.json
             data/source_routing.json
@@ -188,7 +184,6 @@ jobs:
             data/investment_theses.json \
             data/fundamental_history.json \
             data/signal_tracker.json \
-            data/near_high_skiplist.json \
             data/run_journal.json \
             data/source_health.json \
             data/source_routing.json

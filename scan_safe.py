@@ -387,8 +387,14 @@ def source_health_payload() -> dict[str, Any]:
     }
 
 
-def save_source_health(path: Path = SOURCE_HEALTH_PATH) -> dict[str, Any]:
+def save_source_health(
+    path: Path = SOURCE_HEALTH_PATH,
+    *,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     payload = source_health_payload()
+    if extra:
+        payload.update(extra)
     try:
         scan.json_save(path, payload, pretty=True)
     except Exception as exc:
@@ -441,6 +447,65 @@ def load_cache_metadata(path: Path) -> dict[str, Any]:
     return raw if isinstance(raw, dict) else {}
 
 
+def compatible_cache_paths(symbol: str, bars: int) -> list[Path]:
+    """Return the exact cache followed by larger caches that can serve it.
+
+    Daily, weekly and monthly analyzers all consume the same daily OHLCV. A
+    fresh 1,560-bar weekend cache therefore also satisfies a 520/780-bar
+    request without another provider call.
+    """
+
+    exact = scan.cache_path(symbol, bars)
+    candidates: list[tuple[int, Path]] = []
+    prefix = f"{symbol.upper()}_D_"
+    for candidate in exact.parent.glob(f"{symbol.upper()}_D_*.parquet"):
+        stem = candidate.stem
+        if not stem.startswith(prefix):
+            continue
+        try:
+            cached_bars = int(stem[len(prefix) :])
+        except ValueError:
+            continue
+        if cached_bars >= bars and candidate != exact:
+            candidates.append((cached_bars, candidate))
+    candidates.sort(key=lambda item: item[0])
+    return [exact, *(path for _, path in candidates)]
+
+
+def load_compatible_cache(
+    symbol: str,
+    bars: int,
+    *,
+    ttl_minutes: int | None = None,
+    stale_max_days: int | None = None,
+    quiet_stale: bool = False,
+) -> tuple[pd.DataFrame | None, Path | None]:
+    best: tuple[pd.DataFrame, Path] | None = None
+    for candidate in compatible_cache_paths(symbol, bars):
+        if ttl_minutes is not None:
+            if not intel.is_cache_fresh_today(candidate, ttl_minutes):
+                continue
+            cached = scan.read_cache_frame(candidate)
+        else:
+            if quiet_stale:
+                if not candidate.exists() or not stale_max_days or stale_max_days <= 0:
+                    continue
+                modified_at = datetime.fromtimestamp(candidate.stat().st_mtime, tz=scan.VN_TZ)
+                age_days = (datetime.now(scan.VN_TZ) - modified_at).total_seconds() / 86400
+                if age_days > stale_max_days:
+                    continue
+                cached = scan.read_cache_frame(candidate)
+            else:
+                cached = scan.read_stale_cache(candidate, stale_max_days)
+        cached = intel.validate_ohlcv(cached)
+        if cached is not None and len(cached) >= 80:
+            if len(cached) >= bars:
+                return cached, candidate
+            if best is None or len(cached) > len(best[0]):
+                best = (cached, candidate)
+    return best if best is not None else (None, None)
+
+
 def merge_recent_history(history: pd.DataFrame, recent: pd.DataFrame) -> pd.DataFrame | None:
     """Overlay recent validated bars on a deeper cache, preferring recent data."""
 
@@ -460,10 +525,10 @@ def merge_recent_history(history: pd.DataFrame, recent: pd.DataFrame) -> pd.Data
 def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) -> pd.DataFrame | None:
     ttl = 480 if not force_refresh else 0
     path = scan.cache_path(symbol, bars)
-    if not force_refresh and intel.is_cache_fresh_today(path, ttl):
-        cached = intel.validate_ohlcv(scan.read_cache_frame(path))
-        if cached is not None and len(cached) >= 80:
-            metadata = load_cache_metadata(path)
+    if not force_refresh:
+        cached, cached_path = load_compatible_cache(symbol, bars, ttl_minutes=ttl)
+        if cached is not None and cached_path is not None:
+            metadata = load_cache_metadata(cached_path)
             cached = fetcher.canonicalize_price_units(cached, symbol, metadata.get("data_source"))
             if cached is None:
                 return None
@@ -481,11 +546,15 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     reference = None
     old_metadata: dict[str, Any] = {}
     fiinquant_recent: pd.DataFrame | None = None
-    if path.exists():
-        reference = intel.validate_ohlcv(scan.read_cache_frame(path))
-        if reference is not None:
-            old_metadata = load_cache_metadata(path)
-            reference = fetcher.canonicalize_price_units(reference, symbol, old_metadata.get("data_source"))
+    reference, reference_path = load_compatible_cache(
+        symbol,
+        bars,
+        stale_max_days=scan.STALE_CACHE_MAX_DAYS,
+        quiet_stale=True,
+    )
+    if reference is not None and reference_path is not None:
+        old_metadata = load_cache_metadata(reference_path)
+        reference = fetcher.canonicalize_price_units(reference, symbol, old_metadata.get("data_source"))
 
     for attempt in range(FETCH_MAX_ATTEMPTS):
         for alias in symbol_aliases(symbol):
@@ -592,9 +661,13 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             wait = (2 ** attempt) + random.uniform(0, 1)
             logger.warning("[%s] retry %s/%s after %.1fs", symbol, attempt + 2, FETCH_MAX_ATTEMPTS, wait)
             time.sleep(wait)
-    cached = scan.read_stale_cache(path)
-    if cached is not None:
-        metadata = load_cache_metadata(path)
+    cached, cached_path = load_compatible_cache(
+        symbol,
+        bars,
+        stale_max_days=scan.STALE_CACHE_MAX_DAYS,
+    )
+    if cached is not None and cached_path is not None:
+        metadata = load_cache_metadata(cached_path)
         cached = fetcher.canonicalize_price_units(cached, symbol, metadata.get("data_source"))
         if cached is None:
             return None

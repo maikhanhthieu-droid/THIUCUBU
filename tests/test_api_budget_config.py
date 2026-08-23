@@ -18,6 +18,9 @@ def test_scanner_and_weekend_share_the_seventy_percent_budget() -> None:
         assert 'FIINQUANT_MONTHLY_REQUEST_BUDGET: "70000"' in text
         assert 'SCAN_SOURCE_USAGE_RATIO: "0.70"' in text
         assert 'VIMO_DAILY_REQUEST_BUDGET: "70"' in text
+        assert 'VIMO_REQUESTS_PER_MINUTE: "5"' in text
+        assert 'VIMO_USAGE_RATIO: "0.70"' in text
+        assert 'VIMO_MAX_WORKERS: "1"' in text
         assert "path: data/api_budget" in text
 
 
@@ -31,8 +34,14 @@ def test_full_audits_are_non_persistent_and_pulse_is_rate_limited() -> None:
     assert "inputs.mode != 'audit_full'" in scanner
     assert 'description: "full | test | audit"' in weekend
     assert "inputs.mode != 'audit'" in weekend
+    assert 'WEEKEND_HISTORY_BARS: "1560"' in weekend
+    assert 'WEEKEND_FUNDAMENTAL_CACHE_TTL_HOURS: "168"' in weekend
+    assert "near_high" not in weekend.lower()
+    assert "near-high" not in weekend.lower()
     assert 'PULSE_SOURCE_LIMITS: "KBS=20,VCI=20"' in pulse
     assert 'PULSE_SOURCE_USAGE_RATIO: "0.70"' in pulse
     assert 'EXTRA_ARGS+=(--no-notify)' in pulse
     assert "inputs.persist == true" in pulse
+    assert "schedule:" not in pulse
+    assert "cron:" not in pulse
     assert "path: data/api_budget" in workflow("fiinquant-check.yml")

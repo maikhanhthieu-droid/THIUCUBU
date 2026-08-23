@@ -23,7 +23,7 @@ sys.path.insert(0, repo)
 os.chdir(os.environ["TMP_RUN_DIR"])
 
 import scan
-import session_gate_near_high as entry
+import session_gate_safe as entry
 
 sent = []
 
@@ -69,7 +69,7 @@ scan.send_chunks = fake_send_chunks
 entry.gate.plus.scan.send_chunks = fake_send_chunks
 entry.gate.plus.sess.SESSION_RANDOM_START_MAX = 0
 
-sys.argv = ["session_gate_near_high.py", "--mode", "test"]
+sys.argv = ["session_gate_safe.py", "--mode", "test"]
 asyncio.run(entry.gate.plus.main())
 
 latest = scan.json_load(scan.DATA_DIR / "session_alerts_latest.json", {})

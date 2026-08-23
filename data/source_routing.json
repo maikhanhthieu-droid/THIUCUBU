@@ -8,7 +8,7 @@
     "strong_score_threshold": 72,
     "near_break_score_threshold": 62,
     "unhealthy_source_score": 40,
-    "standard_fiinquant_emergency_fallback": true,
+    "standard_fiinquant_emergency_fallback": false,
     "priority_source_order": [
       "FIINQUANT",
       "VCI",
@@ -952,7 +952,7 @@
   "meta": {
     "priority_count": 32,
     "standard_count": 143,
-    "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE; FiinQuant chỉ cứu hộ khi cả ba nguồn thường lỗi.",
+    "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
       "VCI": 38,
       "KBS": 55,

@@ -22,7 +22,7 @@ def routing_with_priority(*symbols: str) -> dict:
     return routing
 
 
-def test_priority_uses_fiinquant_first_and_standard_uses_it_only_as_emergency() -> None:
+def test_priority_uses_fiinquant_and_standard_never_spends_its_symbol_quota() -> None:
     routing = routing_with_priority("VNM")
 
     priority = source_router.source_order("VNM", SOURCES, routing=routing)
@@ -30,8 +30,9 @@ def test_priority_uses_fiinquant_first_and_standard_uses_it_only_as_emergency() 
 
     assert priority[0] == "FIINQUANT"
     assert priority[1:] == [source for source in priority if source != "FIINQUANT"]
-    assert standard[-1] == "FIINQUANT"
-    assert set(standard[:3]) == {"VCI", "KBS", "DNSE"}
+    assert "FIINQUANT" not in standard
+    assert set(standard) == {"VCI", "KBS", "DNSE"}
+    assert source_router.source_order("HPG", ["FIINQUANT"], routing=routing) == []
 
 
 def test_unhealthy_fiinquant_yields_to_fallback_sources() -> None:
@@ -52,7 +53,7 @@ def test_manual_standard_override_wins() -> None:
 
     order = source_router.source_order("VNM", SOURCES, routing=routing)
 
-    assert order[-1] == "FIINQUANT"
+    assert "FIINQUANT" not in order
 
 
 def test_update_promotes_attention_and_balances_remaining_symbols(tmp_path: Path) -> None:
@@ -150,6 +151,8 @@ def test_manual_priority_cannot_exceed_fiinquant_free_plan_cap(tmp_path: Path) -
     routing = source_router.default_routing()
     routing["manual"]["force_fiinquant"] = symbols
     source_router.save_routing(routing, path)
+
+    assert len(source_router.priority_symbols(source_router.load_routing(path))) == 32
 
     updated = source_router.update_routing([], universe=symbols, path=path)
 
