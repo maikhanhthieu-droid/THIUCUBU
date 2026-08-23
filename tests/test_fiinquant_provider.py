@@ -39,6 +39,20 @@ def test_aliases_and_index_symbols_are_normalized(monkeypatch) -> None:
     assert fiin.canonical_symbol("UPCOMINDEX") == "UpcomIndex"
 
 
+def test_fiinquant_rejects_python_311_with_clear_error(monkeypatch) -> None:
+    class Python311:
+        major = 3
+        minor = 11
+
+        def __lt__(self, other):
+            return (self.major, self.minor) < other
+
+    monkeypatch.setattr(fiin.sys, "version_info", Python311())
+
+    with pytest.raises(fiin.FiinQuantError, match=r"requires Python 3\.12\+"):
+        fiin._load_session_type()
+
+
 def test_healthy_fiinquant_is_first_only_for_priority_symbols(monkeypatch) -> None:
     monkeypatch.setattr(scan_safe, "API_SOURCES", ["FIINQUANT", "VCI", "KBS", "DNSE"])
     monkeypatch.setattr(scan_safe, "PREVIOUS_SOURCE_HEALTH", {"sources": {}})

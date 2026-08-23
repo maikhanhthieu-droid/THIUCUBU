@@ -1,3 +1,5 @@
+# FiinQuantX 0.1.67 requires Python 3.12+ because its runtime uses PEP 701
+# f-strings, despite the broader Python range currently declared by the wheel.
 # Runtime dependencies are resolved from PyPI first. The FiinQuantX wheel is
 # installed separately with --no-deps from FiinQuant's official package index;
 # this avoids querying that small index for every transitive dependency.

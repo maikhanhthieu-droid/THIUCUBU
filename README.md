@@ -267,6 +267,9 @@ python -m pytest -q
 
 Nếu muốn dùng FiinQuantX khi chạy local:
 
+> FiinQuantX `0.1.67` cần Python `3.12+`. Scanner vẫn chạy bằng các nguồn dự
+> phòng nếu máy dùng Python cũ hơn, nhưng nhánh FiinQuant sẽ được bỏ qua.
+
 ```bash
 python -m pip install -r requirements-fiinquant.txt
 python -m pip install --no-deps --extra-index-url https://fiinquant.github.io/fiinquantx/simple fiinquantx==0.1.67

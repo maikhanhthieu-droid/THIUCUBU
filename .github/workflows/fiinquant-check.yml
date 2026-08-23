@@ -22,7 +22,8 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          # FiinQuantX 0.1.67 uses PEP 701 f-strings and requires Python 3.12+.
+          python-version: "3.12"
           cache: "pip"
 
       - name: Verify Secrets exist

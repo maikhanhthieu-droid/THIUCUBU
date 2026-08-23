@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 import os
 import re
+import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -139,6 +140,14 @@ _SESSION_LOCK = threading.Lock()
 
 
 def _load_session_type() -> Any:
+    # FiinQuantX 0.1.67 contains PEP 701 f-strings in its encrypted runtime
+    # modules.  They fail during import on Python 3.11 even though the wheel's
+    # metadata currently advertises support for older Python versions.
+    if sys.version_info < (3, 12):
+        raise FiinQuantError(
+            "FiinQuantX 0.1.67 requires Python 3.12+; "
+            f"current runtime is {sys.version_info.major}.{sys.version_info.minor}"
+        )
     try:
         from FiinQuantX import FiinSession
     except ImportError as exc:  # pragma: no cover - depends on optional SDK install
