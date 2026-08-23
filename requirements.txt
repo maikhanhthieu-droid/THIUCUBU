@@ -1,4 +1,7 @@
 vnstock==4.0.2
+# vnstock 4.0.2 imports MPlot from the legacy package.  Newer ezchart
+# releases removed that import path and break VCI explorer loading on CI.
+vnstock_ezchart==0.0.3
 vietfin==0.2.0
 pydantic-settings>=2.0.0,<3.0.0
 pandas>=2.0.0,<3.0.0
