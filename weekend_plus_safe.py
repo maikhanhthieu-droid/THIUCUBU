@@ -74,8 +74,15 @@ def fetch_fundamental_safe(symbol: str) -> Any:
         return None
 
 
-def build_report_compat(opportunities, sectors, mode, near_high=None, missing_fundamental=None) -> str:
-    report = _old_build_report(opportunities, sectors, mode)
+def build_report_compat(
+    opportunities,
+    sectors,
+    mode,
+    near_high=None,
+    missing_fundamental=None,
+    weekly_watch=None,
+) -> str:
+    report = _old_build_report(opportunities, sectors, mode, weekly_watch)
     if missing_fundamental:
         preview = ",".join(missing_fundamental[:12])
         suffix = "..." if len(missing_fundamental) > 12 else ""
@@ -160,18 +167,26 @@ async def main() -> None:
             plus.weekend.save_fundamental_history(packets)
         sectors = plus.weekend.build_sector_snapshots(packets)
         opportunities = plus.weekend.build_opportunities(packets, sectors)
+        weekly_watch = plus.weekend.weekly_bottom_watch.rank_packets(packets)
         near_high = []
         build_near_high = getattr(plus.weekend, "build_near_high_snapshots", None)
         if callable(build_near_high) and plus.weekend.UPDATE_NEAR_HIGH and mode != "test":
             near_high = build_near_high(packets)
-        plus.weekend.save_outputs(opportunities, sectors)
+        plus.weekend.save_outputs(opportunities, sectors, weekly_watch)
         if mode != "test":
             plus.weekend.source_router.update_from_weekend(
                 opportunities,
                 universe=scan.ALL_TICKERS,
             )
 
-        report = plus.weekend.build_report(opportunities, sectors, mode, near_high, missing_fundamental)
+        report = plus.weekend.build_report(
+            opportunities,
+            sectors,
+            mode,
+            near_high,
+            missing_fundamental,
+            weekly_watch,
+        )
         telegram_sent = bool(await scan.send_chunks("*THIEUCUBU WEEKEND*", report)) and not scan.DRY_RUN
         scan_safe.save_source_health()
         run_journal.finish_run(
@@ -183,7 +198,12 @@ async def main() -> None:
             elapsed_sec=time.time() - started,
             telegram_sent=telegram_sent,
         )
-        plus.weekend.logger.info("Weekend opportunities found: %s near_high_skip=%s", len(opportunities), len(near_high))
+        plus.weekend.logger.info(
+            "Weekend opportunities found: %s weekly_bottom_watch=%s near_high_skip=%s",
+            len(opportunities),
+            len(weekly_watch),
+            len(near_high),
+        )
     except Exception as exc:
         scan_safe.save_source_health()
         run_journal.fail_run(run_id, f"weekend_{mode}", exc, elapsed_sec=time.time() - started)

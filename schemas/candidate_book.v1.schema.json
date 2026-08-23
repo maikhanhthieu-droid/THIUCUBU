@@ -13,6 +13,11 @@
       "maxItems": 2,
       "items": {"$ref": "#/$defs/candidate"}
     },
+    "weekly_bottom_watch": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {"type": "object"}
+    },
     "watchlist": {
       "type": "array",
       "items": {"$ref": "#/$defs/candidate"}

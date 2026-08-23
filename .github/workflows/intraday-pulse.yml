@@ -59,6 +59,7 @@ jobs:
           PULSE_BATCH_DELAY_SEC: "0.25"
           PULSE_MAX_SYMBOLS: "1800"
           PULSE_MIN_INTERVAL_MINUTES: "20"
+          PULSE_ALERT_LIMIT: "5"
         run: |
           EXTRA_ARGS=()
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then

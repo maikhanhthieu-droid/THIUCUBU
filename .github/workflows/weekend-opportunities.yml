@@ -73,6 +73,7 @@ jobs:
           WEEKEND_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'full' }}
           WEEKEND_TOP_N: "20"
           WEEKEND_CONVICTION_LIMIT: "2"
+          WEEKEND_BOTTOM_WATCH_LIMIT: "5"
           WEEKEND_HISTORY_BARS: "780"
           WEEKEND_MIN_SCORE: "60"
           WEEKEND_MIN_SECTOR_SCORE: "52"
@@ -138,6 +139,7 @@ jobs:
           name: thieucutoo-weekend-${{ github.run_number }}
           path: |
             data/weekend_opportunities_latest.json
+            data/weekly_bottom_watch_latest.json
             data/filter_feed_latest.json
             data/weekend_opportunities_history.json
             data/candidate_book_latest.json
@@ -160,6 +162,7 @@ jobs:
             --message "chore: update weekend opportunities [skip ci]" \
             --paths \
             data/weekend_opportunities_latest.json \
+            data/weekly_bottom_watch_latest.json \
             data/filter_feed_latest.json \
             data/weekend_opportunities_history.json \
             data/candidate_book_latest.json \

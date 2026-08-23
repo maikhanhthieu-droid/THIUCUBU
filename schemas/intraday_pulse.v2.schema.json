@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/intraday_pulse.v2.schema.json",
+  "title": "THIEUCUBU Intraday Pulse v2",
+  "type": "object",
+  "required": ["schema_version", "updated_at", "trading_date", "status", "top_symbols", "events"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.intraday_pulse.v2"},
+    "updated_at": {"type": "string"},
+    "trading_date": {"type": "string"},
+    "status": {"enum": ["ok", "degraded"]},
+    "raw_event_count": {"type": "integer", "minimum": 0},
+    "alert_limit": {"type": "integer", "minimum": 1, "maximum": 20},
+    "top_symbols": {"type": "array", "maxItems": 5, "items": {"type": "string"}},
+    "events": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["symbol", "event_type", "direction", "score", "quality_state", "out_of_band"],
+        "properties": {
+          "symbol": {"type": "string"},
+          "event_type": {"type": "string"},
+          "direction": {"enum": ["UP", "DOWN", "NEUTRAL"]},
+          "score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "quality_state": {"type": "string"},
+          "quality_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "out_of_band": {"type": "boolean"},
+          "outlier_z": {"type": ["number", "null"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

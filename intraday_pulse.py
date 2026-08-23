@@ -32,8 +32,9 @@ VN_TZ = timezone(timedelta(hours=7))
 DATA_DIR = Path("data")
 STATE_PATH = DATA_DIR / "intraday_pulse_state.json"
 LATEST_PATH = DATA_DIR / "intraday_pulse_latest.json"
-SCHEMA_VERSION = "thieucubu.intraday_pulse.v1"
+SCHEMA_VERSION = "thieucubu.intraday_pulse.v2"
 SYMBOL_LIMIT = 12
+DEFAULT_ALERT_LIMIT = 5
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,11 @@ class PulseEvent:
     source: str
     verified: bool | None
     reasons: list[str]
+    out_of_band: bool = False
+    outlier_z: float | None = None
+    quality_state: str = "NO_DATA"
+    quality_score: int = 0
+    primary_stream: str = "unclassified"
 
 
 def _safe(value: Any, default: float = 0.0) -> float:
@@ -324,6 +330,26 @@ def _event_type(
     return "SESSION_MOVER", "UP" if change >= 0 else "DOWN"
 
 
+def _cross_section_return_band(changes: Iterable[float]) -> tuple[float, float, float]:
+    """Return median/lower/upper robust bounds for one 30-minute cross-section.
+
+    A static fallback is intentionally used for small diagnostic samples.  In a
+    live board the MAD band removes broad-market drift, so OUT-BAND means a
+    symbol moved unusually versus the rest of the market, not merely that the
+    whole market rose or fell together.
+    """
+
+    series = pd.Series([_safe(value) for value in changes], dtype="float64").dropna()
+    if len(series) < 20:
+        return 0.0, -2.5, 2.5
+    median = float(series.median())
+    mad = float((series - median).abs().median())
+    robust_sigma = max(1.4826 * mad, 0.18)
+    lower = min(-1.0, median - 3.2 * robust_sigma)
+    upper = max(1.0, median + 3.2 * robust_sigma)
+    return median, lower, upper
+
+
 def compare_snapshots(
     current: Mapping[str, Mapping[str, Any]],
     previous: Mapping[str, Mapping[str, Any]],
@@ -334,6 +360,21 @@ def compare_snapshots(
 
     events: list[PulseEvent] = []
     rate = 30.0 / max(elapsed_minutes, 5.0)
+    changes: dict[str, float] = {}
+    for symbol, now in current.items():
+        before = previous.get(symbol)
+        if not isinstance(before, Mapping):
+            continue
+        price_now = _safe(now.get("close"))
+        price_before = _safe(before.get("close"))
+        if price_now <= 0 or price_before <= 0:
+            continue
+        value = (price_now / price_before - 1.0) * 100.0
+        if abs(value) <= 20:
+            changes[symbol] = value
+    band_median, band_lower, band_upper = _cross_section_return_band(changes.values())
+    band_sigma = max((band_upper - band_median) / 3.2, (band_median - band_lower) / 3.2, 0.18)
+
     for symbol, now in current.items():
         before = previous.get(symbol)
         if not isinstance(before, Mapping):
@@ -358,6 +399,8 @@ def compare_snapshots(
         ask_volume = _safe(now.get("ask_volume_1"))
         imbalance = bid_volume / ask_volume if bid_volume > 0 and ask_volume > 0 else None
 
+        out_of_band = bool(change >= band_upper or change <= band_lower)
+        outlier_z = (change - band_median) / band_sigma
         score = 0
         absolute_change = abs(change)
         if absolute_change >= 3.0:
@@ -395,6 +438,8 @@ def compare_snapshots(
             score += 5
         if value_30m >= 25 and absolute_change <= 0.6:
             score += 10
+        if out_of_band:
+            score += 16
 
         liquid_enough = value_30m >= 1 or total_value >= 5
         material = bool(
@@ -403,11 +448,14 @@ def compare_snapshots(
                 score >= 38
                 or (absolute_change >= 2.5 and value_30m >= 0.5)
                 or crossed_session_band
+                or (out_of_band and value_30m >= 0.5)
             )
         )
         if not material:
             continue
         event_type, direction = _event_type(change, value_30m, close_position, imbalance)
+        if out_of_band:
+            event_type = "OUT_BAND_UP" if change > 0 else "OUT_BAND_DOWN"
         reasons: list[str] = []
         if absolute_change >= 0.7:
             reasons.append(f"giá 30p {change:+.2f}%")
@@ -415,6 +463,8 @@ def compare_snapshots(
             reasons.append(f"GTGD 30p {value_30m:.1f} tỷ")
         if crossed_session_band:
             reasons.append(f"vượt ngưỡng phiên {session_change:+.2f}%")
+        if out_of_band:
+            reasons.append(f"OUT-BAND 30p z={outlier_z:+.1f}")
         if close_position >= 0.82:
             reasons.append("bám đỉnh phiên")
         elif close_position <= 0.18:
@@ -435,9 +485,127 @@ def compare_snapshots(
                 source=str(now.get("source") or "UNKNOWN"),
                 verified=None,
                 reasons=reasons[:4],
+                out_of_band=out_of_band,
+                outlier_z=round(outlier_z, 2) if out_of_band else None,
             )
         )
     return sorted(events, key=lambda item: (item.score, item.value_30m_billion), reverse=True)
+
+
+def load_quality_context(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Load the last deep-scan state used to remove weak 30-minute noise."""
+
+    payload = _read_json(path or DATA_DIR / "filter_feed_latest.json", {})
+    facts = payload.get("facts") if isinstance(payload, Mapping) else None
+    if not isinstance(facts, list):
+        return {}
+    output: dict[str, dict[str, Any]] = {}
+    for fact in facts:
+        if not isinstance(fact, Mapping):
+            continue
+        symbol = _symbol(fact.get("symbol"))
+        if not symbol:
+            continue
+        classification = fact.get("classification") if isinstance(fact.get("classification"), Mapping) else {}
+        structure = fact.get("market_structure") if isinstance(fact.get("market_structure"), Mapping) else {}
+        frames = structure.get("timeframes") if isinstance(structure.get("timeframes"), Mapping) else {}
+        scores = fact.get("scores") if isinstance(fact.get("scores"), Mapping) else {}
+        overall_state = str(
+            classification.get("market_state") or structure.get("overall_state") or "NO_DATA"
+        ).upper()
+        daily_state = str((frames.get("1D") or {}).get("state") or "NO_DATA").upper()
+        weekly_state = str((frames.get("1W") or {}).get("state") or "NO_DATA").upper()
+        primary_stream = str(classification.get("primary_stream") or "unclassified").lower()
+        score = int(max(_safe(scores.get("overall")), _safe(scores.get("advanced"))))
+        failed = bool(fact.get("failed_break"))
+        healthy = bool(
+            not failed
+            and overall_state not in {"DISTRIBUTION", "MARKDOWN"}
+            and daily_state not in {"DISTRIBUTION", "MARKDOWN"}
+            and weekly_state not in {"DISTRIBUTION", "MARKDOWN"}
+        )
+        accumulation = bool(
+            overall_state in {"ACCUMULATION", "REACCUMULATION"}
+            or daily_state in {"ACCUMULATION", "REACCUMULATION"}
+            or primary_stream == "early"
+        )
+        strong = bool(
+            overall_state == "OPPORTUNITY"
+            or primary_stream == "opportunity"
+            or score >= 70
+        )
+        eligible = bool(healthy and (strong or accumulation or score >= 58))
+        if strong and healthy:
+            label = "MẠNH"
+        elif accumulation and healthy:
+            label = "TÍCH LŨY"
+        elif eligible:
+            label = "TRẠNG THÁI ĐẸP"
+        else:
+            label = "KHÔNG ĐẠT"
+        output[symbol] = {
+            "eligible": eligible,
+            "label": label,
+            "score": score,
+            "primary_stream": primary_stream,
+            "overall_state": overall_state,
+            "daily_state": daily_state,
+            "weekly_state": weekly_state,
+            "failed_break": failed,
+        }
+    return output
+
+
+def select_actionable_events(
+    events: list[PulseEvent],
+    quality_context: Mapping[str, Mapping[str, Any]],
+    *,
+    portfolio_symbols: Iterable[str] = (),
+    limit: int = DEFAULT_ALERT_LIMIT,
+) -> list[PulseEvent]:
+    """Keep only quality-state pulses, portfolio risk, and true OUT-BAND moves."""
+
+    portfolio = {_symbol(value) for value in portfolio_symbols}
+    ranked: list[tuple[float, PulseEvent]] = []
+    for event in events:
+        if event.event_type == "SOURCE_MISMATCH" or event.verified is False:
+            continue
+        context = quality_context.get(event.symbol, {})
+        eligible = bool(context.get("eligible"))
+        in_portfolio = event.symbol in portfolio
+        out_band_exception = bool(
+            event.out_of_band
+            and event.score >= 48
+            and event.value_30m_billion >= 0.5
+            and (event.direction == "UP" or eligible or in_portfolio)
+        )
+        if event.direction == "UP":
+            keep = (eligible and event.score >= 38) or out_band_exception or (in_portfolio and event.score >= 38)
+        elif event.direction == "DOWN":
+            keep = (eligible or in_portfolio) and (event.out_of_band or event.score >= 58)
+        else:
+            keep = eligible and event.score >= 48 and event.value_30m_billion >= 3
+        if not keep:
+            continue
+        data = asdict(event)
+        data["quality_state"] = (
+            "DANH MỤC"
+            if in_portfolio
+            else str(context.get("label") or ("OUT-BAND" if event.out_of_band else "NO_DATA"))
+        )
+        data["quality_score"] = int(context.get("score") or 0)
+        data["primary_stream"] = str(context.get("primary_stream") or "unclassified")
+        enriched = PulseEvent(**data)
+        priority = (
+            event.score
+            + min(enriched.quality_score, 97) * 0.22
+            + (12 if event.out_of_band else 0)
+            + (10 if in_portfolio else 0)
+            + (5 if event.direction == "UP" else 0)
+        )
+        ranked.append((priority, enriched))
+    ranked.sort(key=lambda item: (item[0], item[1].value_30m_billion), reverse=True)
+    return [item for _, item in ranked[: max(1, limit)]]
 
 
 def compact_snapshot(board: Mapping[str, Mapping[str, Any]]) -> dict[str, dict[str, float]]:
@@ -551,8 +719,10 @@ def pulse_posture(market: Mapping[str, Any] | None, events: list[PulseEvent]) ->
 def _event_line(item: PulseEvent) -> str:
     verification = "2 nguồn" if item.verified is True else "lệch nguồn" if item.verified is False else "1 nguồn"
     event_name = item.event_type.replace("_", " ")
+    band = " | OUT-BAND" if item.out_of_band else ""
     return (
-        f"`{item.symbol}` P{item.score}/97 | {event_name} | Giá {item.price:.2f} | "
+        f"`{item.symbol}` [{item.quality_state}] P{item.score}/97 · nền {item.quality_score}/97 | "
+        f"{event_name}{band} | Giá {item.price:.2f} | "
         f"30p {item.change_30m_pct:+.2f}% | Phiên {item.session_change_pct:+.2f}% | "
         f"GTGD30 {item.value_30m_billion:.1f} tỷ | {verification}"
     )
@@ -567,6 +737,7 @@ def build_report(
     portfolio_symbols: list[str],
     fetch_meta: Mapping[str, Any],
     elapsed_minutes: float | None,
+    raw_event_count: int | None = None,
 ) -> str:
     elapsed_text = "gieo baseline" if elapsed_minutes is None else f"so với {elapsed_minutes:.0f} phút trước"
     source_bits = ", ".join(
@@ -586,36 +757,22 @@ def build_report(
     else:
         lines.append("*VNINDEX* chưa lấy được dữ liệu mới; Pulse vẫn tiếp tục quét cổ phiếu.")
 
-    up = [item for item in events if item.direction == "UP"]
-    down = [item for item in events if item.direction == "DOWN"]
-    neutral = [item for item in events if item.direction == "NEUTRAL"]
     lines += [
         "",
-        "*MÃ ĐỘT BIẾN TÓM TẮT*",
-        "Tăng: " + (", ".join(f"`{item.symbol}` {item.score}" for item in up[:15]) or "không có"),
-        "Giảm: " + (", ".join(f"`{item.symbol}` {item.score}" for item in down[:15]) or "không có"),
-        "Dòng tiền: " + (", ".join(f"`{item.symbol}` {item.score}" for item in neutral[:10]) or "không có"),
+        f"*TOP ĐỘT BIẾN CHẤT LƯỢNG — {len(events)}/{raw_event_count if raw_event_count is not None else len(events)} MÃ*",
+        "Mã: " + (", ".join(f"`{item.symbol}` {item.score}" for item in events) or "không có"),
     ]
     if elapsed_minutes is None:
         lines += ["", "Đã tạo baseline đầu buổi; lượt Pulse kế tiếp mới tính biến động 30 phút."]
     elif events:
-        lines += ["", "*CHI TIẾT ĐÁNG CHÚ Ý*"]
-        lines += [_event_line(item) for item in events[:20]]
+        lines += [_event_line(item) for item in events]
     else:
-        lines += ["", "Không có mã vượt ngưỡng đột biến; hệ thống vẫn lưu snapshot cho lượt sau."]
+        lines += ["", "Không có mã mạnh/tích lũy hoặc OUT-BAND đủ chuẩn; không gửi danh sách dài để tránh nhiễu."]
 
-    lines += ["", "*PORTFOLIO PULSE*", "Mã: " + (", ".join(f"`{item}`" for item in portfolio_symbols) or "chưa có")]
-    for symbol in portfolio_symbols:
-        row = board.get(symbol)
-        if not row:
-            lines.append(f"`{symbol}` NO_DATA")
-            continue
-        session_change = (_safe(row.get("close")) / max(_safe(row.get("reference")), 1e-9) - 1) * 100
-        lines.append(
-            f"`{symbol}` Giá {_safe(row.get('close')):.2f} | Phiên {session_change:+.2f}% | "
-            f"GTGD {_safe(row.get('value')) / 1_000_000_000:.1f} tỷ | {row.get('source', 'UNKNOWN')}"
-        )
-    lines += ["", "Pulse chỉ phát hiện bất thường; quyết định Lướt/Cầm/Gom chốt tại báo cáo 5 luồng."]
+    portfolio_hits = [item.symbol for item in events if item.symbol in set(portfolio_symbols)]
+    if portfolio_hits:
+        lines += ["", "Danh mục có đột biến: " + ", ".join(f"`{item}`" for item in portfolio_hits)]
+    lines += ["", "Pulse 30P chỉ báo bất thường; Lướt/Cầm/Gom vẫn do báo cáo 5 luồng xác nhận."]
     return "\n".join(lines)
 
 
@@ -684,10 +841,21 @@ def run(*, force: bool = False, notify: bool = True) -> dict[str, Any]:
     )
     if not previous or previous_date != now.date().isoformat() or elapsed is None or elapsed > 95 or afternoon_reset:
         elapsed = None
-    events = compare_snapshots(board, previous, elapsed_minutes=elapsed) if elapsed is not None else []
-    events = verify_events(events)
-    market = fetch_vnindex_snapshot()
     portfolio_symbols = load_watch_symbols()
+    raw_events = compare_snapshots(board, previous, elapsed_minutes=elapsed) if elapsed is not None else []
+    raw_events = verify_events(raw_events)
+    quality_context = load_quality_context()
+    alert_limit = min(
+        DEFAULT_ALERT_LIMIT,
+        max(1, _integer(os.getenv("PULSE_ALERT_LIMIT", str(DEFAULT_ALERT_LIMIT)), DEFAULT_ALERT_LIMIT)),
+    )
+    events = select_actionable_events(
+        raw_events,
+        quality_context,
+        portfolio_symbols=portfolio_symbols,
+        limit=alert_limit,
+    )
+    market = fetch_vnindex_snapshot()
     report = build_report(
         generated_at=now,
         board=board,
@@ -696,6 +864,7 @@ def run(*, force: bool = False, notify: bool = True) -> dict[str, Any]:
         portfolio_symbols=portfolio_symbols,
         fetch_meta=fetch_meta,
         elapsed_minutes=elapsed,
+        raw_event_count=len(raw_events),
     )
     event_rows = [asdict(item) for item in events]
     latest_payload = {
@@ -709,7 +878,9 @@ def run(*, force: bool = False, notify: bool = True) -> dict[str, Any]:
         "fetch": fetch_meta,
         "market": market,
         "portfolio_symbols": portfolio_symbols,
-        "top_symbols": [item.symbol for item in events[:30]],
+        "raw_event_count": len(raw_events),
+        "alert_limit": alert_limit,
+        "top_symbols": [item.symbol for item in events],
         "events": event_rows,
     }
     history = state.get("events", []) if isinstance(state, dict) else []

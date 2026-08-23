@@ -23,6 +23,7 @@ import scan_safe
 import scoring
 import sector_rotation
 import source_router
+import weekly_bottom_watch
 import weekly_sniper
 
 logging.basicConfig(
@@ -992,7 +993,12 @@ def sector_line(item: SectorSnapshot) -> str:
     )
 
 
-def build_report(opportunities: list[Opportunity], sectors: dict[str, SectorSnapshot], mode: str) -> str:
+def build_report(
+    opportunities: list[Opportunity],
+    sectors: dict[str, SectorSnapshot],
+    mode: str,
+    weekly_watch: list[weekly_bottom_watch.WeeklyBottomCandidate] | None = None,
+) -> str:
     now = datetime.now(VN_TZ).strftime("%d/%m/%Y %H:%M")
     top = opportunities[:TOP_N]
     selected = [item for item in top if item.selected][:2]
@@ -1007,6 +1013,10 @@ def build_report(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
         "*💎 TỐI ĐA 2 MÃ ƯU TIÊN GOM*",
     ]
     lines += [opportunity_line(item) for item in selected] or ["Tuần này chưa có mã đồng thời đủ 5 cửa; không ép chọn."]
+    lines += ["", "*🎯 CANH GOM SỚM — 2/3 ĐÁY KHUNG TUẦN*"]
+    lines += [weekly_bottom_watch.format_line(item) for item in (weekly_watch or [])] or [
+        "Chưa có mã đồng thời đủ 2 đáy tuần, chiết khấu và động lượng đáy."
+    ]
     lines += ["", "*🟢 CẤU TRÚC ĐANG CHUẨN BỊ*"]
     lines += [opportunity_line(item) for item in prep[:8]] or ["Chưa có mã chuẩn bị đủ rõ."]
     lines += ["", "*👀 WATCHLIST ĐỊNH GIÁ / CHỜ GIÁ*"]
@@ -1056,9 +1066,15 @@ def update_investment_theses(opportunities: list[Opportunity], updated_at: str) 
     return payload
 
 
-def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnapshot]) -> None:
+def save_outputs(
+    opportunities: list[Opportunity],
+    sectors: dict[str, SectorSnapshot],
+    weekly_watch: list[weekly_bottom_watch.WeeklyBottomCandidate] | None = None,
+) -> None:
     now = datetime.now(VN_TZ).isoformat(timespec="seconds")
     selected = [item for item in opportunities if item.selected][:2]
+    weekly_watch = weekly_watch or []
+    weekly_watch_payload = weekly_bottom_watch.payload(weekly_watch, now)
     systemic, sector_states = load_weekend_market_context()
     latest = {
         "schema_version": "thieucubu.weekend_opportunities.v2",
@@ -1074,6 +1090,7 @@ def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
             "hard_lock_new_accumulation": bool(systemic.get("hard_lock_new_accumulation")),
         },
         "convictions": [asdict(item) for item in selected],
+        "weekly_bottom_watch": weekly_watch_payload,
         "top": [asdict(item) for item in opportunities[:TOP_N]],
         "sectors": [asdict(item) for item in sorted(sectors.values(), key=lambda x: x.score, reverse=True)],
     }
@@ -1085,10 +1102,12 @@ def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
             "updated_at": now,
             "systemic_regime": systemic,
             "convictions": latest["convictions"],
+            "weekly_bottom_watch": weekly_watch_payload["candidates"],
             "watchlist": [asdict(item) for item in opportunities if not item.selected][:TOP_N],
         },
         pretty=False,
     )
+    scan.json_save(DATA_DIR / "weekly_bottom_watch_latest.json", weekly_watch_payload, pretty=False)
     update_investment_theses(opportunities, now)
 
     history_path = DATA_DIR / "weekend_opportunities_history.json"
@@ -1098,6 +1117,7 @@ def save_outputs(opportunities: list[Opportunity], sectors: dict[str, SectorSnap
             "updated_at": now,
             "systemic_state": systemic.get("state"),
             "convictions": latest["convictions"],
+            "weekly_bottom_watch": weekly_watch_payload["candidates"],
             "top": latest["top"][:10],
         }
     )
@@ -1139,11 +1159,12 @@ async def main() -> None:
     sectors = build_sector_snapshots(packets)
     save_fundamental_history(packets)
     opportunities = build_opportunities(packets, sectors)
-    save_outputs(opportunities, sectors)
+    weekly_watch = weekly_bottom_watch.rank_packets(packets)
+    save_outputs(opportunities, sectors, weekly_watch)
     if mode != "test":
         source_router.update_from_weekend(opportunities, universe=scan.ALL_TICKERS)
 
-    report = build_report(opportunities, sectors, mode)
+    report = build_report(opportunities, sectors, mode, weekly_watch)
     await scan.send_chunks("*THIEUCUBU WEEKEND*", report)
     logger.info("Weekend opportunities found: %s", len(opportunities))
 

@@ -1,0 +1,20 @@
+{
+  "schema_version": "thieucubu.weekly_bottom_watch.v1",
+  "updated_at": null,
+  "policy": {
+    "advisory_only": true,
+    "max_candidates": 5,
+    "requires": [
+      "weekly_2_or_3_bottoms",
+      "deep_discount",
+      "MACD_RSI_SMI_bottom_momentum"
+    ],
+    "flow_is_bonus": [
+      "OBV",
+      "CMF",
+      "MFI"
+    ],
+    "never_average_below_invalidation": true
+  },
+  "candidates": []
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/maikhanhthieu-droid/THIUCUBU/schemas/weekly_bottom_watch.v1.schema.json",
+  "title": "THIEUCUBU Weekly Bottom Watch v1",
+  "type": "object",
+  "required": ["schema_version", "updated_at", "policy", "candidates"],
+  "properties": {
+    "schema_version": {"const": "thieucubu.weekly_bottom_watch.v1"},
+    "updated_at": {"type": ["string", "null"]},
+    "policy": {
+      "type": "object",
+      "required": ["advisory_only", "max_candidates", "never_average_below_invalidation"],
+      "properties": {
+        "advisory_only": {"const": true},
+        "max_candidates": {"type": "integer", "minimum": 1, "maximum": 10},
+        "never_average_below_invalidation": {"const": true}
+      },
+      "additionalProperties": true
+    },
+    "candidates": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": [
+          "symbol", "score", "label", "action", "bottom_count", "discount_104w_pct",
+          "technical_score", "flow_score", "structure_score", "trigger_price", "invalidation_price"
+        ],
+        "properties": {
+          "symbol": {"type": "string"},
+          "score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "label": {"type": "string", "pattern": "^W-PRE-"},
+          "bottom_count": {"type": "integer", "minimum": 2, "maximum": 3},
+          "probe_fraction": {"type": "number", "minimum": 0, "maximum": 0.2},
+          "discount_104w_pct": {"type": "number", "minimum": 0},
+          "technical_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "flow_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "structure_score": {"type": "integer", "minimum": 0, "maximum": 97},
+          "trigger_price": {"type": ["number", "null"]},
+          "invalidation_price": {"type": ["number", "null"]}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

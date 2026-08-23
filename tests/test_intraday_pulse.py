@@ -90,7 +90,7 @@ def test_compare_snapshots_detects_material_up_and_down_events() -> None:
     assert "high" not in compact["AAA"]
 
 
-def test_pulse_report_lists_symbols_first_and_portfolio_even_without_event() -> None:
+def test_pulse_report_is_compact_and_lists_filtered_symbols_first() -> None:
     events = pulse.compare_snapshots(
         {
             "AAA": {
@@ -122,11 +122,88 @@ def test_pulse_report_lists_symbols_first_and_portfolio_even_without_event() -> 
         elapsed_minutes=30,
     )
 
-    assert "*MÃ ĐỘT BIẾN TÓM TẮT*" in report
-    assert "Tăng: `AAA`" in report
-    assert "*PORTFOLIO PULSE*" in report
-    assert "`NVL` Giá 13.50" in report
-    assert "`SMC` NO_DATA" in report
+    assert "*TOP ĐỘT BIẾN CHẤT LƯỢNG" in report
+    assert "Mã: `AAA`" in report
+    assert "`AAA` [NO_DATA]" in report
+    assert "*PORTFOLIO PULSE*" not in report
+    assert "`SMC` NO_DATA" not in report
+
+
+def test_cross_section_out_band_detects_only_the_true_tail() -> None:
+    previous = {}
+    current = {}
+    for index in range(30):
+        symbol = f"A{index:02d}"
+        previous[symbol] = {"close": 10.0, "reference": 10.0, "value": 2_000_000_000}
+        change = 0.001 * ((index % 5) - 2)
+        current[symbol] = {
+            "close": 10.0 * (1 + change),
+            "reference": 10.0,
+            "high": 10.1,
+            "low": 9.9,
+            "value": 2_100_000_000,
+            "source": "KBS",
+        }
+    previous["HOT"] = {"close": 10.0, "reference": 10.0, "value": 2_000_000_000}
+    current["HOT"] = {
+        "close": 10.28,
+        "reference": 10.0,
+        "high": 10.28,
+        "low": 9.95,
+        "value": 8_000_000_000,
+        "source": "KBS",
+    }
+
+    events = pulse.compare_snapshots(current, previous, elapsed_minutes=30)
+    hot = next(item for item in events if item.symbol == "HOT")
+
+    assert hot.out_of_band is True
+    assert hot.event_type == "OUT_BAND_UP"
+    assert hot.outlier_z is not None and hot.outlier_z > 3
+
+
+def test_actionable_filter_keeps_quality_and_out_band_but_drops_weak_noise() -> None:
+    def event(symbol: str, *, score: int, direction: str = "UP", out_band: bool = False) -> pulse.PulseEvent:
+        return pulse.PulseEvent(
+            symbol=symbol,
+            event_type="OUT_BAND_UP" if out_band else "BUYING_SURGE",
+            direction=direction,
+            score=score,
+            price=10,
+            change_30m_pct=2.8 if out_band else 1.2,
+            session_change_pct=3,
+            value_30m_billion=8,
+            total_value_billion=40,
+            close_position=0.9,
+            order_imbalance=2,
+            source="KBS",
+            verified=True,
+            reasons=[],
+            out_of_band=out_band,
+            outlier_z=4.0 if out_band else None,
+        )
+
+    filtered = pulse.select_actionable_events(
+        [
+            event("GOOD", score=46),
+            event("WEAK", score=70),
+            event("TAIL", score=60, out_band=True),
+            event("RISK", score=65, direction="DOWN", out_band=True),
+        ],
+        {
+            "GOOD": {"eligible": True, "label": "TÍCH LŨY", "score": 72, "primary_stream": "early"},
+            "WEAK": {"eligible": False, "label": "KHÔNG ĐẠT", "score": 30},
+            "RISK": {"eligible": False, "label": "KHÔNG ĐẠT", "score": 20},
+        },
+        limit=5,
+    )
+
+    symbols = [item.symbol for item in filtered]
+    assert "GOOD" in symbols
+    assert "TAIL" in symbols
+    assert "WEAK" not in symbols
+    assert "RISK" not in symbols
+    assert next(item for item in filtered if item.symbol == "GOOD").quality_state == "TÍCH LŨY"
 
 
 def test_second_source_mismatch_is_downgraded_not_used_as_directional_signal(monkeypatch) -> None:

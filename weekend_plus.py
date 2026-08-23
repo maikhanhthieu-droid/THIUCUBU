@@ -15,7 +15,12 @@ def opportunity_line(item: weekend.Opportunity) -> str:
     return tf.format_opportunity_card(item)
 
 
-def build_report(opportunities: list[weekend.Opportunity], sectors: dict[str, weekend.SectorSnapshot], mode: str) -> str:
+def build_report(
+    opportunities: list[weekend.Opportunity],
+    sectors: dict[str, weekend.SectorSnapshot],
+    mode: str,
+    weekly_watch: list[weekend.weekly_bottom_watch.WeeklyBottomCandidate] | None = None,
+) -> str:
     now = datetime.now(weekend.VN_TZ).strftime("%d/%m/%Y %H:%M")
     top = opportunities[:weekend.TOP_N]
     high_confidence = [item for item in top if item.selected][:2]
@@ -33,6 +38,10 @@ def build_report(opportunities: list[weekend.Opportunity], sectors: dict[str, we
         "*💎 TỐI ĐA 2 MÃ ƯU TIÊN GOM*",
     ]
     lines += [opportunity_line(item) for item in high_confidence] or ["Tuần này chưa có mã đồng thời đủ 5 cửa; không ép chọn."]
+    lines += ["", "*🎯 CANH GOM SỚM — 2/3 ĐÁY KHUNG TUẦN*"]
+    lines += [weekend.weekly_bottom_watch.format_line(item) for item in (weekly_watch or [])] or [
+        "Chưa có mã đồng thời đủ 2 đáy tuần, chiết khấu và động lượng đáy."
+    ]
     lines += ["", "*🟢 CẤU TRÚC ĐANG CHUẨN BỊ*"]
     lines += [opportunity_line(item) for item in prep[:8]] or ["Chưa có mã chuẩn bị đủ rõ."]
     lines += ["", "*👀 WATCHLIST ĐỊNH GIÁ / CHỜ GIÁ*"]

@@ -26,6 +26,7 @@ THIEUCUBU là lớp lọc thô và chuẩn hóa dữ liệu cho cổ phiếu Vi�
 - Kết hợp định giá, chất lượng doanh nghiệp, cấu trúc tuần, thời điểm, ngành và rủi ro.
 - Dùng cấu trúc từ Pine Weekly Accumulation Sniper v3.1 làm lớp price/volume, không dùng Pine thay cho định giá.
 - Chỉ chọn tối đa 2 mã `ƯU TIÊN GOM`; hệ thống được phép chọn 0 mã nếu thị trường không có cơ hội đủ tốt.
+- Chạy thêm radar `W-PRE-*` tối đa 5 mã: cấu trúc 2–3 đáy khung tuần, MACD/RSI/SMI đáy và chiết khấu sâu; OBV/CMF/MFI tốt được cộng điểm để canh thăm dò sớm.
 - Lưu vùng gom, vùng breakout, mức vô hiệu luận điểm, bull case và rủi ro.
 - Ghi nhớ luận điểm qua nhiều tuần để một cổ phiếu tốt không biến mất chỉ vì nhiễu một phiên.
 
@@ -47,6 +48,8 @@ Phân loại được tạo tự động sau mỗi lần quét. `session_alerts_
 
 - Chạy mỗi 30 phút trong phiên sáng và chiều; lượt `09:00` và `13:00` gieo baseline mới.
 - Tìm biến động giá 30 phút, giá trị giao dịch tăng nhanh, bám đỉnh/đáy phiên và mất cân bằng mua/bán.
+- Chỉ giữ tối đa 5 mã thuộc trạng thái `MẠNH / TÍCH LŨY / TRẠNG THÁI ĐẸP` của lần quét sâu gần nhất. Mã yếu hoặc phân phối bị loại khỏi thông báo 30P.
+- `OUT-BAND` là cú lệch khỏi dải biến động robust của toàn thị trường trong cùng 30 phút; OUT-BAND tăng đủ thanh khoản vẫn được giữ như ngoại lệ để phát hiện mã mới, còn OUT-BAND giảm chỉ báo khi đó là mã tốt trước đó hoặc mã danh mục.
 - Vẫn gửi heartbeat khi không có mã vượt ngưỡng, để biết radar đang hoạt động.
 - Pulse không tạo Luồng 6 và không tự phát lệnh mua. Mã đột biến được lưu vào `top_symbols`, rồi tự được ưu tiên trong lượt quét sâu cố định kế tiếp để xếp vào đúng một trong 5 luồng.
 - Nếu KBS lỗi, VCI tiếp quản theo batch; nếu nguồn xác minh lỗi thì sự kiện vẫn được giữ với nhãn `1 nguồn`, không làm hỏng toàn bộ lượt quét.
@@ -66,7 +69,7 @@ FiinQuant / VCI / KBS / DNSE
         ▼
 Safe fetch + chuẩn hóa nghìn VND + provenance + cache + source health
         │
-        ├── Pulse 30P ─────► radar đột biến, nâng mã vào lượt quét sâu
+        ├── Pulse 30P ─────► quality gate + OUT-BAND, tối đa 5 mã
         │
         ├── Daily scanner ──► Telegram mua/bán, lướt/gom
         │
@@ -75,6 +78,7 @@ Safe fetch + chuẩn hóa nghìn VND + provenance + cache + source health
         └── Weekend engine
              ├── định giá và chất lượng
              ├── weekly_sniper.py
+             ├── weekly_bottom_watch.py ─► W-PRE 2/3 đáy, tối đa 5 mã
              ├── sector + risk gate
              └── 0–2 mã ưu tiên gom
 ```
@@ -138,6 +142,8 @@ Sau lượt EOD, hệ thống chụp một snapshot cùng ngày cho toàn bộ m
 
 Nhãn `PRE-DIV-2/3`, `PRE-HIDDEN-2/3`, `PRE-BASE-2/3(-CROSS)` chỉ được tạo từ pivot đã có đủ nến bên phải, vì vậy không dùng pivot chưa xác nhận. PRE không phải lệnh bắt đáy: mã chỉ được nâng sang `EARLY` khi có thêm chiết khấu, cạn cung, ổn định giá và không bị cấu trúc/systemic gate chặn.
 
+Radar cuối tuần dùng cùng nguyên tắc nhưng chạy trên nến tuần và thêm tiền tố `W-`, ví dụ `W-PRE-DIV-2`. Danh sách này độc lập với conviction: mức cao nhất chỉ là `CANH THĂM DÒ 1/5 KHI GIỮ ĐÁY`, luôn có trigger và mức hủy kịch bản; không bình quân giá xuống khi thủng mức vô hiệu.
+
 ## Năm cửa của bộ lọc cuối tuần
 
 Một mã chỉ có thể vào nhóm `ƯU TIÊN GOM` khi đồng thời vượt qua:
@@ -178,6 +184,7 @@ Pine không có PE/PB và chất lượng doanh nghiệp. Kết quả Pine khôn
 | `data/intraday_pulse_latest.json` | Mã đột biến và snapshot Pulse 30 phút gần nhất |
 | `data/intraday_pulse_state.json` | Baseline bảng giá để tính thay đổi giữa hai lần Pulse |
 | `data/intraday_universe_state.json` | Universe riêng của Pulse, tách khỏi cursor của scanner cố định |
+| `data/weekly_bottom_watch_latest.json` | Tối đa 5 mã W-PRE hai/ba đáy tuần để canh gom sớm |
 | `data/market_state_history.json` | Bộ nhớ chuyển pha và thay đổi điểm đáng kể |
 | `data/market_breadth_history.json` | Chuỗi breadth EOD để phát hiện phân kỳ VNINDEX/breadth |
 | `data/market_systemic_state.json` | Trạng thái rủi ro hệ thống, ngưỡng siết và hệ số size hiện hành |
@@ -340,9 +347,11 @@ Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể c�
 - `SCAN_ROTATING_UNIVERSE_SIZE=36`
 - `WEEKEND_HISTORY_BARS=780`
 - `WEEKEND_CONVICTION_LIMIT=2`
+- `WEEKEND_BOTTOM_WATCH_LIMIT=5`
 - `WEEKEND_MIN_SCORE=60`
 - `WEEKEND_MIN_SECTOR_SCORE=52`
 - `WEEKEND_MIN_OWN_HISTORY_OBSERVATIONS=4`
+- `PULSE_ALERT_LIMIT=5`
 
 `WEEKEND_CONVICTION_LIMIT` được chặn cứng tối đa 2 trong code. Hạ threshold có thể làm watchlist nhạy hơn nhưng không làm tăng số conviction.
 
