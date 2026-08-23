@@ -112,6 +112,7 @@ def test_healthy_fiinquant_is_first_only_for_priority_symbols(monkeypatch) -> No
 def test_history_reuses_one_session_and_never_requests_realtime(monkeypatch) -> None:
     monkeypatch.setenv("FIINQUANT_USERNAME", "user")
     monkeypatch.setenv("FIINQUANT_PASSWORD", "password")
+    monkeypatch.setenv("FIINQUANT_HISTORY_CHUNK_DAYS", "365")
     login_calls: list[tuple[str, str]] = []
     requests: list[dict] = []
 
@@ -152,6 +153,59 @@ def test_history_reuses_one_session_and_never_requests_realtime(monkeypatch) -> 
     assert all(request["by"] == "1d" for request in requests)
     assert first["close"].iloc[-1] == pytest.approx(61.8)
     assert second.attrs["price_unit"] == "thousand_vnd"
+
+
+def test_long_fiinquant_history_is_split_into_contiguous_windows(monkeypatch) -> None:
+    monkeypatch.setenv("FIINQUANT_HISTORY_CHUNK_DAYS", "180")
+
+    windows = fiin._history_windows("2026-01-01", "2026-12-31")
+
+    assert windows == [
+        ("2026-01-01", "2026-06-29"),
+        ("2026-06-30", "2026-12-26"),
+        ("2026-12-27", "2026-12-31"),
+    ]
+
+
+def test_history_retries_an_empty_chunk_and_deduplicates_boundaries(monkeypatch) -> None:
+    monkeypatch.setenv("FIINQUANT_USERNAME", "user")
+    monkeypatch.setenv("FIINQUANT_PASSWORD", "password")
+    monkeypatch.setenv("FIINQUANT_HISTORY_CHUNK_DAYS", "180")
+    monkeypatch.setattr(fiin.time, "sleep", lambda *_: None)
+    requests: list[dict] = []
+
+    class FetchRequest:
+        def __init__(self, kwargs):
+            self.kwargs = kwargs
+
+        def get_data(self):
+            requests.append(self.kwargs)
+            if len(requests) == 1:
+                return pd.DataFrame()
+            timestamp = self.kwargs["from_date"]
+            return pd.DataFrame(
+                {
+                    "ticker": ["VCB", "VCB"],
+                    "timestamp": [timestamp, timestamp],
+                    "open": [60.0, 60.0],
+                    "high": [61.0, 61.0],
+                    "low": [59.0, 59.0],
+                    "close": [60.5, 60.5],
+                    "volume": [1_000_000, 1_000_000],
+                }
+            )
+
+    class Session:
+        def Fetch_Trading_Data(self, **kwargs):
+            return FetchRequest(kwargs)
+
+    monkeypatch.setattr(fiin, "get_session", lambda: Session())
+
+    frame = fiin.fetch_history("VCB", "2026-01-01", "2026-12-31")
+
+    assert len(requests) == 4  # First window retries once, then two more windows.
+    assert len(frame) == 3
+    assert frame.attrs["history_chunks"] == 3
 
 
 def test_fundamental_payload_is_normalized(monkeypatch) -> None:

@@ -251,32 +251,87 @@ def _run_request(call: Any, operation: str) -> Any:
         raise FiinQuantError(message) from None
 
 
+def _history_windows(start: str, end: str) -> list[tuple[str, str]]:
+    """Split long FiinQuant ranges to avoid upstream 504 gateway responses."""
+
+    try:
+        start_date = datetime.fromisoformat(start).date()
+        end_date = datetime.fromisoformat(end).date()
+    except ValueError:
+        return [(start, end)]
+    if end_date < start_date:
+        raise FiinQuantError(f"FiinQuantX invalid history range: {start} > {end}")
+    chunk_days = _env_int(
+        "FIINQUANT_HISTORY_CHUNK_DAYS",
+        180,
+        minimum=30,
+        maximum=365,
+    )
+    windows: list[tuple[str, str]] = []
+    cursor = start_date
+    while cursor <= end_date:
+        chunk_end = min(end_date, cursor + timedelta(days=chunk_days - 1))
+        windows.append((cursor.isoformat(), chunk_end.isoformat()))
+        cursor = chunk_end + timedelta(days=1)
+    return windows
+
+
+def _as_frame(raw: Any, ticker: str) -> pd.DataFrame:
+    if isinstance(raw, pd.DataFrame):
+        return raw
+    try:
+        return pd.DataFrame(raw)
+    except (TypeError, ValueError) as exc:
+        raise FiinQuantError(f"FiinQuantX returned invalid OHLCV for {ticker}") from exc
+
+
 def fetch_history(symbol: str, start: str, end: str) -> pd.DataFrame:
     """Fetch adjusted daily OHLCV without opening a realtime stream."""
 
     session = get_session()
     ticker = canonical_symbol(symbol)
+    frames: list[pd.DataFrame] = []
+    started = False
+    retries = _env_int("FIINQUANT_HISTORY_CHUNK_RETRIES", 2, minimum=1, maximum=3)
+    for chunk_start, chunk_end in _history_windows(start, end):
+        frame = pd.DataFrame()
+        for attempt in range(retries):
+            def request() -> Any:
+                return session.Fetch_Trading_Data(
+                    realtime=False,
+                    tickers=[ticker],
+                    fields=["open", "high", "low", "close", "volume"],
+                    adjusted=True,
+                    by="1d",
+                    from_date=chunk_start,
+                    to_date=chunk_end,
+                    lasted=True,
+                ).get_data()
 
-    def request() -> Any:
-        return session.Fetch_Trading_Data(
-            realtime=False,
-            tickers=[ticker],
-            fields=["open", "high", "low", "close", "volume"],
-            adjusted=True,
-            by="1d",
-            from_date=start,
-            to_date=end,
-            lasted=True,
-        ).get_data()
-
-    raw = _run_request(request, f"historical request for {ticker}")
-    if not isinstance(raw, pd.DataFrame):
-        try:
-            raw = pd.DataFrame(raw)
-        except (TypeError, ValueError) as exc:
-            raise FiinQuantError(f"FiinQuantX returned invalid OHLCV for {ticker}") from exc
-    if raw.empty:
+            raw = _run_request(
+                request,
+                f"historical request for {ticker} ({chunk_start}..{chunk_end})",
+            )
+            frame = _as_frame(raw, ticker)
+            if not frame.empty:
+                break
+            if attempt + 1 < retries:
+                time.sleep(1.0 + attempt)
+        if frame.empty:
+            # Empty leading windows are valid for newly listed stocks. Once
+            # data starts, a missing later window would silently corrupt MTF
+            # history, so fail and let the source router use a fallback.
+            if started:
+                raise FiinQuantError(
+                    f"FiinQuantX missing OHLCV chunk for {ticker} "
+                    f"({chunk_start}..{chunk_end})"
+                )
+            continue
+        started = True
+        frames.append(frame)
+    if not frames:
         raise FiinQuantError(f"FiinQuantX returned no OHLCV for {ticker}")
+    raw = pd.concat(frames, ignore_index=True)
     ticker_column = next(
         (column for column in raw.columns if str(column).strip().lower() in {"ticker", "symbol"}),
         None,
@@ -285,8 +340,20 @@ def fetch_history(symbol: str, start: str, end: str) -> pd.DataFrame:
         selected = raw[raw[ticker_column].astype(str).str.upper() == ticker.upper()]
         if not selected.empty:
             raw = selected
+    time_column = next(
+        (
+            column
+            for column in raw.columns
+            if str(column).strip().lower() in {"time", "timestamp", "date", "tradingdate"}
+        ),
+        None,
+    )
+    dedupe_columns = [column for column in (ticker_column, time_column) if column is not None]
+    if dedupe_columns:
+        raw = raw.drop_duplicates(subset=dedupe_columns, keep="last")
     raw = raw.copy()
     raw.attrs["provider"] = SDK_SOURCE_NAME
+    raw.attrs["history_chunks"] = len(_history_windows(start, end))
     return raw
 
 
