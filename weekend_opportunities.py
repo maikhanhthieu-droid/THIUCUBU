@@ -425,7 +425,10 @@ def call_ratio_method(method: Any, args: tuple[Any, ...], source: str, symbol: s
 
 def fetch_fundamental(symbol: str) -> FundamentalSnapshot | None:
     global _FIINQUANT_WARNING_LOGGED
-    if fiinquant_provider.is_configured():
+    # FiinQuant is the premium path only for state-routed attention symbols.
+    # Standard symbols stay on independent vnstock/VCI/KBS paths so a slow
+    # premium endpoint cannot serialize the whole weekend universe.
+    if fiinquant_provider.is_configured() and source_router.is_priority(symbol):
         try:
             values = fiinquant_provider.fetch_fundamental(symbol)
             if values:

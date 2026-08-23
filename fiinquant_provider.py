@@ -139,6 +139,37 @@ _SESSION_ERROR: FiinQuantError | None = None
 _SESSION_LOCK = threading.Lock()
 
 
+class _RequestsTimeoutProxy:
+    """Add a default timeout without changing the SDK's global requests module."""
+
+    def __init__(self, backend: Any, timeout: float) -> None:
+        self._backend = backend
+        self._timeout = timeout
+
+    def get(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("timeout", self._timeout)
+        return self._backend.get(*args, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._backend, name)
+
+
+def _configure_sdk_http_timeout() -> None:
+    """Bound FiinQuant's fundamental calls, whose SDK requests omit a timeout."""
+
+    module = sys.modules.get("FiinQuantX.core.FundamentalAnalysis")
+    backend = getattr(module, "requests", None) if module is not None else None
+    if backend is None or isinstance(backend, _RequestsTimeoutProxy):
+        return
+    timeout = _env_float(
+        "FIINQUANT_HTTP_TIMEOUT_SEC",
+        20.0,
+        minimum=3.0,
+        maximum=60.0,
+    )
+    module.requests = _RequestsTimeoutProxy(backend, timeout)
+
+
 def _load_session_type() -> Any:
     # FiinQuantX 0.1.67 contains PEP 701 f-strings in its encrypted runtime
     # modules.  They fail during import on Python 3.11 even though the wheel's
@@ -154,6 +185,7 @@ def _load_session_type() -> Any:
         raise FiinQuantError(
             "FiinQuantX is not installed; install requirements-fiinquant.txt"
         ) from exc
+    _configure_sdk_http_timeout()
     return FiinSession
 
 

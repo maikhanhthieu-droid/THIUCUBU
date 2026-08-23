@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import traceback
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -51,6 +52,48 @@ def test_fiinquant_rejects_python_311_with_clear_error(monkeypatch) -> None:
 
     with pytest.raises(fiin.FiinQuantError, match=r"requires Python 3\.12\+"):
         fiin._load_session_type()
+
+
+def test_fiinquant_fundamental_requests_receive_default_timeout(monkeypatch) -> None:
+    calls: list[dict] = []
+
+    class Requests:
+        def get(self, *args, **kwargs):
+            calls.append(kwargs)
+            return object()
+
+    module_name = "FiinQuantX.core.FundamentalAnalysis"
+    fake_module = SimpleNamespace(requests=Requests())
+    monkeypatch.setitem(fiin.sys.modules, module_name, fake_module)
+    monkeypatch.setenv("FIINQUANT_HTTP_TIMEOUT_SEC", "17")
+
+    fiin._configure_sdk_http_timeout()
+    fake_module.requests.get("https://example.test/default")
+    fake_module.requests.get("https://example.test/explicit", timeout=5)
+
+    assert calls == [{"timeout": 17.0}, {"timeout": 5}]
+
+
+def test_weekend_fiinquant_fundamental_only_runs_for_priority_symbols(monkeypatch) -> None:
+    monkeypatch.setenv("FIINQUANT_USERNAME", "user")
+    monkeypatch.setenv("FIINQUANT_PASSWORD", "password")
+    monkeypatch.setattr(weekend, "VnFundamental", None)
+    monkeypatch.setattr(weekend, "VnCompany", None)
+    calls: list[str] = []
+
+    def fetch(symbol: str):
+        calls.append(symbol)
+        return {"symbol": symbol, "pe": 9.0, "source": "FiinQuantX"}
+
+    monkeypatch.setattr(fiin, "fetch_fundamental", fetch)
+    monkeypatch.setattr(weekend.source_router, "is_priority", lambda symbol: symbol == "VCB")
+
+    assert weekend.fetch_fundamental("HPG") is None
+    snapshot = weekend.fetch_fundamental("VCB")
+
+    assert calls == ["VCB"]
+    assert snapshot is not None
+    assert snapshot.source == "FiinQuantX"
 
 
 def test_healthy_fiinquant_is_first_only_for_priority_symbols(monkeypatch) -> None:
