@@ -377,6 +377,7 @@ def source_health_payload() -> dict[str, Any]:
     return {
         "updated_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
         "sources": {source: limiter.health_dict() for source, limiter in API_LIMITERS.items()},
+        "fiinquant_monthly_budget": fetcher.fiinquant_provider.quota_snapshot(),
         # Per-symbol provenance makes workflow artifacts auditable without
         # exposing credentials: recent-price source and optional deep backfill.
         "symbol_provenance": {

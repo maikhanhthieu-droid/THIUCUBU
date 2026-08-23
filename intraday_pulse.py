@@ -16,6 +16,7 @@ import logging
 import math
 import os
 import sys
+import threading
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, time as dt_time, timedelta, timezone
@@ -35,6 +36,8 @@ LATEST_PATH = DATA_DIR / "intraday_pulse_latest.json"
 SCHEMA_VERSION = "thieucubu.intraday_pulse.v2"
 SYMBOL_LIMIT = 12
 DEFAULT_ALERT_LIMIT = 5
+_PULSE_RATE_LOCK = threading.Lock()
+_PULSE_NEXT_AT: dict[str, float] = {}
 
 
 @dataclass(frozen=True)
@@ -78,6 +81,35 @@ def _integer(value: Any, default: int = 0) -> int:
 def _symbol(value: Any) -> str:
     text = str(value or "").strip().upper()
     return text if 3 <= len(text) <= SYMBOL_LIMIT and text.isalnum() else ""
+
+
+def pulse_source_effective_rpm(source: str) -> float:
+    default_limit = max(
+        1.0,
+        _safe(os.getenv("PULSE_SOURCE_REQUESTS_PER_MINUTE", "20"), 20.0),
+    )
+    limits: dict[str, float] = {}
+    for entry in os.getenv("PULSE_SOURCE_LIMITS", "KBS=20,VCI=20").split(","):
+        name, separator, raw = entry.partition("=")
+        if not separator:
+            continue
+        limits[name.strip().upper()] = max(1.0, _safe(raw, default_limit))
+    ratio = max(
+        0.05,
+        min(0.70, _safe(os.getenv("PULSE_SOURCE_USAGE_RATIO", "0.70"), 0.70)),
+    )
+    return limits.get(source.upper(), default_limit) * ratio
+
+
+def _wait_source_turn(source: str) -> None:
+    normalized = source.upper()
+    interval = 60.0 / max(0.1, pulse_source_effective_rpm(normalized))
+    with _PULSE_RATE_LOCK:
+        now = time.monotonic()
+        wait_for = max(0.0, _PULSE_NEXT_AT.get(normalized, 0.0) - now)
+        _PULSE_NEXT_AT[normalized] = max(now, _PULSE_NEXT_AT.get(normalized, 0.0)) + interval
+    if wait_for:
+        time.sleep(wait_for)
 
 
 def _price(value: Any) -> float:
@@ -226,6 +258,7 @@ def fetch_market_board(
     clients: dict[str, Any] = {}
     output: dict[str, dict[str, Any]] = {}
     source_counts = {source: 0 for source in sources}
+    request_counts = {source: 0 for source in sources}
     failures: list[str] = []
     delay = max(0.0, _safe(os.getenv("PULSE_BATCH_DELAY_SEC", "0.2"), 0.2))
     for start in range(0, len(values), max(1, batch_size)):
@@ -234,6 +267,8 @@ def fetch_market_board(
             if not missing:
                 break
             try:
+                _wait_source_turn(source)
+                request_counts[source] += 1
                 if source not in clients:
                     clients[source] = _create_client(source)
                 rows = _fetch_batch(clients[source], source, missing)
@@ -250,6 +285,11 @@ def fetch_market_board(
         "requested": len(values),
         "received": len(output),
         "source_counts": source_counts,
+        "request_counts": request_counts,
+        "effective_rpm": {
+            source: round(pulse_source_effective_rpm(source), 2)
+            for source in sources
+        },
         "failures": failures[:12],
     }
 
@@ -634,6 +674,7 @@ def verify_events(
         return events
     try:
         client = _create_client("VCI")
+        _wait_source_turn("VCI")
         verification = _fetch_batch(client, "VCI", candidates)
     except Exception as exc:
         logger.warning("Pulse second-source validation unavailable: %s", exc)
@@ -665,6 +706,7 @@ def fetch_vnindex_snapshot() -> dict[str, Any] | None:
         start = (datetime.now(VN_TZ) - timedelta(days=12)).date().isoformat()
         for source in ("KBS", "VCI"):
             try:
+                _wait_source_turn(source)
                 frame = fetcher.fetch_source_history(source, "VNINDEX", start, end)
                 if frame is None or frame.empty:
                     continue

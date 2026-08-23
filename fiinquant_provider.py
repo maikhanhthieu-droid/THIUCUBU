@@ -10,6 +10,7 @@ WebSocket is opened).
 from __future__ import annotations
 
 import math
+import json
 import os
 import re
 import sys
@@ -17,6 +18,7 @@ import threading
 import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Iterator
 
 import pandas as pd
@@ -42,6 +44,10 @@ class FiinQuantNotConfigured(FiinQuantError):
 
 class FiinQuantAuthenticationError(FiinQuantError):
     """Raised when FiinQuant rejects the configured account."""
+
+
+class FiinQuantQuotaError(FiinQuantError):
+    """Raised before a request would exceed the configured monthly budget."""
 
 
 def _env_int(name: str, default: int, minimum: int = 1, maximum: int | None = None) -> int:
@@ -112,25 +118,111 @@ class _RequestGate:
     """Limit request starts while allowing a small number of in-flight calls."""
 
     def __init__(self) -> None:
-        rpm = _env_int("FIINQUANT_REQUESTS_PER_MINUTE", 80, minimum=1, maximum=90)
-        usage = _env_float("FIINQUANT_USAGE_RATIO", 0.75)
+        rpm = _env_int("FIINQUANT_REQUESTS_PER_MINUTE", 90, minimum=1, maximum=90)
+        usage = _env_float("FIINQUANT_USAGE_RATIO", 0.70)
         self.min_interval = 60.0 / max(1.0, rpm * usage)
         self.next_at = 0.0
         self.start_lock = threading.Lock()
         self.slots = threading.BoundedSemaphore(
-            _env_int("FIINQUANT_MAX_CONCURRENCY", 2, minimum=1, maximum=4)
+            _env_int("FIINQUANT_MAX_CONCURRENCY", 1, minimum=1, maximum=4)
         )
 
     @contextmanager
     def request(self) -> Iterator[None]:
         with self.slots:
             with self.start_lock:
+                reserve_monthly_request()
                 now = time.monotonic()
                 wait = max(0.0, self.next_at - now)
                 if wait:
                     time.sleep(wait)
                 self.next_at = time.monotonic() + self.min_interval
             yield
+
+
+_BUDGET_LOCK = threading.Lock()
+
+
+def _monthly_budget_config() -> tuple[int | None, Path]:
+    raw = os.getenv("FIINQUANT_MONTHLY_REQUEST_BUDGET", "").strip()
+    path = Path(
+        os.getenv(
+            "FIINQUANT_BUDGET_FILE",
+            "data/api_budget/fiinquant.json",
+        )
+    )
+    if not raw:
+        return None, path
+    try:
+        limit = int(raw)
+    except ValueError:
+        limit = 70_000
+    return max(1, min(limit, 100_000)), path
+
+
+def _read_budget(path: Path, period: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        payload = {}
+    if not isinstance(payload, dict) or payload.get("period") != period:
+        return {"period": period, "used": 0}
+    try:
+        used = max(0, int(payload.get("used") or 0))
+    except (TypeError, ValueError):
+        used = 0
+    return {"period": period, "used": used}
+
+
+def _write_budget(path: Path, payload: dict[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+        temp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+        temp.replace(path)
+    except OSError:
+        raise FiinQuantQuotaError(
+            "FiinQuantX monthly request budget cannot be persisted; using fallback sources"
+        ) from None
+
+
+def reserve_monthly_request() -> None:
+    """Reserve one logical SDK request against the optional monthly hard cap."""
+
+    limit, path = _monthly_budget_config()
+    if limit is None:
+        return
+    period = datetime.now(VN_TZ).strftime("%Y-%m")
+    with _BUDGET_LOCK:
+        payload = _read_budget(path, period)
+        if int(payload["used"]) >= limit:
+            raise FiinQuantQuotaError(
+                f"FiinQuantX monthly safety budget reached ({limit}); using fallback sources"
+            )
+        payload.update(
+            used=int(payload["used"]) + 1,
+            limit=limit,
+            updated_at=datetime.now(VN_TZ).isoformat(timespec="seconds"),
+        )
+        _write_budget(path, payload)
+
+
+def quota_snapshot() -> dict[str, Any]:
+    limit, path = _monthly_budget_config()
+    period = datetime.now(VN_TZ).strftime("%Y-%m")
+    if limit is None:
+        return {"enabled": False, "period": period, "used": 0, "limit": None}
+    with _BUDGET_LOCK:
+        payload = _read_budget(path, period)
+    used = int(payload["used"])
+    return {
+        "enabled": True,
+        "period": period,
+        "used": used,
+        "limit": limit,
+        "remaining": max(0, limit - used),
+        "usage_pct": round(used / limit * 100, 3),
+    }
 
 
 _REQUEST_GATE = _RequestGate()

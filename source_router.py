@@ -136,7 +136,9 @@ def normalize_routing(raw: Any) -> dict[str, Any]:
     policy_raw = _mapping(raw.get("policy"))
     policy = dict(DEFAULT_POLICY)
     policy.update({key: policy_raw[key] for key in policy if key in policy_raw})
-    policy["priority_limit"] = _integer(policy.get("priority_limit"), 32, 1, 100)
+    # FiinQuant Free allows 33 historical symbols. Keep one spare slot for
+    # diagnostics/index checks and never route more than 32 equities to it.
+    policy["priority_limit"] = _integer(policy.get("priority_limit"), 32, 1, 32)
     policy["demote_after_scans"] = _integer(policy.get("demote_after_scans"), 3, 1, 10)
     policy["strong_score_threshold"] = _integer(policy.get("strong_score_threshold"), 72, 40, 97)
     policy["near_break_score_threshold"] = _integer(policy.get("near_break_score_threshold"), 62, 40, 97)
@@ -522,6 +524,13 @@ def update_routing(
     forced_entries = [entry for entry in selected_entries if entry["symbol"] in manual_fiinquant]
     automatic_entries = [entry for entry in selected_entries if entry["symbol"] not in manual_fiinquant]
     limit = int(policy["priority_limit"])
+    if len(forced_entries) > limit:
+        logger.warning(
+            "Manual FiinQuant list has %s symbols; only the first %s fit the safety cap",
+            len(forced_entries),
+            limit,
+        )
+        forced_entries = forced_entries[:limit]
     slots = max(0, limit - len(forced_entries))
     selected_entries = forced_entries + automatic_entries[:slots]
     selected_entries.sort(key=sort_key, reverse=True)

@@ -295,3 +295,18 @@ def test_transient_login_failure_can_retry(monkeypatch) -> None:
 
     assert fiin.get_session() is not None
     assert calls == 2
+
+
+def test_monthly_budget_stops_before_configured_cap(monkeypatch, tmp_path) -> None:
+    budget = tmp_path / "fiinquant_budget.json"
+    monkeypatch.setenv("FIINQUANT_MONTHLY_REQUEST_BUDGET", "2")
+    monkeypatch.setenv("FIINQUANT_BUDGET_FILE", str(budget))
+
+    fiin.reserve_monthly_request()
+    fiin.reserve_monthly_request()
+
+    with pytest.raises(fiin.FiinQuantQuotaError, match="budget reached"):
+        fiin.reserve_monthly_request()
+    snapshot = fiin.quota_snapshot()
+    assert snapshot["used"] == 2
+    assert snapshot["remaining"] == 0

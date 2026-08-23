@@ -12,6 +12,7 @@ import vimo_provider as vimo
 def clean_vimo(monkeypatch, tmp_path):
     monkeypatch.delenv("VIMO_API_KEY", raising=False)
     monkeypatch.setattr(vimo, "CACHE_DIR", tmp_path)
+    monkeypatch.setenv("VIMO_BUDGET_FILE", str(tmp_path / "request_budget.json"))
     monkeypatch.setattr(vimo, "_wait_turn", lambda: None)
     vimo.reset_health()
 
@@ -127,3 +128,15 @@ def test_authentication_error_does_not_expose_key(monkeypatch):
 
     assert "super-secret" not in str(error.value)
 
+
+def test_vimo_daily_budget_stops_at_seventy_percent_cap(monkeypatch):
+    monkeypatch.setenv("VIMO_DAILY_REQUEST_BUDGET", "2")
+
+    vimo._reserve_daily_request_unlocked()
+    vimo._reserve_daily_request_unlocked()
+
+    with pytest.raises(vimo.VimoRateLimitError, match="budget reached"):
+        vimo._reserve_daily_request_unlocked()
+    snapshot = vimo.daily_budget_snapshot()
+    assert snapshot["used"] == 2
+    assert snapshot["remaining"] == 0

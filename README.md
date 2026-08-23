@@ -232,6 +232,14 @@ GitHub schedule có các mốc dự phòng và watchdog. Duplicate guard, hard t
 - Giá cổ phiếu từ mọi nguồn được chuẩn hóa về `thousand_vnd`; cache và nguồn mới còn được đối chiếu ngày trùng nhau để tự sửa sai lệch 1.000 lần.
 - Dữ liệu stale có thể xuất hiện trong báo cáo tham khảo nhưng không được chọn làm conviction cuối tuần.
 - Source health được lưu để lần chạy sau ưu tiên nguồn khỏe hơn.
+- Ngân sách mặc định giữ quanh 70%: FiinQuant tối đa 63 request/phút,
+  70.000 request/tháng, một kết nối và tối đa 32 mã ưu tiên; VIMO tối đa
+  70 call/ngày. Khi chạm hard budget, nguồn đó dừng và các nguồn độc lập khác
+  vẫn tiếp tục.
+- Scanner chỉ tải OHLCV ngày một lần; khung `1W` và `1M` được resample cục bộ,
+  vì vậy phân tích đa khung không nhân ba số request API.
+- Pulse 30 phút dùng bulk board KBS làm chính, VCI xác minh; nó không tiêu quota
+  FiinQuant/VIMO và được giới hạn 70% tốc độ nội bộ đã đặt cho từng nguồn.
 
 ### Phân luồng tự động
 
@@ -281,6 +289,10 @@ Test scanner không gửi Telegram:
 DRY_RUN=1 python session_plus.py --mode test
 DRY_RUN=1 python weekend_plus_safe.py --mode test
 ```
+
+Hai chế độ audit thủ công trên GitHub Actions gọi dữ liệu thật nhưng không gửi
+Telegram và không commit snapshot thử nghiệm: Scanner `audit_full` quét toàn bộ
+universe theo pipeline EOD; Weekend `audit` quét toàn bộ pipeline cuối tuần.
 
 ### VIMO support flow (optional)
 
@@ -344,11 +356,14 @@ Các mã này luôn được báo lại đầy đủ trong mỗi phiên, kể c�
 ## Cấu hình quan trọng
 
 - `SCAN_API_SOURCES=FIINQUANT,VCI,KBS,DNSE`
-- `SCAN_SOURCE_LIMITS=FIINQUANT=80,VCI=20,KBS=20,DNSE=15`
-- `FIINQUANT_REQUESTS_PER_MINUTE=80`
-- `FIINQUANT_USAGE_RATIO=0.75`
+- `SCAN_SOURCE_LIMITS=FIINQUANT=90,VCI=20,KBS=20,DNSE=15`
+- `FIINQUANT_REQUESTS_PER_MINUTE=90`
+- `FIINQUANT_USAGE_RATIO=0.70`
+- `FIINQUANT_MONTHLY_REQUEST_BUDGET=70000`
 - `FIINQUANT_MAX_CONCURRENCY=1`
-- `SCAN_SOURCE_USAGE_RATIO=0.78`
+- `SCAN_SOURCE_USAGE_RATIO=0.70`
+- `VIMO_DAILY_REQUEST_BUDGET=70`
+- `PULSE_SOURCE_USAGE_RATIO=0.70`
 - `SCAN_ROTATING_UNIVERSE_SIZE=36`
 - `WEEKEND_HISTORY_BARS=780`
 - `WEEKEND_CONVICTION_LIMIT=2`

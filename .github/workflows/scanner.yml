@@ -33,7 +33,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "test | morning_focus | morning_broad | afternoon_focus | afternoon_split | eod | auto"
+        description: "test | audit_full | morning_focus | morning_broad | afternoon_focus | afternoon_split | eod | auto"
         required: false
         default: "test"
 
@@ -184,6 +184,16 @@ jobs:
             scan-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
             scan-cache-${{ runner.os }}-
 
+      - name: Restore shared API budget
+        if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
+        uses: actions/cache@v5
+        with:
+          path: data/api_budget
+          key: api-budget-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ github.run_id }}
+          restore-keys: |
+            api-budget-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
+            api-budget-${{ runner.os }}-
+
       - name: Run scanner
         id: scanner
         if: github.event_name != 'schedule' || steps.guard.outputs.run == 'true'
@@ -200,12 +210,14 @@ jobs:
           SCAN_MAX_WORKERS: "3"
           SCAN_API_SOURCES: "FIINQUANT,VCI,KBS,DNSE"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
-          SCAN_SOURCE_LIMITS: "FIINQUANT=80,VCI=20,KBS=20,DNSE=15"
-          FIINQUANT_REQUESTS_PER_MINUTE: "80"
-          FIINQUANT_USAGE_RATIO: "0.75"
+          # 70% safety envelope. FiinQuant Free: 90 rpm, 100k/month, 1 connection.
+          SCAN_SOURCE_LIMITS: "FIINQUANT=90,VCI=20,KBS=20,DNSE=15"
+          FIINQUANT_REQUESTS_PER_MINUTE: "90"
+          FIINQUANT_USAGE_RATIO: "0.70"
+          FIINQUANT_MONTHLY_REQUEST_BUDGET: "70000"
           # The free FiinQuant plan allows one maximum connection.
           FIINQUANT_MAX_CONCURRENCY: "1"
-          SCAN_SOURCE_USAGE_RATIO: "0.78"
+          SCAN_SOURCE_USAGE_RATIO: "0.70"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.3"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.5"
           SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "30"
@@ -238,7 +250,7 @@ jobs:
           MARKET_PROBE_UNCHANGED_RATIO: "0.85"
           MARKET_PROBE_OLD_DATE_RATIO: "0.80"
           MARKET_PROBE_ZERO_VOLUME_RATIO: "0.80"
-          DRY_RUN: "0"
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'audit_full' && '1' || '0' }}
         run: |
           MODE="$SCAN_MODE"
           if [ "$SCAN_EVENT_NAME" = "push" ] && [ "$MODE" = "auto" ]; then
@@ -262,6 +274,13 @@ jobs:
           fi
           if [ "$MODE" = "auto" ] && [ "$SCAN_EVENT_NAME" = "workflow_dispatch" ]; then
             MODE="test"
+          fi
+          if [ "$MODE" = "audit_full" ]; then
+            echo "Full API audit: use the complete EOD universe, bypass clock waits, do not notify or commit data."
+            MODE="eod"
+            export SESSION_SKIP_WAIT="1"
+            export SESSION_RANDOM_START_MAX_SEC="0"
+            export SESSION_DATA_JITTER_MAX_SEC="0"
           fi
           if [ "$MODE" = "afternoon_split" ]; then
             export SESSION_FOCUS_LIMIT="28"
@@ -305,10 +324,12 @@ jobs:
           VIMO_API_KEY: ${{ secrets.VIMO_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          VIMO_REQUESTS_PER_MINUTE: "20"
-          VIMO_USAGE_RATIO: "0.75"
+          VIMO_REQUESTS_PER_MINUTE: "10"
+          VIMO_USAGE_RATIO: "0.70"
+          VIMO_DAILY_REQUEST_BUDGET: "70"
           VIMO_MAX_WORKERS: "2"
           VIMO_DAILY_MAX_SYMBOLS: "8"
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'audit_full' && '1' || '0' }}
         run: |
           if [ -z "$VIMO_API_KEY" ]; then
             echo "VIMO_API_KEY is not configured; optional support flow skipped."
@@ -346,7 +367,7 @@ jobs:
           retention-days: 30
 
       - name: Commit scanner data
-        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'test') && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
+        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'test' && inputs.mode != 'audit_full')) && (github.event_name != 'schedule' || steps.guard.outputs.run == 'true')
         run: |
           python scripts/safe_commit_data.py \
             --message "chore: update scanner data [skip ci]" \

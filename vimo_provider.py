@@ -64,6 +64,79 @@ _HEALTH: dict[str, Any] = {
 }
 
 
+def _daily_budget_config() -> tuple[int | None, Path]:
+    raw = os.getenv("VIMO_DAILY_REQUEST_BUDGET", "").strip()
+    configured = os.getenv("VIMO_BUDGET_FILE", "").strip()
+    path = Path(configured) if configured else Path("data/api_budget/vimo.json")
+    if not raw:
+        return None, path
+    try:
+        limit = int(raw)
+    except ValueError:
+        limit = 70
+    return max(1, min(limit, 100)), path
+
+
+def _read_daily_budget(path: Path, day: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        payload = {}
+    if not isinstance(payload, dict) or payload.get("day") != day:
+        return {"day": day, "used": 0}
+    try:
+        used = max(0, int(payload.get("used") or 0))
+    except (TypeError, ValueError):
+        used = 0
+    return {"day": day, "used": used}
+
+
+def _write_daily_budget(path: Path, payload: Mapping[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+        temp.write_text(json.dumps(dict(payload), ensure_ascii=False), encoding="utf-8")
+        temp.replace(path)
+    except OSError:
+        raise VimoRateLimitError(
+            "VIMO daily request budget cannot be persisted"
+        ) from None
+
+
+def _reserve_daily_request_unlocked() -> None:
+    limit, path = _daily_budget_config()
+    if limit is None:
+        return
+    day = datetime.now(VN_TZ).date().isoformat()
+    payload = _read_daily_budget(path, day)
+    if int(payload["used"]) >= limit:
+        raise VimoRateLimitError(f"VIMO daily safety budget reached ({limit})")
+    payload.update(
+        used=int(payload["used"]) + 1,
+        limit=limit,
+        updated_at=datetime.now(VN_TZ).isoformat(timespec="seconds"),
+    )
+    _write_daily_budget(path, payload)
+
+
+def daily_budget_snapshot() -> dict[str, Any]:
+    limit, path = _daily_budget_config()
+    day = datetime.now(VN_TZ).date().isoformat()
+    if limit is None:
+        return {"enabled": False, "day": day, "used": 0, "limit": None}
+    with _LOCK:
+        payload = _read_daily_budget(path, day)
+    used = int(payload["used"])
+    return {
+        "enabled": True,
+        "day": day,
+        "used": used,
+        "limit": limit,
+        "remaining": max(0, limit - used),
+        "usage_pct": round(used / limit * 100, 2),
+    }
+
+
 def is_configured() -> bool:
     return bool(os.getenv("VIMO_API_KEY", "").strip())
 
@@ -78,16 +151,17 @@ def _safe_float(value: Any) -> float | None:
 
 def _request_interval() -> float:
     try:
-        rpm = max(1.0, float(os.getenv("VIMO_REQUESTS_PER_MINUTE", "20")))
-        ratio = max(0.05, min(1.0, float(os.getenv("VIMO_USAGE_RATIO", "0.75"))))
+        rpm = max(1.0, float(os.getenv("VIMO_REQUESTS_PER_MINUTE", "10")))
+        ratio = max(0.05, min(1.0, float(os.getenv("VIMO_USAGE_RATIO", "0.70"))))
     except ValueError:
-        rpm, ratio = 20.0, 0.75
+        rpm, ratio = 10.0, 0.70
     return 60.0 / (rpm * ratio)
 
 
 def _wait_turn() -> None:
     global _NEXT_REQUEST_AT
     with _LOCK:
+        _reserve_daily_request_unlocked()
         now = time.monotonic()
         wait_for = max(0.0, _NEXT_REQUEST_AT - now)
         _NEXT_REQUEST_AT = max(now, _NEXT_REQUEST_AT) + _request_interval()
@@ -115,6 +189,7 @@ def health_dict() -> dict[str, Any]:
     with _LOCK:
         payload = dict(_HEALTH)
     payload.update({"provider": "VIMO", "configured": is_configured(), "optional": True})
+    payload["daily_budget"] = daily_budget_snapshot()
     return payload
 
 
@@ -211,8 +286,8 @@ def call_tool(name: str, arguments: Mapping[str, Any] | None = None) -> dict[str
     }
     last_error: BaseException | None = None
     for attempt in range(attempts):
-        _wait_turn()
         try:
+            _wait_turn()
             with httpx.Client(timeout=TIMEOUT) as client:
                 response = client.post(MCP_ENDPOINT, headers=headers, json=body)
             if response.status_code in {401, 403}:

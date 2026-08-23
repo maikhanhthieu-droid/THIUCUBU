@@ -6,6 +6,7 @@ venv/
 __pycache__/
 *.pyc
 data/cache/
+data/api_budget/
 *.parquet
 data/failed_breaks.json
 data/historical_peaks.json

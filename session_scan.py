@@ -190,6 +190,9 @@ def session_deadline(mode: str) -> dt_time | None:
 
 
 async def wait_until(target: dt_time | None, label: str) -> None:
+    if os.getenv("SESSION_SKIP_WAIT", "").strip().lower() in {"1", "true", "yes", "on"}:
+        logger.info("Audit mode skips wait for %s", label)
+        return
     target_dt = session_target_datetime(target)
     if target_dt is None:
         return

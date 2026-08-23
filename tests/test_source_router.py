@@ -142,3 +142,16 @@ def test_committed_routing_has_disjoint_complete_groups() -> None:
     assert priority.isdisjoint(standard)
     assert routing["meta"]["priority_count"] == len(priority)
     assert routing["meta"]["standard_count"] == len(standard)
+
+
+def test_manual_priority_cannot_exceed_fiinquant_free_plan_cap(tmp_path: Path) -> None:
+    path = tmp_path / "source_routing.json"
+    symbols = [f"A{index:02d}" for index in range(35)]
+    routing = source_router.default_routing()
+    routing["manual"]["force_fiinquant"] = symbols
+    source_router.save_routing(routing, path)
+
+    updated = source_router.update_routing([], universe=symbols, path=path)
+
+    assert len(updated["fiinquant_priority"]) == 32
+    assert updated["manual"]["force_fiinquant"] == symbols

@@ -11,6 +11,14 @@ import market_strategy
 import session_scan
 
 
+def test_pulse_source_rate_is_hard_capped_at_seventy_percent(monkeypatch) -> None:
+    monkeypatch.setenv("PULSE_SOURCE_LIMITS", "KBS=20,VCI=10")
+    monkeypatch.setenv("PULSE_SOURCE_USAGE_RATIO", "0.95")
+
+    assert pulse.pulse_source_effective_rpm("KBS") == 14.0
+    assert pulse.pulse_source_effective_rpm("VCI") == 7.0
+
+
 def test_normalize_kbs_board_repairs_units_and_keeps_liquidity() -> None:
     frame = pd.DataFrame(
         [

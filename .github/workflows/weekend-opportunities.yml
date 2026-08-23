@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "full | test"
+        description: "full | test | audit"
         required: false
         default: "full"
 
@@ -63,6 +63,15 @@ jobs:
             scan-cache-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
             scan-cache-${{ runner.os }}-
 
+      - name: Restore shared API budget
+        uses: actions/cache@v5
+        with:
+          path: data/api_budget
+          key: api-budget-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-${{ github.run_id }}
+          restore-keys: |
+            api-budget-${{ runner.os }}-${{ steps.cache-date.outputs.date }}-
+            api-budget-${{ runner.os }}-
+
       - name: Run weekend opportunity scanner
         id: weekend-scanner
         env:
@@ -82,7 +91,7 @@ jobs:
           WEEKEND_MAX_WORKERS: "3"
           WEEKEND_RANDOM_START_MAX_SEC: "600"
           WEEKEND_FUNDAMENTAL_REQUESTS_PER_MINUTE: "15"
-          WEEKEND_FUNDAMENTAL_USAGE_RATIO: "0.80"
+          WEEKEND_FUNDAMENTAL_USAGE_RATIO: "0.70"
           WEEKEND_FUNDAMENTAL_DELAY_MIN_SEC: "0.4"
           WEEKEND_FUNDAMENTAL_DELAY_MAX_SEC: "1.4"
           WEEKEND_UPDATE_NEAR_HIGH: "1"
@@ -91,12 +100,13 @@ jobs:
           SCAN_MAX_WORKERS: "3"
           SCAN_API_SOURCES: "FIINQUANT,VCI,KBS,DNSE"
           SCAN_SOURCE_REQUESTS_PER_MINUTE: "15"
-          SCAN_SOURCE_LIMITS: "FIINQUANT=80,VCI=20,KBS=20,DNSE=15"
-          FIINQUANT_REQUESTS_PER_MINUTE: "80"
-          FIINQUANT_USAGE_RATIO: "0.75"
+          SCAN_SOURCE_LIMITS: "FIINQUANT=90,VCI=20,KBS=20,DNSE=15"
+          FIINQUANT_REQUESTS_PER_MINUTE: "90"
+          FIINQUANT_USAGE_RATIO: "0.70"
+          FIINQUANT_MONTHLY_REQUEST_BUDGET: "70000"
           # The free FiinQuant plan allows one maximum connection.
           FIINQUANT_MAX_CONCURRENCY: "1"
-          SCAN_SOURCE_USAGE_RATIO: "0.78"
+          SCAN_SOURCE_USAGE_RATIO: "0.70"
           SCAN_REQUEST_JITTER_MIN_SEC: "0.4"
           SCAN_REQUEST_JITTER_MAX_SEC: "1.8"
           SCAN_SOURCE_ERROR_COOLDOWN_MIN_SEC: "30"
@@ -108,10 +118,16 @@ jobs:
           SCAN_STALE_CACHE_MAX_DAYS: "7"
           MARKET_CLOSED_POLICY: "scan_old"
           MARKET_ACTIVITY_PROBE_ACTION: "warn"
-          DRY_RUN: "0"
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'audit' && '1' || '0' }}
         run: |
-          python weekend_plus_safe.py --mode "$WEEKEND_MODE"
-          if [ "$WEEKEND_MODE" != "test" ]; then
+          MODE="$WEEKEND_MODE"
+          if [ "$MODE" = "audit" ]; then
+            echo "Full weekend API audit: complete universe, no random wait, no notification or commit."
+            MODE="full"
+            export WEEKEND_RANDOM_START_MAX_SEC="0"
+          fi
+          python weekend_plus_safe.py --mode "$MODE"
+          if [ "$MODE" != "test" ]; then
             python near_high_filter.py --mode full
           fi
 
@@ -122,10 +138,12 @@ jobs:
           VIMO_API_KEY: ${{ secrets.VIMO_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          VIMO_REQUESTS_PER_MINUTE: "20"
-          VIMO_USAGE_RATIO: "0.75"
+          VIMO_REQUESTS_PER_MINUTE: "10"
+          VIMO_USAGE_RATIO: "0.70"
+          VIMO_DAILY_REQUEST_BUDGET: "70"
           VIMO_MAX_WORKERS: "2"
           VIMO_WEEKEND_MAX_SYMBOLS: "12"
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'audit' && '1' || '0' }}
         run: |
           if [ -z "$VIMO_API_KEY" ]; then
             echo "VIMO_API_KEY is not configured; optional weekend support skipped."
@@ -157,7 +175,7 @@ jobs:
           retention-days: 60
 
       - name: Commit weekend data
-        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.mode != 'test')
+        if: always() && github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.mode != 'test' && inputs.mode != 'audit'))
         run: |
           python scripts/safe_commit_data.py \
             --message "chore: update weekend opportunities [skip ci]" \

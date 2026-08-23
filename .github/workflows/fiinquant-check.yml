@@ -26,6 +26,19 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      - name: Resolve budget date
+        id: budget-date
+        run: echo "date=$(TZ=Asia/Ho_Chi_Minh date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore shared API budget
+        uses: actions/cache@v5
+        with:
+          path: data/api_budget
+          key: api-budget-${{ runner.os }}-${{ steps.budget-date.outputs.date }}-${{ github.run_id }}
+          restore-keys: |
+            api-budget-${{ runner.os }}-${{ steps.budget-date.outputs.date }}-
+            api-budget-${{ runner.os }}-
+
       - name: Verify Secrets exist
         env:
           FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
@@ -46,8 +59,9 @@ jobs:
         env:
           FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
           FIINQUANT_PASSWORD: ${{ secrets.FIINQUANT_PASSWORD }}
-          FIINQUANT_REQUESTS_PER_MINUTE: "20"
-          FIINQUANT_USAGE_RATIO: "0.50"
+          FIINQUANT_REQUESTS_PER_MINUTE: "90"
+          FIINQUANT_USAGE_RATIO: "0.70"
+          FIINQUANT_MONTHLY_REQUEST_BUDGET: "70000"
           FIINQUANT_MAX_CONCURRENCY: "1"
         run: |
           python -m scripts.check_fiinquant
