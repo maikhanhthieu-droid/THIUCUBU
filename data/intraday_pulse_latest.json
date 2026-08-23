@@ -1,8 +1,1 @@
-{
-  "schema_version": "thieucubu.intraday_pulse.v1",
-  "updated_at": null,
-  "trading_date": null,
-  "status": "waiting_for_first_pulse",
-  "top_symbols": [],
-  "events": []
-}
+{"schema_version":"thieucubu.intraday_pulse.v2","updated_at":"2026-08-24T03:44:37+07:00","trading_date":"2026-08-24","status":"ok","universe_count":175,"snapshot_count":173,"elapsed_minutes":null,"fetch":{"requested":175,"received":173,"source_counts":{"KBS":173,"VCI":0},"request_counts":{"KBS":2,"VCI":2},"effective_rpm":{"KBS":14.0,"VCI":14.0},"failures":["VCI:ImportError","VCI:ImportError"]},"market":{"symbol":"VNINDEX","timestamp":"2026-08-21T07:00:00+07:00","source":"KBS","close":1768.12,"open":1733.52,"high":1768.31,"low":1725.4},"portfolio_symbols":["NVL","SMC"],"raw_event_count":0,"alert_limit":5,"top_symbols":[],"events":[]}
