@@ -564,7 +564,6 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                     logger.warning("[%s] %s/%s returned insufficient data", source, symbol, alias)
                     if source == "FIINQUANT":
                         limiter.record_failure()
-                        limiter.disable("unavailable for this run; fallback sources remain active")
                 except SystemExit as exc:
                     logger.warning("[%s] %s/%s stopped by vnstock quota: %s", source, symbol, alias, str(exc).splitlines()[0])
                     if is_rate_limit_error(exc):
@@ -584,7 +583,6 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             is_rate_limit=is_rate_limit_error(exc),
                             retry_after_seconds=extract_retry_after_seconds(exc),
                         )
-                        limiter.disable("unavailable for this run; fallback sources remain active")
                     else:
                         limiter.record_failure(
                             is_rate_limit=is_rate_limit_error(exc),

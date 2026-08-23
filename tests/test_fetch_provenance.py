@@ -141,3 +141,69 @@ def test_safe_fetch_keeps_fiinquant_overlay_on_standard_backfill(monkeypatch, tm
     overlap = result[result["time"].isin(recent_dates)]
     assert not overlap.empty
     assert (overlap["close"] - 10.2).abs().max() < 1e-9
+
+
+def test_transient_fiinquant_failure_falls_back_without_disabling_run(monkeypatch, tmp_path) -> None:
+    dates = pd.bdate_range("2025-01-01", periods=300)
+    deep = pd.DataFrame(
+        {
+            "time": dates,
+            "open": 10.0,
+            "high": 10.5,
+            "low": 9.5,
+            "close": 10.0,
+            "volume": 1_000_000,
+        }
+    )
+
+    class Limiter:
+        def __init__(self) -> None:
+            self.disabled = False
+            self.failures = 0
+            self.disable_calls = 0
+
+        def wait_turn(self, symbol):
+            pass
+
+        def record_success(self):
+            pass
+
+        def record_failure(self, **kwargs):
+            self.failures += 1
+
+        def disable(self, reason):
+            self.disable_calls += 1
+            self.disabled = True
+
+    fiinquant = Limiter()
+    vci = Limiter()
+    calls: list[tuple[str, str]] = []
+
+    def fetch(source, symbol, start, end):
+        calls.append((source, symbol))
+        if source == "FIINQUANT" and symbol == "AAA":
+            raise TimeoutError("504 Gateway Timeout")
+        return deep.copy()
+
+    monkeypatch.setattr(scan_safe, "FETCH_MAX_ATTEMPTS", 1)
+    monkeypatch.setattr(scan_safe, "API_LIMITERS", {"FIINQUANT": fiinquant, "VCI": vci})
+    monkeypatch.setattr(scan_safe, "source_order_for_symbol", lambda symbol: ["FIINQUANT", "VCI"])
+    monkeypatch.setattr(scan_safe, "fetch_source_history", fetch)
+    monkeypatch.setattr(
+        scan_safe.scan,
+        "cache_path",
+        lambda symbol, bars: tmp_path / f"{symbol}.parquet",
+    )
+    monkeypatch.setattr(scan_safe.scan, "write_cache_frame", lambda path, value: None)
+    monkeypatch.setattr(scan_safe.scan, "json_save", lambda *args, **kwargs: None)
+    monkeypatch.setattr(scan_safe.scan, "read_stale_cache", lambda path: None)
+
+    first = scan_safe.fetch_ohlcv_safe("AAA", bars=260, force_refresh=True)
+    second = scan_safe.fetch_ohlcv_safe("BBB", bars=260, force_refresh=True)
+
+    assert first is not None and first.attrs["data_source"] == "VCI"
+    assert second is not None and second.attrs["data_source"] == "FIINQUANT"
+    assert ("FIINQUANT", "BBB") in calls
+    assert fiinquant.failures == 1
+    assert fiinquant.disable_calls == 0
+    assert fiinquant.disabled is False
