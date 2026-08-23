@@ -78,3 +78,62 @@ def test_provenance_records_hybrid_history_source() -> None:
 
     assert result.attrs["data_source"] == "FIINQUANT"
     assert result.attrs["history_backfill_source"] == "VCI"
+
+
+def test_safe_fetch_keeps_fiinquant_overlay_on_standard_backfill(monkeypatch, tmp_path) -> None:
+    deep_dates = pd.bdate_range("2025-01-01", periods=300)
+    recent_dates = deep_dates[-90:]
+
+    def frame(dates, close):
+        return pd.DataFrame(
+            {
+                "time": dates,
+                "open": close,
+                "high": close + 0.5,
+                "low": close - 0.5,
+                "close": close,
+                "volume": 1_000_000,
+            }
+        )
+
+    deep = frame(deep_dates, 10.0)
+    recent = frame(recent_dates, 10.2)
+    recent.attrs["history_partial"] = True
+
+    class Limiter:
+        disabled = False
+
+        def wait_turn(self, symbol):
+            pass
+
+        def record_success(self):
+            pass
+
+        def record_failure(self, **kwargs):
+            pass
+
+        def disable(self, reason):
+            self.disabled = True
+
+    monkeypatch.setattr(scan_safe, "FETCH_MAX_ATTEMPTS", 1)
+    monkeypatch.setattr(scan_safe, "API_LIMITERS", {"FIINQUANT": Limiter(), "VCI": Limiter()})
+    monkeypatch.setattr(scan_safe, "source_order_for_symbol", lambda symbol: ["FIINQUANT", "VCI"])
+    monkeypatch.setattr(
+        scan_safe,
+        "fetch_source_history",
+        lambda source, symbol, start, end: recent.copy() if source == "FIINQUANT" else deep.copy(),
+    )
+    monkeypatch.setattr(scan_safe.scan, "cache_path", lambda symbol, bars: tmp_path / "AAA.parquet")
+    monkeypatch.setattr(scan_safe.scan, "write_cache_frame", lambda path, value: None)
+    monkeypatch.setattr(scan_safe.scan, "json_save", lambda *args, **kwargs: None)
+    monkeypatch.setattr(scan_safe.scan, "read_stale_cache", lambda path: None)
+
+    result = scan_safe.fetch_ohlcv_safe("AAA", bars=260, force_refresh=True)
+
+    assert result is not None
+    assert len(result) == 260
+    assert result.attrs["data_source"] == "FIINQUANT"
+    assert result.attrs["history_backfill_source"] == "VCI"
+    overlap = result[result["time"].isin(recent_dates)]
+    assert not overlap.empty
+    assert (overlap["close"] - 10.2).abs().max() < 1e-9

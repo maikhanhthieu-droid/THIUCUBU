@@ -438,7 +438,13 @@ def merge_recent_history(history: pd.DataFrame, recent: pd.DataFrame) -> pd.Data
     """Overlay recent validated bars on a deeper cache, preferring recent data."""
 
     recent_attrs = dict(recent.attrs)
-    merged = intel.validate_ohlcv(pd.concat([history, recent], ignore_index=True))
+    combined = pd.concat([history, recent], ignore_index=True)
+    combined["time"] = pd.to_datetime(combined["time"], errors="coerce")
+    # De-duplicate before validate_ohlcv sorts the rows. Pandas' default sort
+    # is not stable for equal timestamps, which could otherwise let an older
+    # backfill row overwrite the FiinQuant overlay nondeterministically.
+    combined = combined.dropna(subset=["time"]).drop_duplicates("time", keep="last")
+    merged = intel.validate_ohlcv(combined)
     if merged is not None:
         merged.attrs.update(recent_attrs)
     return merged
@@ -466,6 +472,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
     start = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
     reference = None
     old_metadata: dict[str, Any] = {}
+    fiinquant_recent: pd.DataFrame | None = None
     if path.exists():
         reference = intel.validate_ohlcv(scan.read_cache_frame(path))
         if reference is not None:
@@ -477,6 +484,8 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
             for source in source_order_for_symbol(alias):
                 limiter = API_LIMITERS[source]
                 if limiter.disabled:
+                    continue
+                if source == "FIINQUANT" and fiinquant_recent is not None:
                     continue
                 limiter.wait_turn(alias)
                 try:
@@ -490,9 +499,11 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             continue
                         df, repaired = fetcher.harmonize_with_reference(df, reference, symbol)
                         history_backfill_source = None
+                        result_source = source
                         if source == "FIINQUANT" and raw_attrs.get("history_partial"):
                             if reference is None:
                                 limiter.record_success()
+                                fiinquant_recent = df
                                 logger.info(
                                     "[FIINQUANT] %s recent data OK; using a standard source for deep-history backfill",
                                     symbol,
@@ -505,6 +516,19 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             history_backfill_source = str(
                                 old_metadata.get("data_source") or "VALIDATED_CACHE"
                             )
+                        elif source != "FIINQUANT" and fiinquant_recent is not None:
+                            recent, recent_repaired = fetcher.harmonize_with_reference(
+                                fiinquant_recent,
+                                df,
+                                symbol,
+                            )
+                            merged = merge_recent_history(df, recent)
+                            if merged is None:
+                                continue
+                            df = merged
+                            repaired = repaired or recent_repaired
+                            result_source = "FIINQUANT"
+                            history_backfill_source = source
                         limiter.record_success()
                         df = df.tail(bars).reset_index(drop=True)
                         scan.write_cache_frame(path, df)
@@ -512,7 +536,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                             cache_metadata_path(path),
                             {
                                 "symbol": symbol.upper(),
-                                "data_source": source,
+                                "data_source": result_source,
                                 "history_backfill_source": history_backfill_source,
                                 "as_of": dataframe_as_of(df),
                                 "cached_at": datetime.now(scan.VN_TZ).isoformat(timespec="seconds"),
@@ -525,7 +549,7 @@ def fetch_ohlcv_safe(symbol: str, bars: int = 260, force_refresh: bool = False) 
                         return with_provenance(
                             symbol,
                             df,
-                            source=source,
+                            source=result_source,
                             cache_status="live",
                             history_backfill_source=history_backfill_source,
                         )
