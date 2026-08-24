@@ -538,5 +538,11 @@
     "date": "2026-08-24",
     "score": 21,
     "reason": "vol kiet; OBV up; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "DIG",
+    "date": "2026-08-24",
+    "score": 9,
+    "reason": "OBV up; MFI tot; gan nen break; MTF CẨN THẬN; GẦN ĐIỂM BREAK; ? FAILED_BREAK_CONFIRMED"
   }
 ]
