@@ -1,12 +1,6 @@
 [
   {
     "symbol": "NVL",
-    "date": "2026-07-31",
-    "score": 47,
-    "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
-  },
-  {
-    "symbol": "NVL",
     "date": "2026-08-01",
     "score": 47,
     "reason": "nen chat; OBV up; MFI tot; gan nen break; ? FAILED_BREAK,WEAK_CLOSE"
@@ -658,5 +652,23 @@
     "date": "2026-08-25",
     "score": 0,
     "reason": "discount 47.2% >= target 35%; vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "HDB",
+    "date": "2026-08-26",
+    "score": 42,
+    "reason": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN"
+  },
+  {
+    "symbol": "DBM",
+    "date": "2026-08-26",
+    "score": 11,
+    "reason": "vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "DCF",
+    "date": "2026-08-26",
+    "score": 7,
+    "reason": "vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   }
 ]
