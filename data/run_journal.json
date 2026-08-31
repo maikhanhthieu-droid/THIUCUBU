@@ -2,26 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260814210950-b156eebb",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-08-14T21:17:58+07:00",
-      "success_count": 176,
-      "failed_count": 0,
-      "failed_symbols": [],
-      "elapsed_sec": 488.7,
-      "telegram_sent": true,
-      "updated_at": "2026-08-14T21:17:58+07:00"
-    },
-    {
-      "run_id": "20260815093253-6217f4e7",
-      "mode": "weekend_full",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-08-15T09:32:53+07:00",
-      "updated_at": "2026-08-15T09:32:53+07:00"
-    },
-    {
       "run_id": "20260815093253-6217f4e7",
       "mode": "weekend_full",
       "status": "success",
@@ -802,35 +782,56 @@
       "updated_at": "2026-08-30T04:31:36+07:00"
     },
     {
-      "run_id": "20260831173324-d00b1e87",
+      "run_id": "20260831165633-16148cd2",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-08-31T17:33:24+07:00",
-      "updated_at": "2026-08-31T17:33:24+07:00"
+      "started_at": "2026-08-31T16:56:33+07:00",
+      "updated_at": "2026-08-31T16:56:33+07:00"
     },
     {
-      "run_id": "20260831173324-d00b1e87",
+      "run_id": "20260831165633-16148cd2",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-08-31T18:04:37+07:00",
-      "success_count": 203,
-      "failed_count": 9,
+      "finished_at": "2026-08-31T17:27:18+07:00",
+      "success_count": 202,
+      "failed_count": 10,
       "failed_symbols": [
         "HCI",
         "HFX",
         "HGT",
         "HHB",
         "HHN",
+        "PET",
         "PVI",
         "PVT",
         "TVS",
         "VTO"
       ],
-      "elapsed_sec": 1873.5,
+      "elapsed_sec": 1844.8,
       "telegram_sent": true,
-      "updated_at": "2026-08-31T18:04:37+07:00"
+      "updated_at": "2026-08-31T17:27:18+07:00"
+    },
+    {
+      "run_id": "20260831180945-e959f05e",
+      "mode": "morning_focus",
+      "trigger": "workflow_dispatch",
+      "status": "started",
+      "started_at": "2026-08-31T18:09:45+07:00",
+      "updated_at": "2026-08-31T18:09:45+07:00"
+    },
+    {
+      "run_id": "20260831180945-e959f05e",
+      "mode": "morning_focus",
+      "status": "success",
+      "finished_at": "2026-08-31T18:15:25+07:00",
+      "success_count": 60,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 340.0,
+      "telegram_sent": true,
+      "updated_at": "2026-08-31T18:15:25+07:00"
     }
   ],
-  "last_updated": "2026-08-31T18:04:37+07:00"
+  "last_updated": "2026-08-31T18:15:25+07:00"
 }
