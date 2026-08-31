@@ -802,36 +802,35 @@
       "updated_at": "2026-08-30T04:31:36+07:00"
     },
     {
-      "run_id": "20260831165633-16148cd2",
+      "run_id": "20260831173324-d00b1e87",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-08-31T16:56:33+07:00",
-      "updated_at": "2026-08-31T16:56:33+07:00"
+      "started_at": "2026-08-31T17:33:24+07:00",
+      "updated_at": "2026-08-31T17:33:24+07:00"
     },
     {
-      "run_id": "20260831165633-16148cd2",
+      "run_id": "20260831173324-d00b1e87",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-08-31T17:27:18+07:00",
-      "success_count": 202,
-      "failed_count": 10,
+      "finished_at": "2026-08-31T18:04:37+07:00",
+      "success_count": 203,
+      "failed_count": 9,
       "failed_symbols": [
         "HCI",
         "HFX",
         "HGT",
         "HHB",
         "HHN",
-        "PET",
         "PVI",
         "PVT",
         "TVS",
         "VTO"
       ],
-      "elapsed_sec": 1844.8,
+      "elapsed_sec": 1873.5,
       "telegram_sent": true,
-      "updated_at": "2026-08-31T17:27:18+07:00"
+      "updated_at": "2026-08-31T18:04:37+07:00"
     }
   ],
-  "last_updated": "2026-08-31T17:27:18+07:00"
+  "last_updated": "2026-08-31T18:04:37+07:00"
 }

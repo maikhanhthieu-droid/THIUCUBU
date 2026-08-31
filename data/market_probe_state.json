@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-31T16:58:36+07:00",
+  "updated_at": "2026-08-31T17:35:48+07:00",
   "mode": "eod",
   "result": {
     "checked": 38,
@@ -124,7 +124,7 @@
       "symbol": "MBB",
       "latest_date": "2026-08-28",
       "close": 20.95,
-      "volume": 1915100.0
+      "volume": 2065100.0
     },
     "MSN": {
       "symbol": "MSN",

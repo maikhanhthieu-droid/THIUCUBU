@@ -780,6 +780,12 @@
     "reason": "discount 25.1% >= target 25%; nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF CẨN THẬN"
   },
   {
+    "symbol": "PET",
+    "date": "2026-08-31",
+    "score": 27,
+    "reason": "nen chat; vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
     "symbol": "BVH",
     "date": "2026-08-31",
     "score": 13,

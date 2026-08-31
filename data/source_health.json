@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-31T17:27:18+07:00",
+  "updated_at": "2026-08-31T18:04:37+07:00",
   "sources": {
     "FIINQUANT": {
       "source": "FIINQUANT",
@@ -7,20 +7,20 @@
       "effective_rpm": 63.0,
       "attempts": 20,
       "successes": 0,
-      "failures": 0,
+      "failures": 1,
       "rate_limit_failures": 0,
-      "transient_failures": 15,
+      "transient_failures": 16,
       "parked_count": 5,
       "disabled": false,
-      "last_error": "transient parked",
+      "last_error": "transient",
       "health_score": 0
     },
     "VCI": {
       "source": "VCI",
       "rpm_limit": 20,
       "effective_rpm": 14.0,
-      "attempts": 95,
-      "successes": 65,
+      "attempts": 96,
+      "successes": 66,
       "failures": 0,
       "rate_limit_failures": 0,
       "transient_failures": 0,
@@ -47,8 +47,8 @@
       "source": "DNSE",
       "rpm_limit": 15,
       "effective_rpm": 10.5,
-      "attempts": 101,
-      "successes": 69,
+      "attempts": 102,
+      "successes": 70,
       "failures": 1,
       "rate_limit_failures": 0,
       "transient_failures": 7,
@@ -61,10 +61,10 @@
   "fiinquant_monthly_budget": {
     "enabled": true,
     "period": "2026-08",
-    "used": 357,
+    "used": 400,
     "limit": 70000,
-    "remaining": 69643,
-    "usage_pct": 0.51
+    "remaining": 69600,
+    "usage_pct": 0.571
   },
   "symbol_provenance": {
     "AAA": {
@@ -72,7 +72,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:03:55+07:00",
+      "observed_at": "2026-08-31T17:41:08+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -82,7 +82,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:22:57+07:00",
+      "observed_at": "2026-08-31T17:59:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -92,7 +92,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:06+07:00",
+      "observed_at": "2026-08-31T17:34:15+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -102,7 +102,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:01+07:00",
+      "observed_at": "2026-08-31T17:41:13+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -112,7 +112,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:05+07:00",
+      "observed_at": "2026-08-31T17:41:19+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -122,7 +122,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:09+07:00",
+      "observed_at": "2026-08-31T17:41:22+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -132,7 +132,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:11+07:00",
+      "observed_at": "2026-08-31T17:41:23+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -142,7 +142,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:23:10+07:00",
+      "observed_at": "2026-08-31T17:59:51+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -152,7 +152,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:16+07:00",
+      "observed_at": "2026-08-31T17:41:28+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -162,7 +162,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:15+07:00",
+      "observed_at": "2026-08-31T17:41:27+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -172,7 +172,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:56:56+07:00",
+      "observed_at": "2026-08-31T17:34:11+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -182,7 +182,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:04:22+07:00",
+      "observed_at": "2026-08-31T17:41:33+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -192,7 +192,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:05:44+07:00",
+      "observed_at": "2026-08-31T17:42:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -202,7 +202,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:05:44+07:00",
+      "observed_at": "2026-08-31T17:42:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -212,7 +212,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:03+07:00",
+      "observed_at": "2026-08-31T17:35:15+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -222,7 +222,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:05:54+07:00",
+      "observed_at": "2026-08-31T17:43:07+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -232,7 +232,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:05:48+07:00",
+      "observed_at": "2026-08-31T17:43:02+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -242,7 +242,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:23:48+07:00",
+      "observed_at": "2026-08-31T18:00:07+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -252,7 +252,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:05:58+07:00",
+      "observed_at": "2026-08-31T17:43:12+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -262,7 +262,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:05:56+07:00",
+      "observed_at": "2026-08-31T17:43:09+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -272,7 +272,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:06:03+07:00",
+      "observed_at": "2026-08-31T17:43:17+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -282,7 +282,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:06:08+07:00",
+      "observed_at": "2026-08-31T17:43:22+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -292,7 +292,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:06:28+07:00",
+      "observed_at": "2026-08-31T17:43:30+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -302,7 +302,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:06:33+07:00",
+      "observed_at": "2026-08-31T17:43:36+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -312,7 +312,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:07:46+07:00",
+      "observed_at": "2026-08-31T18:00:20+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -322,7 +322,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:00+07:00",
+      "observed_at": "2026-08-31T17:45:21+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -332,7 +332,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:56:58+07:00",
+      "observed_at": "2026-08-31T17:34:08+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -342,7 +342,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:07:53+07:00",
+      "observed_at": "2026-08-31T17:45:08+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -352,7 +352,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:07:52+07:00",
+      "observed_at": "2026-08-31T17:45:27+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -362,7 +362,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:07:58+07:00",
+      "observed_at": "2026-08-31T17:45:12+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -372,7 +372,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:07+07:00",
+      "observed_at": "2026-08-31T17:45:34+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -382,7 +382,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:10+07:00",
+      "observed_at": "2026-08-31T17:35:22+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -392,7 +392,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:13+07:00",
+      "observed_at": "2026-08-31T17:45:41+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -402,7 +402,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:08+07:00",
+      "observed_at": "2026-08-31T17:35:20+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -412,7 +412,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:20+07:00",
+      "observed_at": "2026-08-31T17:45:47+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -422,7 +422,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:09+07:00",
+      "observed_at": "2026-08-31T17:45:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -432,7 +432,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:17+07:00",
+      "observed_at": "2026-08-31T17:35:30+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -442,7 +442,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:12+07:00",
+      "observed_at": "2026-08-31T17:45:39+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -452,7 +452,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:13+07:00",
+      "observed_at": "2026-08-31T17:35:24+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -462,7 +462,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:27+07:00",
+      "observed_at": "2026-08-31T17:45:54+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -472,7 +472,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:33+07:00",
+      "observed_at": "2026-08-31T17:46:00+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -482,7 +482,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:40+07:00",
+      "observed_at": "2026-08-31T17:46:07+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -492,7 +492,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:46+07:00",
+      "observed_at": "2026-08-31T17:46:12+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -502,7 +502,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:23:57+07:00",
+      "observed_at": "2026-08-31T18:01:06+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -512,7 +512,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:46+07:00",
+      "observed_at": "2026-08-31T17:46:12+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -522,7 +522,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:48+07:00",
+      "observed_at": "2026-08-31T17:46:13+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -532,7 +532,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:55+07:00",
+      "observed_at": "2026-08-31T17:46:20+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -542,7 +542,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:51+07:00",
+      "observed_at": "2026-08-31T17:46:16+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -552,7 +552,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:09:02+07:00",
+      "observed_at": "2026-08-31T17:46:27+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -562,7 +562,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:08:58+07:00",
+      "observed_at": "2026-08-31T17:46:23+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -572,7 +572,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:44+07:00",
+      "observed_at": "2026-08-31T17:34:52+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -582,7 +582,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:49+07:00",
+      "observed_at": "2026-08-31T17:34:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -592,7 +592,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:09:00+07:00",
+      "observed_at": "2026-08-31T17:46:25+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -602,7 +602,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:09:06+07:00",
+      "observed_at": "2026-08-31T17:46:30+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -612,7 +612,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:56+07:00",
+      "observed_at": "2026-08-31T17:35:15+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -622,7 +622,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:09:11+07:00",
+      "observed_at": "2026-08-31T17:46:36+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -632,7 +632,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:09:08+07:00",
+      "observed_at": "2026-08-31T17:46:33+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -642,7 +642,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:35+07:00",
+      "observed_at": "2026-08-31T17:35:48+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -652,7 +652,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:20+07:00",
+      "observed_at": "2026-08-31T17:47:46+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -662,7 +662,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:19+07:00",
+      "observed_at": "2026-08-31T17:47:45+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -672,7 +672,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:20+07:00",
+      "observed_at": "2026-08-31T17:47:45+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -682,7 +682,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:26+07:00",
+      "observed_at": "2026-08-31T17:47:50+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -692,7 +692,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:37+07:00",
+      "observed_at": "2026-08-31T17:35:51+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -702,7 +702,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:40+07:00",
+      "observed_at": "2026-08-31T17:35:53+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -712,7 +712,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:42+07:00",
+      "observed_at": "2026-08-31T17:35:56+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -722,7 +722,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:45+07:00",
+      "observed_at": "2026-08-31T17:35:58+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -732,7 +732,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:26+07:00",
+      "observed_at": "2026-08-31T17:34:36+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -742,7 +742,7 @@
       "as_of": "2026-03-30",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:01+07:00",
+      "observed_at": "2026-08-31T17:36:13+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -752,7 +752,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:05+07:00",
+      "observed_at": "2026-08-31T17:36:18+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -762,7 +762,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:11+07:00",
+      "observed_at": "2026-08-31T17:34:21+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -772,7 +772,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:33+07:00",
+      "observed_at": "2026-08-31T17:47:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -782,7 +782,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:39+07:00",
+      "observed_at": "2026-08-31T17:48:03+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -792,7 +792,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:07+07:00",
+      "observed_at": "2026-08-31T17:36:19+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -802,7 +802,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:18+07:00",
+      "observed_at": "2026-08-31T17:36:31+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -812,7 +812,7 @@
       "as_of": "2026-08-26",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:24+07:00",
+      "observed_at": "2026-08-31T17:36:38+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -822,7 +822,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:39+07:00",
+      "observed_at": "2026-08-31T17:36:56+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -832,7 +832,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:40+07:00",
+      "observed_at": "2026-08-31T17:36:56+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -842,7 +842,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:38+07:00",
+      "observed_at": "2026-08-31T17:36:55+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -852,7 +852,7 @@
       "as_of": "2026-07-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:44+07:00",
+      "observed_at": "2026-08-31T17:37:01+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -862,7 +862,7 @@
       "as_of": "2026-06-30",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:50+07:00",
+      "observed_at": "2026-08-31T17:37:06+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -872,7 +872,7 @@
       "as_of": "2026-08-18",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:45+07:00",
+      "observed_at": "2026-08-31T17:37:00+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -882,7 +882,7 @@
       "as_of": "2026-06-24",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:46+07:00",
+      "observed_at": "2026-08-31T17:37:02+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -892,7 +892,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:59:54+07:00",
+      "observed_at": "2026-08-31T17:37:09+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 0.001,
       "unit_repaired_from_cache": false
@@ -902,7 +902,7 @@
       "as_of": "2026-08-27",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:02+07:00",
+      "observed_at": "2026-08-31T17:38:16+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -912,7 +912,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:07+07:00",
+      "observed_at": "2026-08-31T17:38:20+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -922,7 +922,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:07+07:00",
+      "observed_at": "2026-08-31T17:38:21+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -932,7 +932,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:11+07:00",
+      "observed_at": "2026-08-31T17:38:25+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -942,7 +942,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:29+07:00",
+      "observed_at": "2026-08-31T17:47:52+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -952,7 +952,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:13+07:00",
+      "observed_at": "2026-08-31T17:38:26+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -962,7 +962,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:18+07:00",
+      "observed_at": "2026-08-31T17:38:32+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -972,7 +972,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:24+07:00",
+      "observed_at": "2026-08-31T17:38:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -982,7 +982,7 @@
       "as_of": "2026-08-26",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:22+07:00",
+      "observed_at": "2026-08-31T17:38:35+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -992,7 +992,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:35+07:00",
+      "observed_at": "2026-08-31T17:38:47+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1002,7 +1002,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:39+07:00",
+      "observed_at": "2026-08-31T17:38:52+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1012,7 +1012,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:45+07:00",
+      "observed_at": "2026-08-31T17:38:58+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1022,7 +1022,7 @@
       "as_of": "2023-12-08",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:01:41+07:00",
+      "observed_at": "2026-08-31T17:38:54+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1032,7 +1032,7 @@
       "as_of": "2026-08-27",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:02:42+07:00",
+      "observed_at": "2026-08-31T17:39:54+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1042,7 +1042,7 @@
       "as_of": "2026-08-27",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:22:31+07:00",
+      "observed_at": "2026-08-31T17:59:17+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1052,7 +1052,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:34+07:00",
+      "observed_at": "2026-08-31T17:47:58+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1062,7 +1062,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:36+07:00",
+      "observed_at": "2026-08-31T17:47:59+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1072,7 +1072,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:32+07:00",
+      "observed_at": "2026-08-31T17:34:42+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1082,7 +1082,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:41+07:00",
+      "observed_at": "2026-08-31T17:48:03+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1092,7 +1092,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:33+07:00",
+      "observed_at": "2026-08-31T17:34:42+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1102,7 +1102,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:41+07:00",
+      "observed_at": "2026-08-31T17:48:43+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1112,7 +1112,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:10:45+07:00",
+      "observed_at": "2026-08-31T17:48:09+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1122,7 +1122,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:48+07:00",
+      "observed_at": "2026-08-31T17:48:47+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1132,7 +1132,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:49+07:00",
+      "observed_at": "2026-08-31T17:48:48+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1142,7 +1142,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:47+07:00",
+      "observed_at": "2026-08-31T17:48:46+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1152,7 +1152,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:54+07:00",
+      "observed_at": "2026-08-31T17:48:52+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1162,7 +1162,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:54+07:00",
+      "observed_at": "2026-08-31T17:48:53+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1172,7 +1172,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:16+07:00",
+      "observed_at": "2026-08-31T17:35:29+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1182,7 +1182,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:00+07:00",
+      "observed_at": "2026-08-31T17:48:59+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1192,7 +1192,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:11:58+07:00",
+      "observed_at": "2026-08-31T17:48:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1202,7 +1202,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:06+07:00",
+      "observed_at": "2026-08-31T17:49:06+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1212,7 +1212,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:01+07:00",
+      "observed_at": "2026-08-31T17:48:59+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1222,7 +1222,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:07+07:00",
+      "observed_at": "2026-08-31T17:49:04+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1232,7 +1232,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:12+07:00",
+      "observed_at": "2026-08-31T17:49:10+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1242,7 +1242,7 @@
       "as_of": "2026-06-19",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:15+07:00",
+      "observed_at": "2026-08-31T17:49:16+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1252,7 +1252,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:06+07:00",
+      "observed_at": "2026-08-31T17:34:14+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1262,7 +1262,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:20+07:00",
+      "observed_at": "2026-08-31T17:49:20+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1272,7 +1272,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:21+07:00",
+      "observed_at": "2026-08-31T17:49:22+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1282,7 +1282,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:24+07:00",
+      "observed_at": "2026-08-31T17:49:25+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1292,7 +1292,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:49+07:00",
+      "observed_at": "2026-08-31T17:49:44+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1302,7 +1302,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:30+07:00",
+      "observed_at": "2026-08-31T17:49:30+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1312,7 +1312,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:36+07:00",
+      "observed_at": "2026-08-31T17:49:35+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1322,7 +1322,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:36+07:00",
+      "observed_at": "2026-08-31T17:35:48+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1332,7 +1332,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:47+07:00",
+      "observed_at": "2026-08-31T17:35:04+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1342,7 +1342,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:39+07:00",
+      "observed_at": "2026-08-31T17:34:47+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1352,7 +1352,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:22+07:00",
+      "observed_at": "2026-08-31T17:35:36+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1362,7 +1362,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:41+07:00",
+      "observed_at": "2026-08-31T17:49:39+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1372,7 +1372,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:38+07:00",
+      "observed_at": "2026-08-31T17:49:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1382,7 +1382,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:46+07:00",
+      "observed_at": "2026-08-31T17:49:44+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1392,7 +1392,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:47+07:00",
+      "observed_at": "2026-08-31T17:36:02+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1402,7 +1402,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:43+07:00",
+      "observed_at": "2026-08-31T17:49:42+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1412,7 +1412,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:51+07:00",
+      "observed_at": "2026-08-31T17:49:49+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1422,7 +1422,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:12:55+07:00",
+      "observed_at": "2026-08-31T17:49:52+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1432,7 +1432,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:01+07:00",
+      "observed_at": "2026-08-31T17:50:03+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1442,7 +1442,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:01+07:00",
+      "observed_at": "2026-08-31T17:49:58+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1452,7 +1452,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:06+07:00",
+      "observed_at": "2026-08-31T17:49:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1462,7 +1462,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:45+07:00",
+      "observed_at": "2026-08-31T18:00:35+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1472,7 +1472,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:03+07:00",
+      "observed_at": "2026-08-31T17:50:00+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1482,7 +1482,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:08+07:00",
+      "observed_at": "2026-08-31T17:50:04+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1492,7 +1492,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:09+07:00",
+      "observed_at": "2026-08-31T17:50:05+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1502,7 +1502,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:58+07:00",
+      "observed_at": "2026-08-31T17:35:09+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1512,7 +1512,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:14+07:00",
+      "observed_at": "2026-08-31T17:50:10+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1522,7 +1522,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:12+07:00",
+      "observed_at": "2026-08-31T17:50:07+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1532,7 +1532,7 @@
       "as_of": "2025-03-11",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:17+07:00",
+      "observed_at": "2026-08-31T17:50:13+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1542,7 +1542,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:22+07:00",
+      "observed_at": "2026-08-31T17:50:18+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1552,7 +1552,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:13:19+07:00",
+      "observed_at": "2026-08-31T17:50:15+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1562,7 +1562,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:35+07:00",
+      "observed_at": "2026-08-31T17:51:30+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1572,7 +1572,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:03+07:00",
+      "observed_at": "2026-08-31T17:35:09+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1582,7 +1582,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:59+07:00",
+      "observed_at": "2026-08-31T17:53:57+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1592,7 +1592,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:58+07:00",
+      "observed_at": "2026-08-31T17:35:11+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1602,7 +1602,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:50+07:00",
+      "observed_at": "2026-08-31T17:53:56+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1612,7 +1612,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:38+07:00",
+      "observed_at": "2026-08-31T17:51:33+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1622,7 +1622,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:41+07:00",
+      "observed_at": "2026-08-31T17:51:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1632,7 +1632,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:45+07:00",
+      "observed_at": "2026-08-31T17:51:41+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1642,7 +1642,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:48+07:00",
+      "observed_at": "2026-08-31T17:51:44+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1652,7 +1652,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:50+07:00",
+      "observed_at": "2026-08-31T17:51:46+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1662,7 +1662,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:53+07:00",
+      "observed_at": "2026-08-31T17:51:49+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1672,7 +1672,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:14:56+07:00",
+      "observed_at": "2026-08-31T17:51:51+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1682,7 +1682,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:15:01+07:00",
+      "observed_at": "2026-08-31T17:51:56+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1692,7 +1692,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:15:04+07:00",
+      "observed_at": "2026-08-31T17:51:59+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1702,7 +1702,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:06+07:00",
+      "observed_at": "2026-08-31T17:53:16+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1712,7 +1712,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:19+07:00",
+      "observed_at": "2026-08-31T17:53:10+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1722,7 +1722,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:48+07:00",
+      "observed_at": "2026-08-31T17:36:00+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1732,7 +1732,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:13+07:00",
+      "observed_at": "2026-08-31T17:34:21+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1742,7 +1742,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:16+07:00",
+      "observed_at": "2026-08-31T17:34:26+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1752,7 +1752,7 @@
       "as_of": "2026-08-27",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:12+07:00",
+      "observed_at": "2026-08-31T17:53:03+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1762,7 +1762,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:25+07:00",
+      "observed_at": "2026-08-31T17:53:23+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1772,7 +1772,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:33+07:00",
+      "observed_at": "2026-08-31T17:53:30+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1782,7 +1782,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:01+07:00",
+      "observed_at": "2026-08-31T17:34:11+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1792,7 +1792,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:39+07:00",
+      "observed_at": "2026-08-31T17:53:36+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1802,7 +1802,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:28+07:00",
+      "observed_at": "2026-08-31T17:53:26+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1812,7 +1812,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:46+07:00",
+      "observed_at": "2026-08-31T17:53:43+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1822,7 +1822,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:52+07:00",
+      "observed_at": "2026-08-31T17:53:50+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1832,7 +1832,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:41+07:00",
+      "observed_at": "2026-08-31T17:53:39+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1842,7 +1842,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:45+07:00",
+      "observed_at": "2026-08-31T17:53:45+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1852,7 +1852,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:16:55+07:00",
+      "observed_at": "2026-08-31T17:53:47+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1862,7 +1862,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:01+07:00",
+      "observed_at": "2026-08-31T17:53:56+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1872,7 +1872,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:21:59+07:00",
+      "observed_at": "2026-08-31T17:59:05+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1882,7 +1882,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:56:57+07:00",
+      "observed_at": "2026-08-31T17:34:06+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1892,7 +1892,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:07+07:00",
+      "observed_at": "2026-08-31T17:54:01+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1902,7 +1902,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:28+07:00",
+      "observed_at": "2026-08-31T17:34:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1912,7 +1912,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:05+07:00",
+      "observed_at": "2026-08-31T17:54:03+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1922,7 +1922,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:11+07:00",
+      "observed_at": "2026-08-31T17:54:06+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1932,7 +1932,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:17+07:00",
+      "observed_at": "2026-08-31T17:54:11+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1942,7 +1942,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:14+07:00",
+      "observed_at": "2026-08-31T17:54:10+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1952,7 +1952,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:16+07:00",
+      "observed_at": "2026-08-31T17:54:12+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1962,7 +1962,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:22+07:00",
+      "observed_at": "2026-08-31T17:54:16+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1972,7 +1972,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:20+07:00",
+      "observed_at": "2026-08-31T17:54:17+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1982,7 +1982,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:53+07:00",
+      "observed_at": "2026-08-31T17:34:58+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -1992,7 +1992,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:26+07:00",
+      "observed_at": "2026-08-31T17:54:21+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2002,7 +2002,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:36+07:00",
+      "observed_at": "2026-08-31T17:34:47+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2012,7 +2012,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:17:26+07:00",
+      "observed_at": "2026-08-31T17:54:23+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2022,7 +2022,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:18:34+07:00",
+      "observed_at": "2026-08-31T17:55:38+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2032,7 +2032,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:28+07:00",
+      "observed_at": "2026-08-31T17:34:37+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2042,7 +2042,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:18:45+07:00",
+      "observed_at": "2026-08-31T17:55:29+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2052,7 +2052,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:22+07:00",
+      "observed_at": "2026-08-31T17:34:31+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2062,7 +2062,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:02+07:00",
+      "observed_at": "2026-08-31T17:34:05+07:00",
       "price_unit": "index_points",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2072,7 +2072,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:58:29+07:00",
+      "observed_at": "2026-08-31T17:35:42+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2082,7 +2082,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:18:39+07:00",
+      "observed_at": "2026-08-31T17:55:34+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2092,7 +2092,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:07+07:00",
+      "observed_at": "2026-08-31T17:34:16+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2102,7 +2102,7 @@
       "as_of": "2026-08-28",
       "data_source": "KBS",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:18:50+07:00",
+      "observed_at": "2026-08-31T17:55:44+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2112,7 +2112,7 @@
       "as_of": "2026-08-28",
       "data_source": "VCI",
       "cache_status": "live",
-      "observed_at": "2026-08-31T16:57:42+07:00",
+      "observed_at": "2026-08-31T17:34:53+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2122,7 +2122,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:18:41+07:00",
+      "observed_at": "2026-08-31T17:55:36+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
@@ -2132,7 +2132,7 @@
       "as_of": "2026-08-28",
       "data_source": "DNSE",
       "cache_status": "live",
-      "observed_at": "2026-08-31T17:22:11+07:00",
+      "observed_at": "2026-08-31T17:59:24+07:00",
       "price_unit": "thousand_vnd",
       "unit_scale_applied": 1.0,
       "unit_repaired_from_cache": false
