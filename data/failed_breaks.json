@@ -994,5 +994,17 @@
     "date": "2026-09-01",
     "score": 0,
     "reason": "discount 39.4% >= target 30%; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "MEL",
+    "date": "2026-09-01",
+    "score": 10,
+    "reason": "vol kiet; OBV up; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "MDG",
+    "date": "2026-09-01",
+    "score": 0,
+    "reason": "MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,DISTRIBUTION"
   }
 ]
