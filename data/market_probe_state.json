@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-09-07T16:02:42+07:00",
-  "mode": "eod",
+  "updated_at": "2026-09-07T17:23:08+07:00",
+  "mode": "morning_focus",
   "result": {
     "checked": 31,
     "with_previous": 31,
-    "changed": 15,
-    "unchanged": 16,
+    "changed": 6,
+    "unchanged": 25,
     "old_date": 16,
     "zero_volume": 0,
     "no_data": 7,
@@ -14,7 +14,7 @@
       "2026-09-04": 16
     },
     "inactive": false,
-    "reason": "market_active changed 15/31",
+    "reason": "market_active changed 6/31",
     "policy": "scan_old",
     "action": "warn"
   },

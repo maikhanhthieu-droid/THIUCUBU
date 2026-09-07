@@ -1422,12 +1422,6 @@
     "reason": "vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   },
   {
-    "symbol": "VGI",
-    "date": "2026-09-07",
-    "score": 42,
-    "reason": "nen chat; vol kiet; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
-  },
-  {
     "symbol": "PVT",
     "date": "2026-09-07",
     "score": 33,
@@ -1446,10 +1440,16 @@
     "reason": "nen chat; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
   },
   {
+    "symbol": "GVR",
+    "date": "2026-09-07",
+    "score": 25,
+    "reason": "discount 31.8% >= target 30%; nen chat; vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
     "symbol": "SBT",
     "date": "2026-09-07",
-    "score": 20,
-    "reason": "MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+    "score": 24,
+    "reason": "OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   },
   {
     "symbol": "CTR",
@@ -1488,6 +1488,18 @@
     "reason": "discount 55.4% >= target 43%; vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   },
   {
+    "symbol": "DXS",
+    "date": "2026-09-07",
+    "score": 4,
+    "reason": "discount 57.1% >= target 43%; nen chat; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "NVL",
+    "date": "2026-09-07",
+    "score": 3,
+    "reason": "nen chat; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
     "symbol": "HDC",
     "date": "2026-09-07",
     "score": 3,
@@ -1500,10 +1512,34 @@
     "reason": "discount 51.6% >= target 35%; vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   },
   {
+    "symbol": "AAA",
+    "date": "2026-09-07",
+    "score": 0,
+    "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "BVS",
+    "date": "2026-09-07",
+    "score": 0,
+    "reason": "OBV up; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "CRE",
+    "date": "2026-09-07",
+    "score": 0,
+    "reason": "MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,MTF_DISTRIBUTION"
+  },
+  {
     "symbol": "DGW",
     "date": "2026-09-07",
     "score": 0,
     "reason": "MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "HT1",
+    "date": "2026-09-07",
+    "score": 0,
+    "reason": "vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   },
   {
     "symbol": "KSB",
@@ -1516,5 +1552,11 @@
     "date": "2026-09-07",
     "score": 0,
     "reason": "nen chat; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "SIP",
+    "date": "2026-09-07",
+    "score": 0,
+    "reason": "nen chat; vol kiet; gan nen break; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]
