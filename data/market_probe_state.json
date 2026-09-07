@@ -1,20 +1,20 @@
 {
-  "updated_at": "2026-09-07T17:23:08+07:00",
-  "mode": "morning_focus",
+  "updated_at": "2026-09-07T19:49:11+07:00",
+  "mode": "eod",
   "result": {
-    "checked": 31,
+    "checked": 38,
     "with_previous": 31,
-    "changed": 6,
-    "unchanged": 25,
-    "old_date": 16,
+    "changed": 0,
+    "unchanged": 31,
+    "old_date": 23,
     "zero_volume": 0,
-    "no_data": 7,
+    "no_data": 0,
     "latest_dates": {
       "2026-09-07": 15,
-      "2026-09-04": 16
+      "2026-09-04": 23
     },
-    "inactive": false,
-    "reason": "market_active changed 6/31",
+    "inactive": true,
+    "reason": "khong_doi 31/31",
     "policy": "scan_old",
     "action": "warn"
   },
@@ -31,6 +31,12 @@
       "close": 36.5,
       "volume": 2364100.0
     },
+    "BSR": {
+      "symbol": "BSR",
+      "latest_date": "2026-09-04",
+      "close": 26.75,
+      "volume": 4903700.0
+    },
     "CTG": {
       "symbol": "CTG",
       "latest_date": "2026-09-04",
@@ -42,6 +48,36 @@
       "latest_date": "2026-09-04",
       "close": 32.55,
       "volume": 3346700.0
+    },
+    "DGC": {
+      "symbol": "DGC",
+      "latest_date": "2026-09-04",
+      "close": 47.1,
+      "volume": 2136400.0
+    },
+    "DIG": {
+      "symbol": "DIG",
+      "latest_date": "2026-09-04",
+      "close": 11.1,
+      "volume": 7543300.0
+    },
+    "DPM": {
+      "symbol": "DPM",
+      "latest_date": "2026-09-04",
+      "close": 22.8,
+      "volume": 3915800.0
+    },
+    "FPT": {
+      "symbol": "FPT",
+      "latest_date": "2026-09-04",
+      "close": 72.8,
+      "volume": 3549500.0
+    },
+    "FRT": {
+      "symbol": "FRT",
+      "latest_date": "2026-09-04",
+      "close": 0.14,
+      "volume": 250600.0
     },
     "GAS": {
       "symbol": "GAS",
@@ -114,6 +150,12 @@
       "latest_date": "2026-09-04",
       "close": 25.7,
       "volume": 3330100.0
+    },
+    "PNJ": {
+      "symbol": "PNJ",
+      "latest_date": "2026-09-04",
+      "close": 40.05,
+      "volume": 8025100.0
     },
     "PVD": {
       "symbol": "PVD",
