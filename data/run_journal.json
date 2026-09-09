@@ -891,27 +891,27 @@
       "updated_at": "2026-09-08T19:20:32+07:00"
     },
     {
-      "run_id": "20260909151645-b5aba439",
+      "run_id": "20260909154426-b53e3b7d",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-09T15:16:45+07:00",
-      "updated_at": "2026-09-09T15:16:45+07:00"
+      "started_at": "2026-09-09T15:44:26+07:00",
+      "updated_at": "2026-09-09T15:44:26+07:00"
     },
     {
-      "run_id": "20260909151645-b5aba439",
+      "run_id": "20260909154426-b53e3b7d",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-09T15:39:12+07:00",
+      "finished_at": "2026-09-09T16:06:40+07:00",
       "success_count": 211,
       "failed_count": 1,
       "failed_symbols": [
         "TQW"
       ],
-      "elapsed_sec": 1346.9,
+      "elapsed_sec": 1334.5,
       "telegram_sent": true,
-      "updated_at": "2026-09-09T15:39:12+07:00"
+      "updated_at": "2026-09-09T16:06:40+07:00"
     }
   ],
-  "last_updated": "2026-09-09T15:39:12+07:00"
+  "last_updated": "2026-09-09T16:06:40+07:00"
 }
