@@ -1,6 +1,6 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-09T18:56:45+07:00",
+  "updated_at": "2026-09-09T19:24:13+07:00",
   "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -72,7 +72,7 @@
       "last_price": 13.0,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -96,7 +96,7 @@
       "last_price": 61.3,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-09-08T16:20:05+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -120,7 +120,7 @@
       "last_price": 13.6,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-09-09T16:06:26+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -144,7 +144,7 @@
       "last_price": 72.1,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -168,7 +168,7 @@
       "last_price": 85.9,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-08-31T17:27:03+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -191,8 +191,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 25.5,
       "as_of": "2026-09-09",
-      "first_promoted_at": "2026-09-09T18:56:45+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "first_promoted_at": "2026-09-09T19:24:13+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -215,8 +215,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 2.2,
       "as_of": "2026-09-09",
-      "first_promoted_at": "2026-09-09T18:56:45+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "first_promoted_at": "2026-09-09T19:24:13+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -239,8 +239,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 1.83,
       "as_of": "2023-07-06",
-      "first_promoted_at": "2026-09-09T18:56:45+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "first_promoted_at": "2026-09-09T19:24:13+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -263,8 +263,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 8.9,
       "as_of": "2026-03-30",
-      "first_promoted_at": "2026-09-09T18:56:45+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "first_promoted_at": "2026-09-09T19:24:13+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -744,7 +744,7 @@
       "last_price": 49.0,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-09-04T16:04:07+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -768,7 +768,7 @@
       "last_price": 23.0,
       "as_of": "2026-09-09",
       "first_promoted_at": "2026-08-31T17:27:03+07:00",
-      "last_evaluated_at": "2026-09-09T18:56:45+07:00",
+      "last_evaluated_at": "2026-09-09T19:24:13+07:00",
       "consecutive_misses": 0
     },
     {
