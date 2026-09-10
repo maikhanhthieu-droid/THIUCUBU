@@ -2,22 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260822024040-0aa0f4f4",
-      "mode": "eod",
-      "trigger": "workflow_dispatch",
-      "status": "started",
-      "started_at": "2026-08-22T02:40:40+07:00",
-      "updated_at": "2026-08-22T02:40:40+07:00"
-    },
-    {
-      "run_id": "20260822093453-7ede7a86",
-      "mode": "weekend_full",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-08-22T09:34:53+07:00",
-      "updated_at": "2026-08-22T09:34:53+07:00"
-    },
-    {
       "run_id": "20260822093453-7ede7a86",
       "mode": "weekend_full",
       "status": "success",
@@ -917,7 +901,36 @@
       "elapsed_sec": 1366.2,
       "telegram_sent": true,
       "updated_at": "2026-09-09T19:24:27+07:00"
+    },
+    {
+      "run_id": "20260910151603-4d73d5cc",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-09-10T15:16:03+07:00",
+      "updated_at": "2026-09-10T15:16:03+07:00"
+    },
+    {
+      "run_id": "20260910151603-4d73d5cc",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-09-10T15:45:13+07:00",
+      "success_count": 204,
+      "failed_count": 8,
+      "failed_symbols": [
+        "UPS",
+        "UTT",
+        "UXC",
+        "VBG",
+        "VBT",
+        "VCE",
+        "VCT",
+        "VDB"
+      ],
+      "elapsed_sec": 1749.2,
+      "telegram_sent": true,
+      "updated_at": "2026-09-10T15:45:13+07:00"
     }
   ],
-  "last_updated": "2026-09-09T19:24:27+07:00"
+  "last_updated": "2026-09-10T15:45:13+07:00"
 }
