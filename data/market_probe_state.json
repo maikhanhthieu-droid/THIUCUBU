@@ -1,19 +1,20 @@
 {
-  "updated_at": "2026-09-10T16:02:39+07:00",
+  "updated_at": "2026-09-10T18:33:28+07:00",
   "mode": "eod",
   "result": {
     "checked": 38,
     "with_previous": 38,
-    "changed": 38,
-    "unchanged": 0,
-    "old_date": 0,
+    "changed": 11,
+    "unchanged": 27,
+    "old_date": 10,
     "zero_volume": 0,
     "no_data": 0,
     "latest_dates": {
-      "2026-09-10": 38
+      "2026-09-10": 28,
+      "2026-09-09": 10
     },
     "inactive": false,
-    "reason": "market_active changed 38/38",
+    "reason": "market_active changed 11/38",
     "policy": "scan_old",
     "action": "warn"
   },
@@ -38,15 +39,15 @@
     },
     "CTG": {
       "symbol": "CTG",
-      "latest_date": "2026-09-10",
-      "close": 30.55,
-      "volume": 6515200.0
+      "latest_date": "2026-09-09",
+      "close": 30.7,
+      "volume": 8789800.0
     },
     "DCM": {
       "symbol": "DCM",
-      "latest_date": "2026-09-10",
-      "close": 32.5,
-      "volume": 2906900.0
+      "latest_date": "2026-09-09",
+      "close": 32.65,
+      "volume": 3045500.0
     },
     "DGC": {
       "symbol": "DGC",
@@ -75,14 +76,14 @@
     "FRT": {
       "symbol": "FRT",
       "latest_date": "2026-09-10",
-      "close": 0.14,
+      "close": 140.0,
       "volume": 455100.0
     },
     "GAS": {
       "symbol": "GAS",
-      "latest_date": "2026-09-10",
-      "close": 84.6,
-      "volume": 1143100.0
+      "latest_date": "2026-09-09",
+      "close": 85.7,
+      "volume": 2290400.0
     },
     "GMD": {
       "symbol": "GMD",
@@ -92,9 +93,9 @@
     },
     "HCM": {
       "symbol": "HCM",
-      "latest_date": "2026-09-10",
-      "close": 26.3,
-      "volume": 2621700.0
+      "latest_date": "2026-09-09",
+      "close": 26.35,
+      "volume": 2455500.0
     },
     "HDB": {
       "symbol": "HDB",
@@ -116,15 +117,15 @@
     },
     "KDH": {
       "symbol": "KDH",
-      "latest_date": "2026-09-10",
+      "latest_date": "2026-09-09",
       "close": 17.0,
-      "volume": 2432900.0
+      "volume": 5114800.0
     },
     "MBB": {
       "symbol": "MBB",
-      "latest_date": "2026-09-10",
-      "close": 20.1,
-      "volume": 6900700.0
+      "latest_date": "2026-09-09",
+      "close": 20.2,
+      "volume": 12163000.0
     },
     "MSN": {
       "symbol": "MSN",
@@ -146,9 +147,9 @@
     },
     "NLG": {
       "symbol": "NLG",
-      "latest_date": "2026-09-10",
-      "close": 24.8,
-      "volume": 1145200.0
+      "latest_date": "2026-09-09",
+      "close": 25.25,
+      "volume": 1582300.0
     },
     "PNJ": {
       "symbol": "PNJ",
@@ -158,9 +159,9 @@
     },
     "PVD": {
       "symbol": "PVD",
-      "latest_date": "2026-09-10",
-      "close": 18.5,
-      "volume": 4406600.0
+      "latest_date": "2026-09-09",
+      "close": 18.65,
+      "volume": 3488900.0
     },
     "PVS": {
       "symbol": "PVS",
@@ -170,9 +171,9 @@
     },
     "SSI": {
       "symbol": "SSI",
-      "latest_date": "2026-09-10",
-      "close": 21.0,
-      "volume": 12807500.0
+      "latest_date": "2026-09-09",
+      "close": 20.9,
+      "volume": 9488000.0
     },
     "STB": {
       "symbol": "STB",
@@ -230,9 +231,9 @@
     },
     "VNM": {
       "symbol": "VNM",
-      "latest_date": "2026-09-10",
-      "close": 61.6,
-      "volume": 1890400.0
+      "latest_date": "2026-09-09",
+      "close": 61.3,
+      "volume": 1620000.0
     },
     "VPB": {
       "symbol": "VPB",
