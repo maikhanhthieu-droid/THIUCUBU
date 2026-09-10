@@ -903,18 +903,18 @@
       "updated_at": "2026-09-09T19:24:27+07:00"
     },
     {
-      "run_id": "20260910151603-4d73d5cc",
+      "run_id": "20260910155906-70e01e8d",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-10T15:16:03+07:00",
-      "updated_at": "2026-09-10T15:16:03+07:00"
+      "started_at": "2026-09-10T15:59:06+07:00",
+      "updated_at": "2026-09-10T15:59:06+07:00"
     },
     {
-      "run_id": "20260910151603-4d73d5cc",
+      "run_id": "20260910155906-70e01e8d",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-10T15:45:13+07:00",
+      "finished_at": "2026-09-10T16:27:06+07:00",
       "success_count": 204,
       "failed_count": 8,
       "failed_symbols": [
@@ -927,10 +927,10 @@
         "VCT",
         "VDB"
       ],
-      "elapsed_sec": 1749.2,
+      "elapsed_sec": 1680.4,
       "telegram_sent": true,
-      "updated_at": "2026-09-10T15:45:13+07:00"
+      "updated_at": "2026-09-10T16:27:06+07:00"
     }
   ],
-  "last_updated": "2026-09-10T15:45:13+07:00"
+  "last_updated": "2026-09-10T16:27:06+07:00"
 }
