@@ -917,18 +917,18 @@
       "updated_at": "2026-09-11T16:00:38+07:00"
     },
     {
-      "run_id": "20260911183251-6d5af9a5",
+      "run_id": "20260911190458-68d30233",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-11T18:32:51+07:00",
-      "updated_at": "2026-09-11T18:32:51+07:00"
+      "started_at": "2026-09-11T19:04:58+07:00",
+      "updated_at": "2026-09-11T19:04:58+07:00"
     },
     {
-      "run_id": "20260911183251-6d5af9a5",
+      "run_id": "20260911190458-68d30233",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-11T18:55:28+07:00",
+      "finished_at": "2026-09-11T19:27:54+07:00",
       "success_count": 209,
       "failed_count": 3,
       "failed_symbols": [
@@ -936,10 +936,10 @@
         "VTM",
         "VXP"
       ],
-      "elapsed_sec": 1357.3,
+      "elapsed_sec": 1376.5,
       "telegram_sent": true,
-      "updated_at": "2026-09-11T18:55:28+07:00"
+      "updated_at": "2026-09-11T19:27:54+07:00"
     }
   ],
-  "last_updated": "2026-09-11T18:55:28+07:00"
+  "last_updated": "2026-09-11T19:27:54+07:00"
 }
