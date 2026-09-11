@@ -926,13 +926,13 @@
       "updated_at": "2026-09-10T19:18:01+07:00"
     },
     {
-      "run_id": "20260911034046-43409ed3",
-      "mode": "afternoon_split",
+      "run_id": "20260911043126-ed1e044a",
+      "mode": "eod",
       "trigger": "workflow_dispatch",
       "status": "started",
-      "started_at": "2026-09-11T03:40:46+07:00",
-      "updated_at": "2026-09-11T03:40:46+07:00"
+      "started_at": "2026-09-11T04:31:26+07:00",
+      "updated_at": "2026-09-11T04:31:26+07:00"
     }
   ],
-  "last_updated": "2026-09-11T03:40:46+07:00"
+  "last_updated": "2026-09-11T04:31:26+07:00"
 }
