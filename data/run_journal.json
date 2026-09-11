@@ -914,28 +914,28 @@
       "updated_at": "2026-09-11T04:31:26+07:00"
     },
     {
-      "run_id": "20260911151102-32d58bec",
+      "run_id": "20260911153817-b37432fd",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-11T15:11:02+07:00",
-      "updated_at": "2026-09-11T15:11:02+07:00"
+      "started_at": "2026-09-11T15:38:17+07:00",
+      "updated_at": "2026-09-11T15:38:17+07:00"
     },
     {
-      "run_id": "20260911151102-32d58bec",
+      "run_id": "20260911153817-b37432fd",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-11T15:33:08+07:00",
+      "finished_at": "2026-09-11T16:00:38+07:00",
       "success_count": 210,
       "failed_count": 2,
       "failed_symbols": [
         "VNX",
         "VPW"
       ],
-      "elapsed_sec": 1325.9,
+      "elapsed_sec": 1341.6,
       "telegram_sent": true,
-      "updated_at": "2026-09-11T15:33:08+07:00"
+      "updated_at": "2026-09-11T16:00:38+07:00"
     }
   ],
-  "last_updated": "2026-09-11T15:33:08+07:00"
+  "last_updated": "2026-09-11T16:00:38+07:00"
 }
