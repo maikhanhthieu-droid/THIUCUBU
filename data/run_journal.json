@@ -2,35 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260824154438-69c0662c",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-08-24T15:44:38+07:00",
-      "updated_at": "2026-08-24T15:44:38+07:00"
-    },
-    {
-      "run_id": "20260824154438-69c0662c",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-08-24T16:03:43+07:00",
-      "success_count": 204,
-      "failed_count": 8,
-      "failed_symbols": [
-        "BCV",
-        "BED",
-        "BGW",
-        "BHG",
-        "BHK",
-        "BLN",
-        "BMD",
-        "BMG"
-      ],
-      "elapsed_sec": 1144.9,
-      "telegram_sent": true,
-      "updated_at": "2026-08-24T16:03:43+07:00"
-    },
-    {
       "run_id": "20260825110531-5796bb10",
       "mode": "auto",
       "trigger": "schedule",
@@ -939,7 +910,27 @@
       "elapsed_sec": 1376.5,
       "telegram_sent": true,
       "updated_at": "2026-09-11T19:27:54+07:00"
+    },
+    {
+      "run_id": "20260912131306-d8c33f30",
+      "mode": "weekend_full",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-09-12T13:13:06+07:00",
+      "updated_at": "2026-09-12T13:13:06+07:00"
+    },
+    {
+      "run_id": "20260912131306-d8c33f30",
+      "mode": "weekend_full",
+      "status": "success",
+      "finished_at": "2026-09-12T13:39:31+07:00",
+      "success_count": 197,
+      "failed_count": 0,
+      "failed_symbols": [],
+      "elapsed_sec": 1584.9,
+      "telegram_sent": true,
+      "updated_at": "2026-09-12T13:39:31+07:00"
     }
   ],
-  "last_updated": "2026-09-11T19:27:54+07:00"
+  "last_updated": "2026-09-12T13:39:31+07:00"
 }
