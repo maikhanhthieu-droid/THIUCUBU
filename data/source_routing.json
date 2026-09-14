@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-14T16:45:06+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-09-14T16:56:13+07:00",
+  "last_mode": "morning_focus",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -70,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -382,7 +382,7 @@
       "last_price": 59.9,
       "as_of": "2026-09-11",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -454,7 +454,7 @@
       "last_price": 12.6,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -478,7 +478,7 @@
       "last_price": 71.7,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -541,8 +541,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 5,
@@ -552,7 +551,7 @@
       "last_price": 38.3,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
       "consecutive_misses": 0
     },
     {
@@ -1707,7 +1706,7 @@
       "KBS": 305,
       "DNSE": 319
     },
-    "evaluated_symbols": 207,
+    "evaluated_symbols": 67,
     "demote_after_scans": 3
   }
 }
