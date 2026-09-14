@@ -914,38 +914,35 @@
       "updated_at": "2026-09-14T16:56:24+07:00"
     },
     {
-      "run_id": "20260914200215-61e6d987",
+      "run_id": "20260914203441-1860c106",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-14T20:02:15+07:00",
-      "updated_at": "2026-09-14T20:02:15+07:00"
+      "started_at": "2026-09-14T20:34:41+07:00",
+      "updated_at": "2026-09-14T20:34:41+07:00"
     },
     {
-      "run_id": "20260914200215-61e6d987",
+      "run_id": "20260914203441-1860c106",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-14T20:29:27+07:00",
-      "success_count": 200,
-      "failed_count": 12,
+      "finished_at": "2026-09-14T21:01:12+07:00",
+      "success_count": 203,
+      "failed_count": 9,
       "failed_symbols": [
         "BCB",
         "BCV",
         "BED",
         "BGW",
         "BHG",
-        "BHI",
         "BHK",
-        "BHN",
-        "BIC",
         "BLN",
         "BMD",
         "BMG"
       ],
-      "elapsed_sec": 1631.9,
+      "elapsed_sec": 1590.8,
       "telegram_sent": true,
-      "updated_at": "2026-09-14T20:29:27+07:00"
+      "updated_at": "2026-09-14T21:01:12+07:00"
     }
   ],
-  "last_updated": "2026-09-14T20:29:27+07:00"
+  "last_updated": "2026-09-14T21:01:12+07:00"
 }
