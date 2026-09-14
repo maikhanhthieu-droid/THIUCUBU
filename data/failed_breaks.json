@@ -2428,5 +2428,17 @@
     "date": "2026-09-14",
     "score": 0,
     "reason": "nen chat; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "BBS",
+    "date": "2026-09-14",
+    "score": 37,
+    "reason": "discount 38.1% >= target 35%; nen chat; vol kiet; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN"
+  },
+  {
+    "symbol": "NLG",
+    "date": "2026-09-14",
+    "score": 0,
+    "reason": "MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
   }
 ]
