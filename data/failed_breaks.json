@@ -2440,5 +2440,35 @@
     "date": "2026-09-14",
     "score": 0,
     "reason": "MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "CCI",
+    "date": "2026-09-14",
+    "score": 19,
+    "reason": "vol kiet; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "CAT",
+    "date": "2026-09-14",
+    "score": 0,
+    "reason": "nen chat; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "CBS",
+    "date": "2026-09-14",
+    "score": 0,
+    "reason": "MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "CCC",
+    "date": "2026-09-14",
+    "score": 0,
+    "reason": "discount 61.1% >= target 35%; vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "CIA",
+    "date": "2026-09-14",
+    "score": 0,
+    "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]

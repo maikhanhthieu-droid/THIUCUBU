@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-14T21:13:33+07:00",
-  "last_mode": "afternoon_focus",
+  "updated_at": "2026-09-14T22:35:29+07:00",
+  "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-14T21:13:33+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -70,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-14T21:13:33+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -180,17 +180,18 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED"
+        "breakout:FAILED_BREAK_CONFIRMED",
+        "state_transition"
       ],
       "attention_score": 134,
       "win_score": 0,
       "advanced_score": 11,
-      "market_state": "CAUTION",
+      "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 10.3,
-      "as_of": "2026-09-11",
+      "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -382,7 +383,7 @@
       "last_price": 59.3,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-14T21:13:33+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -454,7 +455,7 @@
       "last_price": 12.6,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-14T21:13:33+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -478,7 +479,7 @@
       "last_price": 71.7,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-09-14T21:13:33+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -502,7 +503,7 @@
       "last_price": 10.6,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -519,14 +520,14 @@
         "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
-      "win_score": 25,
-      "advanced_score": 30,
+      "win_score": 13,
+      "advanced_score": 23,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 84.0,
-      "as_of": "2026-09-11",
+      "last_price": 83.0,
+      "as_of": "2026-09-14",
       "first_promoted_at": "2026-08-31T17:27:03+07:00",
-      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -550,7 +551,7 @@
       "last_price": 38.3,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-14T21:13:33+07:00",
+      "last_evaluated_at": "2026-09-14T22:35:29+07:00",
       "consecutive_misses": 0
     },
     {
@@ -818,6 +819,14 @@
       "BTP",
       "BWS",
       "CAD",
+      "CBS",
+      "CCA",
+      "CCC",
+      "CCI",
+      "CDP",
+      "CDR",
+      "CFV",
+      "CGV",
       "CII",
       "CLC",
       "CLI",
@@ -1117,7 +1126,11 @@
       "BVS",
       "BWE",
       "CAN",
+      "CAT",
+      "CCR",
       "CEO",
+      "CFM",
+      "CIA",
       "CLH",
       "CLM",
       "CMC",
@@ -1421,6 +1434,20 @@
       "C4G",
       "CAG",
       "CAP",
+      "CAR",
+      "CBI",
+      "CCL",
+      "CCM",
+      "CCS",
+      "CCT",
+      "CDC",
+      "CDN",
+      "CDO",
+      "CEN",
+      "CET",
+      "CHC",
+      "CHP",
+      "CHS",
       "CKV",
       "CLL",
       "CLX",
@@ -1705,14 +1732,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 901,
+    "standard_count": 927,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 271,
-      "KBS": 309,
-      "DNSE": 321
+      "VCI": 279,
+      "KBS": 313,
+      "DNSE": 335
     },
-    "evaluated_symbols": 68,
+    "evaluated_symbols": 208,
     "demote_after_scans": 3
   }
 }
