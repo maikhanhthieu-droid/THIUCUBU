@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-14T16:56:13+07:00",
-  "last_mode": "morning_focus",
+  "updated_at": "2026-09-14T20:29:15+07:00",
+  "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -70,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -190,7 +190,7 @@
       "last_price": 10.3,
       "as_of": "2026-09-11",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-11T19:27:43+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -382,7 +382,7 @@
       "last_price": 59.9,
       "as_of": "2026-09-11",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -454,7 +454,7 @@
       "last_price": 12.6,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -478,7 +478,7 @@
       "last_price": 71.7,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-08-14T13:20:51+07:00",
-      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -492,8 +492,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -503,7 +502,7 @@
       "last_price": 10.6,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -527,7 +526,7 @@
       "last_price": 84.0,
       "as_of": "2026-09-11",
       "first_promoted_at": "2026-08-31T17:27:03+07:00",
-      "last_evaluated_at": "2026-09-14T16:45:06+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -551,7 +550,7 @@
       "last_price": 38.3,
       "as_of": "2026-09-14",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-14T16:56:13+07:00",
+      "last_evaluated_at": "2026-09-14T20:29:15+07:00",
       "consecutive_misses": 0
     },
     {
@@ -807,6 +806,7 @@
       "AGG",
       "AGX",
       "ASM",
+      "BCF",
       "BDG",
       "BFC",
       "BIG",
@@ -1080,7 +1080,11 @@
       "AGR",
       "ANV",
       "BAF",
+      "BBS",
+      "BCA",
+      "BCE",
       "BCM",
+      "BEL",
       "BGE",
       "BHC",
       "BHI",
@@ -1390,7 +1394,9 @@
       "ADP",
       "ADS",
       "AGP",
+      "BBT",
       "BCC",
+      "BCP",
       "BDT",
       "BDW",
       "BHA",
@@ -1699,14 +1705,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 894,
+    "standard_count": 901,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 270,
-      "KBS": 305,
-      "DNSE": 319
+      "VCI": 271,
+      "KBS": 309,
+      "DNSE": 321
     },
-    "evaluated_symbols": 67,
+    "evaluated_symbols": 199,
     "demote_after_scans": 3
   }
 }
