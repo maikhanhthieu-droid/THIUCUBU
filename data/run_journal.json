@@ -922,18 +922,18 @@
       "updated_at": "2026-09-14T22:35:42+07:00"
     },
     {
-      "run_id": "20260915154939-7849bfdf",
+      "run_id": "20260915163353-55009ce3",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-15T15:49:39+07:00",
-      "updated_at": "2026-09-15T15:49:39+07:00"
+      "started_at": "2026-09-15T16:33:53+07:00",
+      "updated_at": "2026-09-15T16:33:53+07:00"
     },
     {
-      "run_id": "20260915154939-7849bfdf",
+      "run_id": "20260915163353-55009ce3",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-15T16:15:15+07:00",
+      "finished_at": "2026-09-15T16:59:12+07:00",
       "success_count": 207,
       "failed_count": 5,
       "failed_symbols": [
@@ -943,10 +943,10 @@
         "CNA",
         "CPH"
       ],
-      "elapsed_sec": 1536.3,
+      "elapsed_sec": 1519.4,
       "telegram_sent": true,
-      "updated_at": "2026-09-15T16:15:15+07:00"
+      "updated_at": "2026-09-15T16:59:12+07:00"
     }
   ],
-  "last_updated": "2026-09-15T16:15:15+07:00"
+  "last_updated": "2026-09-15T16:59:12+07:00"
 }
