@@ -1,6 +1,6 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-16T16:34:30+07:00",
+  "updated_at": "2026-09-16T19:11:28+07:00",
   "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
@@ -37,8 +37,7 @@
         "DNSE"
       ],
       "reasons": [
-        "portfolio_or_note",
-        "state_transition"
+        "portfolio_or_note"
       ],
       "attention_score": 145,
       "win_score": 0,
@@ -48,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -71,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -359,7 +358,7 @@
       "last_price": 59.6,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -431,7 +430,7 @@
       "last_price": 12.65,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -455,7 +454,7 @@
       "last_price": 10.6,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -469,8 +468,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -480,7 +478,7 @@
       "last_price": 84.4,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-08-31T17:27:03+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -744,7 +742,7 @@
       "last_price": 16.2,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -768,7 +766,7 @@
       "last_price": 11.3,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -792,7 +790,7 @@
       "last_price": 23.0,
       "as_of": "2026-09-16",
       "first_promoted_at": "2026-09-16T16:34:30+07:00",
-      "last_evaluated_at": "2026-09-16T16:34:30+07:00",
+      "last_evaluated_at": "2026-09-16T19:11:28+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -858,10 +856,12 @@
       "DNC",
       "DNE",
       "DNP",
+      "DOC",
       "DQC",
       "DSH",
       "DST",
       "DTI",
+      "DTK",
       "DTL",
       "DVN",
       "DXG",
@@ -1183,14 +1183,19 @@
       "DNA",
       "DND",
       "DNH",
+      "DNW",
+      "DOP",
       "DPG",
       "DPM",
       "DRG",
+      "DRH",
       "DSC",
       "DSE",
       "DSN",
       "DSP",
       "DTA",
+      "DTC",
+      "DTG",
       "DTP",
       "DTT",
       "DVC",
@@ -1521,6 +1526,9 @@
       "DKG",
       "DNL",
       "DNM",
+      "DNT",
+      "DPC",
+      "DPH",
       "DPR",
       "DRC",
       "DRI",
@@ -1780,14 +1788,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 974,
+    "standard_count": 984,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 291,
-      "KBS": 329,
-      "DNSE": 354
+      "VCI": 293,
+      "KBS": 334,
+      "DNSE": 357
     },
-    "evaluated_symbols": 204,
+    "evaluated_symbols": 206,
     "demote_after_scans": 3
   }
 }
