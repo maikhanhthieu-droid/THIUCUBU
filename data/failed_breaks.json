@@ -3046,5 +3046,11 @@
     "date": "2026-09-17",
     "score": 0,
     "reason": "MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "GEX",
+    "date": "2026-09-17",
+    "score": 0,
+    "reason": "discount 37.2% >= target 35%; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]

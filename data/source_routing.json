@@ -1,6 +1,6 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-17T16:57:49+07:00",
+  "updated_at": "2026-09-17T19:13:19+07:00",
   "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -70,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -348,8 +348,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -359,7 +358,7 @@
       "last_price": 60.2,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -431,7 +430,7 @@
       "last_price": 12.85,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -455,7 +454,7 @@
       "last_price": 10.9,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -719,7 +718,7 @@
       "last_price": 16.25,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -743,7 +742,7 @@
       "last_price": 11.7,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -767,7 +766,7 @@
       "last_price": 23.0,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-16T16:34:30+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     },
     {
@@ -781,8 +780,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -792,7 +790,7 @@
       "last_price": 10.05,
       "as_of": "2026-09-17",
       "first_promoted_at": "2026-09-17T16:57:49+07:00",
-      "last_evaluated_at": "2026-09-17T16:57:49+07:00",
+      "last_evaluated_at": "2026-09-17T19:13:19+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -880,8 +878,16 @@
       "FSO",
       "FTS",
       "G36",
+      "GCB",
+      "GDW",
+      "GEE",
       "GEG",
+      "GEX",
+      "GGG",
       "GMD",
+      "GSM",
+      "GTD",
+      "GTT",
       "HAH",
       "HBS",
       "HDB",
@@ -1227,8 +1233,21 @@
       "FOX",
       "FPT",
       "FRT",
+      "FTM",
+      "GCF",
+      "GDH",
+      "GDT",
+      "GER",
       "GIL",
+      "GMC",
+      "GND",
+      "GPC",
+      "GSP",
+      "GTA",
+      "GTS",
       "GVR",
+      "GVT",
+      "HAC",
       "HCC",
       "HEJ",
       "HFB",
@@ -1570,7 +1589,18 @@
       "FMC",
       "FRC",
       "GAS",
+      "GDA",
+      "GEL",
+      "GHC",
+      "GIC",
+      "GKM",
+      "GLT",
+      "GMH",
+      "GMX",
+      "HAD",
+      "HAF",
       "HAG",
+      "HAM",
       "HBC",
       "HBH",
       "HCD",
@@ -1817,14 +1847,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 1011,
+    "standard_count": 1043,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 303,
-      "KBS": 343,
-      "DNSE": 365
+      "VCI": 311,
+      "KBS": 356,
+      "DNSE": 376
     },
-    "evaluated_symbols": 203,
+    "evaluated_symbols": 207,
     "demote_after_scans": 3
   }
 }
