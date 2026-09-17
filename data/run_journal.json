@@ -960,18 +960,18 @@
       "updated_at": "2026-09-17T16:58:03+07:00"
     },
     {
-      "run_id": "20260917185205-f5dd6dc9",
+      "run_id": "20260917191728-48bf29b3",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-17T18:52:05+07:00",
-      "updated_at": "2026-09-17T18:52:05+07:00"
+      "started_at": "2026-09-17T19:17:28+07:00",
+      "updated_at": "2026-09-17T19:17:28+07:00"
     },
     {
-      "run_id": "20260917185205-f5dd6dc9",
+      "run_id": "20260917191728-48bf29b3",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-17T19:13:34+07:00",
+      "finished_at": "2026-09-17T19:39:29+07:00",
       "success_count": 208,
       "failed_count": 4,
       "failed_symbols": [
@@ -980,10 +980,10 @@
         "GMA",
         "GTX"
       ],
-      "elapsed_sec": 1288.8,
+      "elapsed_sec": 1321.6,
       "telegram_sent": true,
-      "updated_at": "2026-09-17T19:13:34+07:00"
+      "updated_at": "2026-09-17T19:39:29+07:00"
     }
   ],
-  "last_updated": "2026-09-17T19:13:34+07:00"
+  "last_updated": "2026-09-17T19:39:29+07:00"
 }
