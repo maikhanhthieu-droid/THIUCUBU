@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-09-18T16:16:15+07:00",
+  "last_updated": "2026-09-18T18:54:22+07:00",
   "last_mode": "eod",
   "strong_stocks": [
     {
@@ -46,7 +46,7 @@
       "category": "strong",
       "first_detected": "2026-09-18",
       "last_seen": "2026-09-18",
-      "last_updated": "2026-09-18T16:16:15+07:00",
+      "last_updated": "2026-09-18T18:54:22+07:00",
       "last_mode": "eod",
       "score": 76,
       "win_score": 77,
@@ -124,7 +124,7 @@
       "category": "watchlist",
       "first_detected": "2026-09-14",
       "last_seen": "2026-09-18",
-      "last_updated": "2026-09-18T16:16:15+07:00",
+      "last_updated": "2026-09-18T18:54:22+07:00",
       "last_mode": "eod",
       "score": 78,
       "win_score": 77,
@@ -638,19 +638,57 @@
       "note": "",
       "rs_score": 52,
       "risk_reward": 10.36
+    },
+    {
+      "symbol": "HLY",
+      "category": "watchlist",
+      "first_detected": "2026-09-18",
+      "last_seen": "2026-09-18",
+      "last_updated": "2026-09-18T18:54:22+07:00",
+      "last_mode": "eod",
+      "score": 56,
+      "win_score": 53,
+      "close": 13.2,
+      "sector": "Other",
+      "setup": "DISCOUNT_BASE",
+      "near_break": false,
+      "obv_up": true,
+      "failed_break": false,
+      "market_state": "CAUTION",
+      "daily_phase": "TRANSITION",
+      "weekly_phase": "MARKUP",
+      "monthly_phase": "ACCUMULATION",
+      "breakout_state": "BREAKOUT_UNCONFIRMED",
+      "breakout_level": 12.6,
+      "reaccumulation": false,
+      "rsi": 57.2,
+      "mfi": 94.7,
+      "vol_ratio": 8.66,
+      "consolidation_days": 1,
+      "last_signal": "discount 39.4% >= target 35%; nen chat; OBV up; MFI tot; MTF CẨN THẬN; BREAK CHƯA XÁC NHẬN",
+      "flags": [
+        "obv_up",
+        "mfi_ok",
+        "market_caution",
+        "breakout_unconfirmed"
+      ],
+      "note": "",
+      "rs_score": 49,
+      "risk_reward": 3.14
     }
   ],
   "session_focus": [
     "ABB",
     "GMD",
     "HAH",
-    "HDA",
-    "HDP",
+    "HLD",
+    "HMR",
     "NVL",
     "REE",
     "SMC",
     "STB",
     "CCA",
+    "HDP",
     "TVA",
     "TGP",
     "TSA",
@@ -661,8 +699,10 @@
     "GLT",
     "GTS",
     "VGV",
+    "HDA",
     "DHB",
     "HCC",
+    "HLY",
     "ACB",
     "DGW",
     "DHA",
@@ -677,10 +717,7 @@
     "MCH",
     "KDC",
     "DCL",
-    "PVD",
-    "BSR",
-    "CNG",
-    "BVH"
+    "PVD"
   ],
   "retired": [
     {
@@ -1308,7 +1345,7 @@
     "retired_limit": 50,
     "description": "Bot memory for strong stocks, VCP/VSA watchlist, and priority focus symbols.",
     "strong_count": 3,
-    "watchlist_count": 14,
+    "watchlist_count": 15,
     "session_focus_count": 40,
     "retired_count": 16
   }

@@ -2,37 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260831165633-16148cd2",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-08-31T16:56:33+07:00",
-      "updated_at": "2026-08-31T16:56:33+07:00"
-    },
-    {
-      "run_id": "20260831165633-16148cd2",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-08-31T17:27:18+07:00",
-      "success_count": 202,
-      "failed_count": 10,
-      "failed_symbols": [
-        "HCI",
-        "HFX",
-        "HGT",
-        "HHB",
-        "HHN",
-        "PET",
-        "PVI",
-        "PVT",
-        "TVS",
-        "VTO"
-      ],
-      "elapsed_sec": 1844.8,
-      "telegram_sent": true,
-      "updated_at": "2026-08-31T17:27:18+07:00"
-    },
-    {
       "run_id": "20260831180945-e959f05e",
       "mode": "morning_focus",
       "trigger": "workflow_dispatch",
@@ -989,7 +958,35 @@
       "elapsed_sec": 1482.6,
       "telegram_sent": true,
       "updated_at": "2026-09-18T16:16:27+07:00"
+    },
+    {
+      "run_id": "20260918182802-a7a48397",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-09-18T18:28:02+07:00",
+      "updated_at": "2026-09-18T18:28:02+07:00"
+    },
+    {
+      "run_id": "20260918182802-a7a48397",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-09-18T18:54:33+07:00",
+      "success_count": 205,
+      "failed_count": 7,
+      "failed_symbols": [
+        "HLO",
+        "HLS",
+        "HLT",
+        "HMG",
+        "HNP",
+        "HNR",
+        "HPO"
+      ],
+      "elapsed_sec": 1591.0,
+      "telegram_sent": true,
+      "updated_at": "2026-09-18T18:54:33+07:00"
     }
   ],
-  "last_updated": "2026-09-18T16:16:27+07:00"
+  "last_updated": "2026-09-18T18:54:33+07:00"
 }
