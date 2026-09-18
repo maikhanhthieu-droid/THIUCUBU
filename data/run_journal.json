@@ -960,18 +960,18 @@
       "updated_at": "2026-09-18T16:16:27+07:00"
     },
     {
-      "run_id": "20260918182802-a7a48397",
+      "run_id": "20260918190335-042b7a6e",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-18T18:28:02+07:00",
-      "updated_at": "2026-09-18T18:28:02+07:00"
+      "started_at": "2026-09-18T19:03:35+07:00",
+      "updated_at": "2026-09-18T19:03:35+07:00"
     },
     {
-      "run_id": "20260918182802-a7a48397",
+      "run_id": "20260918190335-042b7a6e",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-18T18:54:33+07:00",
+      "finished_at": "2026-09-18T19:29:38+07:00",
       "success_count": 205,
       "failed_count": 7,
       "failed_symbols": [
@@ -983,10 +983,10 @@
         "HNR",
         "HPO"
       ],
-      "elapsed_sec": 1591.0,
+      "elapsed_sec": 1563.3,
       "telegram_sent": true,
-      "updated_at": "2026-09-18T18:54:33+07:00"
+      "updated_at": "2026-09-18T19:29:38+07:00"
     }
   ],
-  "last_updated": "2026-09-18T18:54:33+07:00"
+  "last_updated": "2026-09-18T19:29:38+07:00"
 }
