@@ -965,18 +965,18 @@
       "updated_at": "2026-09-17T19:39:29+07:00"
     },
     {
-      "run_id": "20260918152253-2df1db38",
+      "run_id": "20260918155145-f5592838",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-18T15:22:53+07:00",
-      "updated_at": "2026-09-18T15:22:53+07:00"
+      "started_at": "2026-09-18T15:51:45+07:00",
+      "updated_at": "2026-09-18T15:51:45+07:00"
     },
     {
-      "run_id": "20260918152253-2df1db38",
+      "run_id": "20260918155145-f5592838",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-18T15:46:35+07:00",
+      "finished_at": "2026-09-18T16:16:27+07:00",
       "success_count": 207,
       "failed_count": 5,
       "failed_symbols": [
@@ -986,10 +986,10 @@
         "HHB",
         "HHN"
       ],
-      "elapsed_sec": 1422.5,
+      "elapsed_sec": 1482.6,
       "telegram_sent": true,
-      "updated_at": "2026-09-18T15:46:35+07:00"
+      "updated_at": "2026-09-18T16:16:27+07:00"
     }
   ],
-  "last_updated": "2026-09-18T15:46:35+07:00"
+  "last_updated": "2026-09-18T16:16:27+07:00"
 }
