@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-21T21:09:16+07:00",
-  "last_mode": "afternoon_focus",
+  "updated_at": "2026-09-21T22:45:34+07:00",
+  "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-21T21:09:16+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -70,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-21T21:09:16+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -358,7 +358,7 @@
       "last_price": 60.3,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-21T21:09:16+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -430,7 +430,7 @@
       "last_price": 12.8,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-21T21:09:16+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -454,7 +454,7 @@
       "last_price": 11.0,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-14T16:45:06+07:00",
-      "last_evaluated_at": "2026-09-21T20:49:52+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -718,7 +718,7 @@
       "last_price": 16.0,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-21T20:49:52+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -742,7 +742,7 @@
       "last_price": 11.7,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-21T20:49:52+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -766,7 +766,7 @@
       "last_price": 22.7,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-16T16:34:30+07:00",
-      "last_evaluated_at": "2026-09-21T20:49:52+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     },
     {
@@ -790,7 +790,7 @@
       "last_price": 9.99,
       "as_of": "2026-09-21",
       "first_promoted_at": "2026-09-21T16:58:30+07:00",
-      "last_evaluated_at": "2026-09-21T20:49:52+07:00",
+      "last_evaluated_at": "2026-09-21T22:45:34+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -948,6 +948,7 @@
       "LKW",
       "LMC",
       "LMH",
+      "MAC",
       "MAS",
       "MBT",
       "MCH",
@@ -1335,6 +1336,7 @@
       "MBS",
       "MCG",
       "MCM",
+      "MDG",
       "MFS",
       "MGR",
       "MHC",
@@ -1725,6 +1727,7 @@
       "MDF",
       "MEC",
       "MED",
+      "MEL",
       "MGC",
       "MGG",
       "MIE",
@@ -1918,14 +1921,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 1114,
+    "standard_count": 1117,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 337,
-      "KBS": 375,
-      "DNSE": 402
+      "VCI": 338,
+      "KBS": 376,
+      "DNSE": 403
     },
-    "evaluated_symbols": 71,
+    "evaluated_symbols": 204,
     "demote_after_scans": 3
   }
 }
