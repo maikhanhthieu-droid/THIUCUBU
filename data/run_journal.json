@@ -2,22 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260901022836-bd802c73",
-      "mode": "eod",
-      "trigger": "workflow_dispatch",
-      "status": "started",
-      "started_at": "2026-09-01T02:28:36+07:00",
-      "updated_at": "2026-09-01T02:28:36+07:00"
-    },
-    {
-      "run_id": "20260901161351-6897ea1d",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-09-01T16:13:51+07:00",
-      "updated_at": "2026-09-01T16:13:51+07:00"
-    },
-    {
       "run_id": "20260901161351-6897ea1d",
       "mode": "eod",
       "status": "success",
@@ -990,7 +974,32 @@
       "elapsed_sec": 1241.9,
       "telegram_sent": true,
       "updated_at": "2026-09-21T16:58:43+07:00"
+    },
+    {
+      "run_id": "20260921200048-020adf22",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-09-21T20:00:48+07:00",
+      "updated_at": "2026-09-21T20:00:48+07:00"
+    },
+    {
+      "run_id": "20260921200048-020adf22",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-09-21T20:22:53+07:00",
+      "success_count": 208,
+      "failed_count": 4,
+      "failed_symbols": [
+        "IME",
+        "IRC",
+        "KAI",
+        "KHX"
+      ],
+      "elapsed_sec": 1325.5,
+      "telegram_sent": true,
+      "updated_at": "2026-09-21T20:22:53+07:00"
     }
   ],
-  "last_updated": "2026-09-21T16:58:43+07:00"
+  "last_updated": "2026-09-21T20:22:53+07:00"
 }
