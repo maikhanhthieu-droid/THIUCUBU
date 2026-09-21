@@ -976,18 +976,18 @@
       "updated_at": "2026-09-21T16:58:43+07:00"
     },
     {
-      "run_id": "20260921200048-020adf22",
+      "run_id": "20260921202732-26d71a82",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-21T20:00:48+07:00",
-      "updated_at": "2026-09-21T20:00:48+07:00"
+      "started_at": "2026-09-21T20:27:32+07:00",
+      "updated_at": "2026-09-21T20:27:32+07:00"
     },
     {
-      "run_id": "20260921200048-020adf22",
+      "run_id": "20260921202732-26d71a82",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-21T20:22:53+07:00",
+      "finished_at": "2026-09-21T20:50:06+07:00",
       "success_count": 208,
       "failed_count": 4,
       "failed_symbols": [
@@ -996,10 +996,10 @@
         "KAI",
         "KHX"
       ],
-      "elapsed_sec": 1325.5,
+      "elapsed_sec": 1353.2,
       "telegram_sent": true,
-      "updated_at": "2026-09-21T20:22:53+07:00"
+      "updated_at": "2026-09-21T20:50:06+07:00"
     }
   ],
-  "last_updated": "2026-09-21T20:22:53+07:00"
+  "last_updated": "2026-09-21T20:50:06+07:00"
 }
