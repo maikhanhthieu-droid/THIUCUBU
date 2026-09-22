@@ -2,34 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260902185607-3adba351",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-09-02T18:56:07+07:00",
-      "updated_at": "2026-09-02T18:56:07+07:00"
-    },
-    {
-      "run_id": "20260902185607-3adba351",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-09-02T19:19:49+07:00",
-      "success_count": 205,
-      "failed_count": 7,
-      "failed_symbols": [
-        "NDW",
-        "NGC",
-        "NHD",
-        "NLS",
-        "NQB",
-        "NSG",
-        "NSS"
-      ],
-      "elapsed_sec": 1421.5,
-      "telegram_sent": true,
-      "updated_at": "2026-09-02T19:19:49+07:00"
-    },
-    {
       "run_id": "20260903153657-ffdffbd4",
       "mode": "auto",
       "trigger": "schedule",
@@ -983,7 +955,35 @@
       "status": "started",
       "started_at": "2026-09-22T02:14:44+07:00",
       "updated_at": "2026-09-22T02:14:44+07:00"
+    },
+    {
+      "run_id": "20260922154105-700238f0",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-09-22T15:41:05+07:00",
+      "updated_at": "2026-09-22T15:41:05+07:00"
+    },
+    {
+      "run_id": "20260922154105-700238f0",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-09-22T16:08:21+07:00",
+      "success_count": 205,
+      "failed_count": 7,
+      "failed_symbols": [
+        "MLC",
+        "MND",
+        "MPY",
+        "MQB",
+        "MTB",
+        "NAC",
+        "NAW"
+      ],
+      "elapsed_sec": 1635.7,
+      "telegram_sent": true,
+      "updated_at": "2026-09-22T16:08:21+07:00"
     }
   ],
-  "last_updated": "2026-09-22T02:14:44+07:00"
+  "last_updated": "2026-09-22T16:08:21+07:00"
 }
