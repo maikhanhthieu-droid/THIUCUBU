@@ -964,18 +964,18 @@
       "updated_at": "2026-09-22T20:08:42+07:00"
     },
     {
-      "run_id": "20260923154301-b1e2ba06",
+      "run_id": "20260923161028-64609b12",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-09-23T15:43:01+07:00",
-      "updated_at": "2026-09-23T15:43:01+07:00"
+      "started_at": "2026-09-23T16:10:28+07:00",
+      "updated_at": "2026-09-23T16:10:28+07:00"
     },
     {
-      "run_id": "20260923154301-b1e2ba06",
+      "run_id": "20260923161028-64609b12",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-09-23T16:06:20+07:00",
+      "finished_at": "2026-09-23T16:33:04+07:00",
       "success_count": 207,
       "failed_count": 5,
       "failed_symbols": [
@@ -985,10 +985,10 @@
         "ONW",
         "PCB"
       ],
-      "elapsed_sec": 1398.9,
+      "elapsed_sec": 1356.1,
       "telegram_sent": true,
-      "updated_at": "2026-09-23T16:06:20+07:00"
+      "updated_at": "2026-09-23T16:33:04+07:00"
     }
   ],
-  "last_updated": "2026-09-23T16:06:20+07:00"
+  "last_updated": "2026-09-23T16:33:04+07:00"
 }
