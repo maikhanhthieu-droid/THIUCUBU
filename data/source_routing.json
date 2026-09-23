@@ -1,6 +1,6 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-09-23T16:32:51+07:00",
+  "updated_at": "2026-09-23T19:13:20+07:00",
   "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
@@ -47,7 +47,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -70,7 +70,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -358,7 +358,7 @@
       "last_price": 60.5,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-10T19:17:48+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -430,7 +430,7 @@
       "last_price": 12.95,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-11T16:00:26+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -694,7 +694,7 @@
       "last_price": 15.95,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -708,8 +708,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -719,7 +718,7 @@
       "last_price": 11.55,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-15T16:58:59+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -743,7 +742,7 @@
       "last_price": 22.7,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-16T16:34:30+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -767,7 +766,7 @@
       "last_price": 9.93,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-21T16:58:30+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     },
     {
@@ -791,7 +790,7 @@
       "last_price": 33.2,
       "as_of": "2026-09-23",
       "first_promoted_at": "2026-09-23T16:32:51+07:00",
-      "last_evaluated_at": "2026-09-23T16:32:51+07:00",
+      "last_evaluated_at": "2026-09-23T19:13:20+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -990,7 +989,9 @@
       "PDR",
       "PET",
       "PFL",
+      "PGI",
       "PGN",
+      "PIV",
       "PLA",
       "PMB",
       "PMJ",
@@ -1387,12 +1388,14 @@
       "PCM",
       "PDV",
       "PEG",
+      "PEQ",
       "PGD",
       "PGS",
       "PHN",
       "PHP",
       "PHR",
       "PHS",
+      "PIA",
       "PIT",
       "PJC",
       "PJS",
@@ -1785,12 +1788,14 @@
       "PEN",
       "PGB",
       "PGC",
+      "PGT",
       "PGV",
       "PHC",
       "PIC",
       "PIS",
       "PJT",
       "PLC",
+      "PLO",
       "PLP",
       "PMG",
       "PMS",
@@ -1932,14 +1937,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 1127,
+    "standard_count": 1133,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 345,
-      "KBS": 379,
-      "DNSE": 403
+      "VCI": 347,
+      "KBS": 381,
+      "DNSE": 405
     },
-    "evaluated_symbols": 206,
+    "evaluated_symbols": 208,
     "demote_after_scans": 3
   }
 }
