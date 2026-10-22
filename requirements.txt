@@ -1,4 +1,4 @@
-vnstock==4.0.2
+vnstock @ https://github.com/thinh-vu/vnstock/archive/refs/tags/v4.0.2.zip
 # vnstock 4.0.2 imports MPlot from the legacy package.  Newer ezchart
 # releases removed that import path and break VCI explorer loading on CI.
 vnstock_ezchart==0.0.3
