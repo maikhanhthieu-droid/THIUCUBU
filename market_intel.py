@@ -6,9 +6,9 @@ import math
 import os
 import random
 import time
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import pandas as pd
 
@@ -85,6 +85,76 @@ def validate_ohlcv(df: pd.DataFrame | None) -> pd.DataFrame | None:
     daily_return = out["close"].pct_change().abs()
     out = out[daily_return.isna() | (daily_return < 0.50)].copy()
     return out.reset_index(drop=True) if not out.empty else None
+
+
+def assess_ohlcv_quality(df: pd.DataFrame | None, symbol: str = "") -> dict[str, Any]:
+    """Evaluate subtle OHLCV data anomalies (gaps, flat streaks, zero-range bars, jump suspects)."""
+    if df is None or df.empty:
+        return {
+            "bars": 0,
+            "quality_score": 0,
+            "max_gap_days": None,
+            "flat_close_streak": 0,
+            "zero_range_ratio": 1.0,
+            "extreme_jump_count": 0,
+            "anomalies": ["EMPTY_DATA"],
+        }
+    recent60 = df.tail(60).copy()
+    recent20 = df.tail(20).copy()
+    anomalies: list[str] = []
+    penalty = 0
+
+    times = pd.to_datetime(recent60["time"], errors="coerce").dropna()
+    max_gap_days = 0
+    if len(times) >= 2:
+        gaps = times.diff().dt.days.dropna()
+        if not gaps.empty:
+            max_gap_days = int(gaps.max())
+            if max_gap_days > 12:
+                anomalies.append(f"GAP_{max_gap_days}D")
+                penalty += 20 if max_gap_days > 20 else 10
+
+    closes = pd.to_numeric(recent20["close"], errors="coerce").dropna().tolist()
+    flat_streak = 0
+    for idx in range(len(closes) - 1, 0, -1):
+        if abs(closes[idx] - closes[idx - 1]) <= 1e-9:
+            flat_streak += 1
+        else:
+            break
+    if flat_streak >= 5:
+        anomalies.append(f"FLAT_CLOSE_{flat_streak}D")
+        penalty += 25
+
+    zero_range_ratio = 0.0
+    if not recent20.empty:
+        zero_bars = int((recent20["high"] <= recent20["low"] + 1e-9).sum())
+        zero_range_ratio = round(zero_bars / len(recent20), 3)
+        if zero_range_ratio >= 0.35:
+            anomalies.append("HIGH_ZERO_RANGE")
+            penalty += 20
+
+    is_index = symbol.upper() in {"VNINDEX", "^VNINDEX", "VN-INDEX", "VN30", "HNX30"}
+    jumps = recent60["close"].pct_change().abs().dropna()
+    jump_threshold = 0.06 if is_index else 0.155
+    extreme_jump_count = int((jumps > jump_threshold).sum())
+    if extreme_jump_count >= 1:
+        anomalies.append(f"EXTREME_JUMP_{extreme_jump_count}")
+        penalty += min(30, extreme_jump_count * 15)
+
+    if len(df) < 120:
+        anomalies.append("SHORT_HISTORY")
+        penalty += 15
+
+    score = int(clamp(100 - penalty, 0, 100))
+    return {
+        "bars": len(df),
+        "quality_score": score,
+        "max_gap_days": max_gap_days,
+        "flat_close_streak": flat_streak,
+        "zero_range_ratio": zero_range_ratio,
+        "extreme_jump_count": extreme_jump_count,
+        "anomalies": anomalies,
+    }
 
 
 def symbol_aliases(symbol: str) -> list[str]:
@@ -286,7 +356,31 @@ def market_regime(df_index: pd.DataFrame | None) -> dict[str, Any]:
     return {"regime": regime, "risk_multiplier": mult, "above_ema50": above50, "above_ema200": above200, "ema50_slope_pct": round(slope * 100, 2), "days_above_50_of_20": days}
 
 
-def compute_trade_levels(result: scan.ScanResult, levels: dict[str, Any]) -> dict[str, Any]:
+def compute_atr(df: pd.DataFrame | None, length: int = 14) -> float | None:
+    if df is None or len(df) < length + 1:
+        return None
+    high = pd.to_numeric(df["high"], errors="coerce")
+    low = pd.to_numeric(df["low"], errors="coerce")
+    close = pd.to_numeric(df["close"], errors="coerce")
+    prev_close = close.shift(1)
+    tr = pd.concat(
+        [
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    atr_val = safe_float(tr.rolling(length).mean().iloc[-1], 0.0)
+    return round(atr_val, 4) if atr_val > 0 else None
+
+
+def compute_trade_levels(
+    result: scan.ScanResult,
+    levels: dict[str, Any],
+    df: pd.DataFrame | None = None,
+    regime: str = "UNKNOWN",
+) -> dict[str, Any]:
     close = safe_float(result.close)
     if close <= 0:
         return {"stop_loss": None, "take_profit": None, "risk_reward": None}
@@ -300,7 +394,46 @@ def compute_trade_levels(result: scan.ScanResult, levels: dict[str, Any]) -> dic
     tp_default = close * (1 + target_pct.get(group, 0.20))
     tp = float(resistance) if resistance and float(resistance) > close * 1.05 else tp_default
     rr = (tp - close) / (close - sl) if close - sl > 0 else None
-    return {"stop_loss": round(sl, 2), "take_profit": round(tp, 2), "risk_reward": round(float(rr), 2) if rr is not None else None}
+    risk_pct = round((close - sl) / close * 100.0, 2) if close > sl else None
+
+    atr_14 = compute_atr(df, 14)
+    atr_pct = round(atr_14 / close * 100.0, 2) if atr_14 else None
+    chandelier_stop: float | None = None
+    ema20_val: float | None = None
+    trailing_state = "SAFE"
+
+    if df is not None and len(df) >= 22:
+        high22 = safe_float(df["high"].tail(22).max(), close)
+        if atr_14 is not None and atr_14 > 0:
+            chandelier_stop = round(max(0.01, high22 - 2.5 * atr_14), 2)
+        ema20_series = scan.ema(df["close"], 20)
+        ema20_val = round(safe_float(ema20_series.iloc[-1], close), 2)
+        below_chandelier = chandelier_stop is not None and close < chandelier_stop
+        below_ema20 = ema20_val is not None and close < ema20_val
+        if close <= sl or (below_chandelier and below_ema20):
+            trailing_state = "BROKEN"
+        elif below_chandelier or below_ema20:
+            trailing_state = "TIGHTEN"
+
+    regime_mult = {"BULL": 1.0, "RECOVERY": 0.75, "CHOPPY": 0.5, "UNKNOWN": 0.5, "BEAR": 0.0}.get(
+        str(regime).upper(), 0.5
+    )
+    eff_risk_frac = max((risk_pct or 8.0) / 100.0, 0.03)
+    raw_weight = min(15.0, (0.01 / eff_risk_frac) * 100.0) * regime_mult
+    suggested_weight_pct = round(raw_weight, 1)
+
+    return {
+        "stop_loss": round(sl, 2),
+        "take_profit": round(tp, 2),
+        "risk_reward": round(float(rr), 2) if rr is not None else None,
+        "risk_pct": risk_pct,
+        "atr_14": round(atr_14, 2) if atr_14 is not None else None,
+        "atr_pct": atr_pct,
+        "chandelier_stop": chandelier_stop,
+        "ema20": ema20_val,
+        "trailing_state": trailing_state,
+        "suggested_weight_pct": suggested_weight_pct,
+    }
 
 
 def position_size(rr: Any, score: int, regime: str) -> str:
@@ -319,12 +452,14 @@ def position_size(rr: Any, score: int, regime: str) -> str:
 
 
 def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResult, df_index: pd.DataFrame | None, regime: dict[str, Any]) -> dict[str, Any]:
+    name = str(regime.get("regime", "UNKNOWN"))
     weekly = weekly_trend(df)
     volume = volume_patterns(df)
     levels = find_key_levels(df)
     vcp = vcp_quality(df)
     rs = relative_strength(df, df_index)
-    trade = compute_trade_levels(result, levels)
+    trade = compute_trade_levels(result, levels, df=df, regime=name)
+    data_quality_detail = assess_ohlcv_quality(df, symbol)
     structure = market_phase.analyze_market_structure(df)
     technical_watch = technical_features.analyze_technical_watch(df)
     early_accumulation = technical_features.analyze_early_accumulation(
@@ -335,7 +470,6 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         relative_strength=rs,
     )
     rr = trade.get("risk_reward")
-    name = str(regime.get("regime", "UNKNOWN"))
     weekly_score = (
         (42 if weekly["weekly_uptrend"] else 12)
         + (30 if weekly["weekly_above_ema13"] else 8)
@@ -383,6 +517,7 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         "market_structure": structure.to_dict(),
         "technical_watch": technical_watch,
         "early_accumulation": early_accumulation,
+        "data_quality_detail": data_quality_detail,
     }
 
 
@@ -393,6 +528,123 @@ def build_market_metrics(results: dict[str, scan.ScanResult], history_store: dic
     for symbol, result in results.items():
         metrics[symbol] = advanced_signal(symbol, frame_from_history(history_store, symbol), result, df_index, regime)
     return metrics, regime
+
+
+def analyze_portfolio_risk(
+    results: Mapping[str, Any],
+    watch_items: Mapping[str, Any],
+    metrics_by_symbol: Mapping[str, Mapping[str, Any]],
+    history_store: Mapping[str, Any] | None = None,
+    *,
+    correlation_threshold: float = 0.80,
+    sector_concentration_threshold: float = 0.40,
+) -> dict[str, Any]:
+    """Compute sector concentration, return correlation, and trailing-stop risk alerts."""
+    symbols = [str(sym).upper() for sym in watch_items.keys() if str(sym).upper() != "VNINDEX"]
+    sector_counts: dict[str, list[str]] = {}
+    trailing_alerts: list[dict[str, Any]] = []
+
+    for symbol in symbols:
+        result = results.get(symbol)
+        if result is None:
+            continue
+        sector = str(getattr(result, "sector", "") or scan.TICKER_TO_SECTOR.get(symbol, "Other"))
+        sector_counts.setdefault(sector, []).append(symbol)
+        metric = metrics_by_symbol.get(symbol, {})
+        trade = metric.get("trade", {}) if isinstance(metric.get("trade"), Mapping) else {}
+        t_state = str(trade.get("trailing_state") or "SAFE")
+        if getattr(result, "failed_break", False) or t_state in {"BROKEN", "TIGHTEN"}:
+            trailing_alerts.append(
+                {
+                    "symbol": symbol,
+                    "trailing_state": "BROKEN" if getattr(result, "failed_break", False) else t_state,
+                    "close": safe_float(getattr(result, "close", 0.0)),
+                    "chandelier_stop": trade.get("chandelier_stop"),
+                    "ema20": trade.get("ema20"),
+                    "stop_loss": trade.get("stop_loss"),
+                }
+            )
+
+    active_count = sum(len(items) for items in sector_counts.values())
+    concentration_warnings: list[dict[str, Any]] = []
+    if active_count >= 3:
+        for sector, members in sorted(sector_counts.items(), key=lambda kv: (-len(kv[1]), kv[0])):
+            share = len(members) / active_count
+            if share >= sector_concentration_threshold and len(members) >= 2:
+                concentration_warnings.append(
+                    {
+                        "sector": sector,
+                        "count": len(members),
+                        "total": active_count,
+                        "share_pct": round(share * 100.0, 1),
+                        "symbols": members,
+                    }
+                )
+
+    high_correlations: list[dict[str, Any]] = []
+    if history_store and len(symbols) >= 2:
+        return_series: dict[str, pd.Series] = {}
+        for symbol in symbols:
+            df = frame_from_history(dict(history_store), symbol)
+            if df is not None and len(df) >= 25:
+                s = df.set_index("time")["close"].pct_change().dropna().tail(60)
+                if len(s) >= 20:
+                    return_series[symbol] = s
+        if len(return_series) >= 2:
+            ret_df = pd.DataFrame(return_series).dropna(how="all")
+            corr_matrix = ret_df.corr()
+            ordered_syms = sorted(return_series.keys())
+            for i, sym_a in enumerate(ordered_syms):
+                for sym_b in ordered_syms[i + 1 :]:
+                    val = corr_matrix.loc[sym_a, sym_b] if (sym_a in corr_matrix and sym_b in corr_matrix) else None
+                    if val is not None and pd.notna(val) and float(val) >= correlation_threshold:
+                        high_correlations.append(
+                            {
+                                "pair": f"{sym_a}-{sym_b}",
+                                "symbols": [sym_a, sym_b],
+                                "correlation": round(float(val), 2),
+                            }
+                        )
+            high_correlations.sort(key=lambda item: -item["correlation"])
+
+    return {
+        "evaluated_symbols": symbols,
+        "active_count": active_count,
+        "sector_allocation": {
+            sector: {
+                "count": len(members),
+                "share_pct": round(len(members) / max(active_count, 1) * 100.0, 1),
+                "symbols": members,
+            }
+            for sector, members in sorted(sector_counts.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        },
+        "concentration_warnings": concentration_warnings,
+        "high_correlations": high_correlations[:8],
+        "trailing_alerts": trailing_alerts,
+    }
+
+
+def format_portfolio_risk_summary(risk: Mapping[str, Any] | None) -> list[str]:
+    if not risk or not int(risk.get("active_count") or 0):
+        return []
+    lines: list[str] = []
+    conc = risk.get("concentration_warnings") or []
+    if conc:
+        bits = [f"{item['sector']} {item['count']}/{item['total']} ({item['share_pct']:.0f}%: {','.join(item['symbols'])})" for item in conc[:3]]
+        lines.append("⚠️ *Tập trung ngành cao*: " + " | ".join(bits))
+    corrs = risk.get("high_correlations") or []
+    if corrs:
+        bits = [f"`{item['pair']}` ({item['correlation']:.2f})" for item in corrs[:4]]
+        lines.append("🔗 *Tương quan 60P cao (≥0.80)*: " + ", ".join(bits))
+    trailing = risk.get("trailing_alerts") or []
+    if trailing:
+        broken = [f"`{item['symbol']}` (SL/Trail {fmt_price(item.get('chandelier_stop') or item.get('stop_loss'))})" for item in trailing if item.get("trailing_state") == "BROKEN"]
+        tighten = [f"`{item['symbol']}` (EMA20 {fmt_price(item.get('ema20'))})" for item in trailing if item.get("trailing_state") == "TIGHTEN"]
+        if broken:
+            lines.append("🚨 *Cảnh báo gãy Trailing/SL*: " + ", ".join(broken[:6]))
+        if tighten:
+            lines.append("🛡️ *Thu hẹp rủi ro (dưới EMA20/Trail)*: " + ", ".join(tighten[:6]))
+    return lines
 
 
 def fmt_price(value: Any) -> str:
@@ -434,6 +686,8 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     adv = int(metrics.get("advanced_score", 0))
     grade = str(metrics.get("grade") or scoring.grade(adv))
     line1 = f"Intel {grade} · {adv}/97 | RS {int(rs.get('rs_score', 50))} | Regime {regime.get('regime', 'UNKNOWN')} | SL {fmt_price(trade.get('stop_loss'))} | TP {fmt_price(trade.get('take_profit'))} | R/R {rr_text}"
+    if trade.get("chandelier_stop") is not None:
+        line1 += f" | Trail {fmt_price(trade.get('chandelier_stop'))}"
     flags: list[str] = []
     if weekly.get("weekly_uptrend"):
         flags.append("weekly up")

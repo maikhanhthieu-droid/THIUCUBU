@@ -6,7 +6,7 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 VN_TZ = timezone(timedelta(hours=7))
 DATA_DIR = Path("data")
@@ -82,23 +82,26 @@ def finish_run(
     failed_symbols: list[str] | None = None,
     elapsed_sec: float | None = None,
     telegram_sent: bool = False,
+    stage_timings: Mapping[str, float] | None = None,
     path: Path = JOURNAL_PATH,
 ) -> dict[str, Any]:
     failed = sorted(set(failed_symbols or []))
-    return append_event(
-        {
-            "run_id": run_id,
-            "mode": mode,
-            "status": status,
-            "finished_at": now_vn().isoformat(timespec="seconds"),
-            "success_count": int(success_count),
-            "failed_count": len(failed),
-            "failed_symbols": failed[:50],
-            "elapsed_sec": round(float(elapsed_sec or 0.0), 1),
-            "telegram_sent": bool(telegram_sent),
-        },
-        path,
-    )
+    event: dict[str, Any] = {
+        "run_id": run_id,
+        "mode": mode,
+        "status": status,
+        "finished_at": now_vn().isoformat(timespec="seconds"),
+        "success_count": int(success_count),
+        "failed_count": len(failed),
+        "failed_symbols": failed[:50],
+        "elapsed_sec": round(float(elapsed_sec or 0.0), 1),
+        "telegram_sent": bool(telegram_sent),
+    }
+    if stage_timings:
+        event["stage_timings"] = {
+            str(k): round(float(v), 2) for k, v in stage_timings.items() if v is not None
+        }
+    return append_event(event, path)
 
 
 def fail_run(
@@ -121,6 +124,73 @@ def fail_run(
         },
         path,
     )
+
+
+def format_github_summary_markdown(
+    record: Mapping[str, Any],
+    source_health: Mapping[str, Any] | None = None,
+) -> str:
+    """Format a concise Markdown table for $GITHUB_STEP_SUMMARY."""
+    status = str(record.get("status") or "unknown").upper()
+    mode = str(record.get("mode") or "auto")
+    run_id = str(record.get("run_id") or "n/a")
+    elapsed = float(record.get("elapsed_sec") or 0.0)
+    ok_count = int(record.get("success_count") or 0)
+    fail_count = int(record.get("failed_count") or 0)
+    tg = "Yes" if record.get("telegram_sent") else "No"
+    lines = [
+        f"### THIEUCUBU Run Summary (`{mode}` — `{status}`)",
+        "",
+        "| Metric | Value |",
+        "|---|---|",
+        f"| Run ID | `{run_id}` |",
+        f"| Symbols OK / Failed | **{ok_count}** / {fail_count} |",
+        f"| Total Elapsed | `{elapsed:.1f}s` |",
+        f"| Telegram Sent | {tg} |",
+    ]
+    timings = record.get("stage_timings")
+    if isinstance(timings, Mapping) and timings:
+        timing_str = ", ".join(f"`{k}={float(v):.1f}s`" for k, v in timings.items())
+        lines.append(f"| Stage Timings | {timing_str} |")
+
+    sources = (source_health or {}).get("sources") if isinstance(source_health, Mapping) else None
+    if isinstance(sources, Mapping) and sources:
+        lines += [
+            "",
+            "#### Data Source Health",
+            "| Source | Score | OK / Attempts | Rate-Limit | Transient | Status |",
+            "|---|---:|---:|---:|---:|---|",
+        ]
+        for src, info in sources.items():
+            if not isinstance(info, Mapping):
+                continue
+            state = "Disabled" if info.get("disabled") else "Active"
+            lines.append(
+                f"| `{src}` | {int(info.get('health_score') or 0)} | "
+                f"{int(info.get('successes') or 0)}/{int(info.get('attempts') or 0)} | "
+                f"{int(info.get('rate_limit_failures') or 0)} | "
+                f"{int(info.get('transient_failures') or 0)} | {state} |"
+            )
+    return "\n".join(lines) + "\n"
+
+
+def write_github_step_summary(
+    record: Mapping[str, Any],
+    source_health: Mapping[str, Any] | None = None,
+    summary_path: Path | str | None = None,
+) -> bool:
+    target_raw = str(summary_path or os.getenv("GITHUB_STEP_SUMMARY", "")).strip()
+    if not target_raw:
+        return False
+    try:
+        target = Path(target_raw)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        markdown = format_github_summary_markdown(record, source_health=source_health)
+        with target.open("a", encoding="utf-8") as handle:
+            handle.write(markdown)
+        return True
+    except OSError:
+        return False
 
 
 def latest_for_mode(mode: str, path: Path = JOURNAL_PATH) -> dict[str, Any] | None:

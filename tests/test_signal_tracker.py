@@ -25,8 +25,26 @@ def history(symbol: str, count: int = 21) -> dict[str, list[dict[str, float | st
     index = []
     for offset, day in enumerate(days):
         close = 100.0 + offset
-        stock.append({"time": day, "open": close, "high": close + 2, "low": close - 3, "close": close, "volume": 1_000_000})
-        index.append({"time": day, "open": 1000 + offset, "high": 1001 + offset, "low": 999 + offset, "close": 1000 + offset, "volume": 1_000_000})
+        stock.append(
+            {
+                "time": day,
+                "open": close - 0.5,
+                "high": close + 2,
+                "low": close - 3,
+                "close": close,
+                "volume": 1_000_000,
+            }
+        )
+        index.append(
+            {
+                "time": day,
+                "open": 1000 + offset,
+                "high": 1001 + offset,
+                "low": 999 + offset,
+                "close": 1000 + offset,
+                "volume": 1_000_000,
+            }
+        )
     return {symbol: stock, "VNINDEX": index}
 
 
@@ -59,8 +77,13 @@ def test_episode_uses_exact_trading_sessions_and_path_metrics(tmp_path):
         history_store=history("AAA"),
         mode="eod",
     )
-    episode = signal_tracker.load_tracker(path)["episodes"][0]
+    loaded = signal_tracker.load_tracker(path)
+    episode = loaded["episodes"][0]
 
+    assert episode["date_t1"] == days[1]
+    assert episode["return_t1"] == pytest.approx(1.0)
+    assert episode["date_t3"] == days[3]
+    assert episode["return_t3"] == pytest.approx(3.0)
     assert episode["date_t5"] == days[5]
     assert episode["return_t5"] == pytest.approx(5.0)
     assert episode["benchmark_return_t5"] == pytest.approx(0.5)
@@ -68,9 +91,16 @@ def test_episode_uses_exact_trading_sessions_and_path_metrics(tmp_path):
     assert episode["mfe_t5_pct"] == pytest.approx(7.0)
     assert episode["mae_t5_pct"] == pytest.approx(-2.0)
     assert episode["return_t20"] == pytest.approx(20.0)
+    assert episode["entry_next_open"] == pytest.approx(100.5)
+    assert episode["overnight_gap_pct"] == pytest.approx(0.5)
+    assert episode["initial_risk_pct"] == pytest.approx(1.0)
+    assert episode["r_multiple_t10"] == pytest.approx(10.0)
     assert episode["episode_status"] == "COMPLETED_T20"
     assert episode["path_outcome"] == "STOPPED"
     assert episode["outcome_session"] == 1
+    assert episode["realized_r"] == pytest.approx(-1.0)
+    assert "analytics" in loaded
+    assert loaded["analytics"]["completed_t10_count"] == 1
 
 
 def test_only_one_active_episode_per_symbol(tmp_path):
@@ -85,13 +115,22 @@ def test_only_one_active_episode_per_symbol(tmp_path):
         confidence=75,
         price_unit="thousand_vnd",
         setup="VCP_BREAK",
+        sector="Bank",
         market_state="OPPORTUNITY",
         daily_phase="MARKUP",
         weekly_phase="ACCUMULATION",
         monthly_phase="ACCUMULATION",
         breakout_state="BREAKOUT_UNCONFIRMED",
     )
-    metrics = {"AAA": {"advanced_score": 86, "trade": {}, "market_structure": {}}}
+    metrics = {
+        "AAA": {
+            "advanced_score": 86,
+            "primary_stream": "opportunity",
+            "trade": {},
+            "market_structure": {},
+            "systemic_regime": {"state": "RISK_ON"},
+        }
+    }
 
     first = signal_tracker.update_tracker(
         path=path,
@@ -109,6 +148,8 @@ def test_only_one_active_episode_per_symbol(tmp_path):
     )
 
     assert len(first) == 1
+    assert first[0]["primary_stream"] == "opportunity"
+    assert first[0]["sector"] == "Bank"
     assert second == []
     assert len(signal_tracker.load_tracker(path)["episodes"]) == 1
 
@@ -132,3 +173,64 @@ def test_legacy_tracker_is_audited_but_excluded(tmp_path):
     assert tracker["legacy_summary"]["record_count"] == 3
     assert tracker["legacy_summary"]["duplicate_records"] == 1
     assert tracker["legacy_summary"]["excluded_from_metrics"] is True
+
+
+def test_summarize_tracker_analytics_calibration_and_report(tmp_path):
+    tracker = {
+        "schema_version": signal_tracker.SCHEMA_VERSION,
+        "updated_at": "2026-02-01T15:00:00+07:00",
+        "episodes": [
+            {
+                "episode_id": "AAA:2026-01-02",
+                "eligible_for_metrics": True,
+                "symbol": "AAA",
+                "date_signal": "2026-01-02",
+                "episode_status": "COMPLETED_T20",
+                "advanced_score": 88,
+                "setup": "VCP_BREAK",
+                "primary_stream": "opportunity",
+                "regime": "BULL",
+                "path_outcome": "TARGET_HIT",
+                "return_t10": 8.5,
+                "excess_return_t10": 6.0,
+                "mfe_t10_pct": 11.0,
+                "mae_t10_pct": -1.5,
+                "r_multiple_t10": 1.7,
+                "return_open_t10": 7.8,
+            },
+            {
+                "episode_id": "BBB:2026-01-05",
+                "eligible_for_metrics": True,
+                "symbol": "BBB",
+                "date_signal": "2026-01-05",
+                "episode_status": "COMPLETED_T20",
+                "advanced_score": 74,
+                "setup": "BASE_HOLD",
+                "primary_stream": "early",
+                "regime": "CHOPPY",
+                "path_outcome": "STOPPED",
+                "return_t10": -2.0,
+                "excess_return_t10": -1.0,
+                "mfe_t10_pct": 2.0,
+                "mae_t10_pct": -5.0,
+                "r_multiple_t10": -0.4,
+                "return_open_t10": -2.3,
+            },
+        ],
+    }
+    path = tmp_path / "tracker.json"
+    path.write_text(json.dumps(tracker), encoding="utf-8")
+
+    analytics = signal_tracker.summarize_tracker_analytics(tracker)
+    assert analytics["calibration_monotonic"] is True
+    assert analytics["calibration"]["score_85_plus"]["avg_return"] == pytest.approx(8.5)
+    assert analytics["calibration"]["score_lt_78"]["avg_return"] == pytest.approx(-2.0)
+    assert analytics["by_setup"]["VCP_BREAK"]["count"] == 1
+    assert analytics["by_stream"]["opportunity"]["win_rate_pct"] == pytest.approx(100.0)
+    assert analytics["path_outcomes"]["target_hit"] == 1
+    assert analytics["path_outcomes"]["stopped"] == 1
+
+    report = signal_tracker.build_performance_report(path)
+    assert "TRACK RECORD V2" in report
+    assert "Calibration T+10:" in report
+    assert "Path 20P:" in report

@@ -36,6 +36,8 @@ _STATE: dict[str, Any] = {
     "systemic": {},
     "sector_rotation": {},
     "rotation": [],
+    "portfolio_risk": {},
+    "stage_timings": {},
 }
 _old_save_session_outputs = sess.save_session_outputs
 
@@ -247,6 +249,7 @@ def build_session_report(
     sector_states = _STATE.get("sector_rotation", {})
     rotation_alerts = _STATE.get("rotation", [])
     transitions = _STATE.get("transitions", [])
+    portfolio_risk = _STATE.get("portfolio_risk", {})
     market = results.get("VNINDEX")
     stocks = [x for x in results.values() if x.symbol != "VNINDEX"]
     streams = report_streams.classify_streams(results, metrics, watch_items)
@@ -292,6 +295,9 @@ def build_session_report(
             extra_symbols=list(watch_items),
         ),
     ]
+    risk_summary_lines = intel.format_portfolio_risk_summary(portfolio_risk)
+    if risk_summary_lines:
+        lines += risk_summary_lines
     lines += portfolio_lines(results, watch_items, metrics)
     opportunity = streams[report_streams.OPPORTUNITY]
     lines += [
@@ -350,6 +356,8 @@ def save_session_outputs(
     market_day: Any | None = None,
     **_: Any,
 ) -> list[dict[str, Any]]:
+    t_metrics_start = time.time()
+    scan_sec = max(0.0, t_metrics_start - float(_STATE.get("started_at", t_metrics_start)))
     metrics, regime = intel.build_market_metrics(results, history_store)
     stocks = [item for item in results.values() if item.symbol != "VNINDEX"]
     expected_symbols = {
@@ -416,11 +424,19 @@ def save_session_outputs(
         metrics,
         portfolio_symbols=list(watch_items),
     )
+    portfolio_risk = intel.analyze_portfolio_risk(
+        results,
+        watch_items,
+        metrics,
+        history_store,
+    )
     transitions = [] if mode == "test" else state_transition.update_transitions(
         path=sess.DATA_DIR / "market_state_history.json",
         results=results,
         metrics_by_symbol=metrics,
     )
+    metrics_sec = max(0.0, time.time() - t_metrics_start)
+    t_save_start = time.time()
     _STATE.update(
         {
             "mode": mode,
@@ -433,6 +449,7 @@ def save_session_outputs(
             "rotation": rotation_alerts,
             "transitions": transitions,
             "streams": streams,
+            "portfolio_risk": portfolio_risk,
         }
     )
     failed_breaks = _old_save_session_outputs(
@@ -477,6 +494,7 @@ def save_session_outputs(
         "mode": mode,
         "focus_symbols": focus_symbols,
         "portfolio_symbols": list(watch_items.keys()),
+        "portfolio_risk": portfolio_risk,
         "market": asdict(results["VNINDEX"]) if "VNINDEX" in results else None,
         "market_day": asdict(market_day) if market_day else None,
         "market_activity": asdict(activity_probe) if activity_probe else None,
@@ -500,15 +518,16 @@ def save_session_outputs(
     }
     scan.json_save(sess.DATA_DIR / "session_alerts_latest.json", latest, pretty=False)
     feed = filter_feed.build_filter_feed(
-            mode=mode,
-            updated_at=latest["updated_at"],
-            results=results,
-            metrics=metrics,
-            regime=regime,
-            source_health=scan_safe.source_health_payload(),
-            market_activity=asdict(activity_probe) if activity_probe else None,
+        mode=mode,
+        updated_at=latest["updated_at"],
+        results=results,
+        metrics=metrics,
+        regime=regime,
+        source_health=scan_safe.source_health_payload(),
+        market_activity=asdict(activity_probe) if activity_probe else None,
     )
     feed["five_streams"] = stream_payload
+    feed["portfolio_risk"] = portfolio_risk
     feed["market_breadth"] = breadth
     feed["systemic_regime"] = systemic
     feed["sector_rotation"] = sector_states
@@ -521,6 +540,12 @@ def save_session_outputs(
         )
     scan.json_save(sess.DATA_DIR / "filter_feed_latest.json", feed, pretty=False)
     scan.json_save(sess.DATA_DIR / "stock_features_latest.json", feed, pretty=False)
+    save_sec = max(0.0, time.time() - t_save_start)
+    _STATE["stage_timings"] = {
+        "scan_sec": round(scan_sec, 2),
+        "metrics_sec": round(metrics_sec, 2),
+        "save_sec": round(save_sec, 2),
+    }
     return failed_breaks
 
 
@@ -568,6 +593,7 @@ def build_fallback_report(mode: str, error: BaseException) -> str:
 
 async def main() -> None:
     _STATE["started_at"] = time.time()
+    _STATE["stage_timings"] = {}
     mode_hint = os.getenv("SCAN_MODE", "auto")
     run_id = run_journal.start_run(mode_hint, os.getenv("SCAN_EVENT_NAME", ""))
     summary_sent = False
@@ -576,21 +602,26 @@ async def main() -> None:
         await sess.main()
         results = _STATE.get("results", {})
         failed_symbols = sorted(getattr(sess, "SCAN_FAILED_SYMBOLS", set()))
-        summary = intel.build_scan_completion_summary(len(results), failed_symbols, time.time() - float(_STATE.get("started_at", time.time())))
+        elapsed = time.time() - float(_STATE.get("started_at", time.time()))
+        summary = intel.build_scan_completion_summary(len(results), failed_symbols, elapsed)
         try:
             summary_sent = bool(await scan.send_chunks("*THIEUCUBU SUMMARY*", summary)) and not scan.DRY_RUN
         except Exception as exc:
             logger.warning("Cannot send completion summary, main report may already be sent: %s", exc)
-        scan_safe.save_source_health()
-        run_journal.finish_run(
+        health_payload = scan_safe.save_source_health()
+        journal_data = run_journal.finish_run(
             run_id,
             actual_mode(mode_hint),
             "success",
             success_count=len(results),
             failed_symbols=failed_symbols,
-            elapsed_sec=time.time() - float(_STATE.get("started_at", time.time())),
+            elapsed_sec=elapsed,
             telegram_sent=summary_sent,
+            stage_timings=_STATE.get("stage_timings") or None,
         )
+        runs = journal_data.get("runs", [])
+        if runs:
+            run_journal.write_github_step_summary(runs[-1], source_health=health_payload)
     except Exception as exc:
         logger.exception("Fatal enhanced session scan error")
         fallback_sent = False
@@ -605,14 +636,17 @@ async def main() -> None:
                 fallback_sent = not scan.DRY_RUN
             except Exception:
                 logger.exception("Cannot send fatal Telegram alert")
-        scan_safe.save_source_health()
-        run_journal.fail_run(
+        health_payload = scan_safe.save_source_health()
+        journal_data = run_journal.fail_run(
             run_id,
             actual_mode(mode_hint),
             exc,
             elapsed_sec=time.time() - float(_STATE.get("started_at", time.time())),
             fallback_sent=fallback_sent,
         )
+        runs = journal_data.get("runs", [])
+        if runs:
+            run_journal.write_github_step_summary(runs[-1], source_health=health_payload)
         raise
 
 

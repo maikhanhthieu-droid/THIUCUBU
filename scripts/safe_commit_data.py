@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -22,11 +23,30 @@ def run(cmd: list[str], check: bool = False) -> subprocess.CompletedProcess[str]
     return completed
 
 
+def validate_json_file(path: Path) -> bool:
+    """Ensure JSON data files are non-empty and syntactically valid before committing."""
+    if path.suffix.lower() != ".json":
+        return True
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+        if not text:
+            print(f"::warning::Skipping empty JSON file {path.as_posix()}", flush=True)
+            return False
+        parsed = json.loads(text)
+        if parsed is None:
+            print(f"::warning::Skipping null JSON file {path.as_posix()}", flush=True)
+            return False
+        return True
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"::warning::Skipping corrupted JSON file {path.as_posix()}: {exc}", flush=True)
+        return False
+
+
 def existing_paths(paths: list[str]) -> list[Path]:
     output: list[Path] = []
     for raw in paths:
         path = Path(raw)
-        if path.exists() and path.is_file():
+        if path.exists() and path.is_file() and validate_json_file(path):
             output.append(path)
     return output
 

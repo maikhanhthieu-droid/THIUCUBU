@@ -6,11 +6,11 @@ import json
 import statistics
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 
 SCHEMA_VERSION = "thieucubu.signal_tracker.v2"
-HORIZONS = (5, 10, 20)
+HORIZONS = (1, 3, 5, 10, 20)
 VN_TZ = timezone(timedelta(hours=7))
 
 
@@ -43,10 +43,12 @@ def _history_rows(rows: Any) -> list[dict[str, Any]]:
         close = _safe_float(raw.get("close"))
         if not day or close is None or close <= 0:
             continue
+        open_price = _safe_float(raw.get("open"))
         high = _safe_float(raw.get("high"))
         low = _safe_float(raw.get("low"))
         by_date[day] = {
             "date": day,
+            "open": open_price if open_price is not None and open_price > 0 else close,
             "close": close,
             "high": high if high is not None else close,
             "low": low if low is not None else close,
@@ -118,11 +120,20 @@ def _benchmark_return(
     return _return_pct(end, start)
 
 
+def _initial_risk_pct(entry: float, stop: float | None) -> float | None:
+    if stop is None or stop <= 0 or entry <= 0 or stop >= entry:
+        return None
+    risk_pct = (entry - stop) / entry * 100.0
+    return round(risk_pct, 2) if risk_pct >= 0.25 else None
+
+
 def _update_path_outcome(episode: dict[str, Any], forward: list[dict[str, Any]]) -> None:
     if episode.get("path_outcome") in {"STOPPED", "TARGET_HIT"}:
         return
+    entry = _safe_float(episode.get("price_at_signal"))
     stop = _safe_float(episode.get("stop_loss"))
     target = _safe_float(episode.get("take_profit"))
+    risk_pct = _initial_risk_pct(entry, stop) if entry else None
     for session_number, row in enumerate(forward[:20], start=1):
         hit_stop = stop is not None and row["low"] <= stop
         hit_target = target is not None and row["high"] >= target
@@ -133,6 +144,7 @@ def _update_path_outcome(episode: dict[str, Any], forward: list[dict[str, Any]])
                     "outcome_date": row["date"],
                     "outcome_session": session_number,
                     "same_bar_conflict": "STOP_FIRST_CONSERVATIVE",
+                    "realized_r": -1.0 if risk_pct is not None else None,
                 }
             )
             return
@@ -142,15 +154,20 @@ def _update_path_outcome(episode: dict[str, Any], forward: list[dict[str, Any]])
                     "path_outcome": "STOPPED",
                     "outcome_date": row["date"],
                     "outcome_session": session_number,
+                    "realized_r": -1.0 if risk_pct is not None else None,
                 }
             )
             return
         if hit_target:
+            realized_r = None
+            if entry and target and risk_pct:
+                realized_r = round(((target / entry - 1.0) * 100.0) / risk_pct, 2)
             episode.update(
                 {
                     "path_outcome": "TARGET_HIT",
                     "outcome_date": row["date"],
                     "outcome_session": session_number,
+                    "realized_r": realized_r,
                 }
             )
             return
@@ -171,6 +188,19 @@ def update_episode(
         return
     forward = rows[start_index + 1 :]
     episode["sessions_observed"] = min(len(forward), 20)
+    stop = _safe_float(episode.get("stop_loss"))
+    risk_pct = _initial_risk_pct(entry, stop)
+    if risk_pct is not None:
+        episode["initial_risk_pct"] = risk_pct
+
+    next_open: float | None = None
+    if forward:
+        raw_next_open = _safe_float(forward[0].get("open"))
+        if raw_next_open is not None and raw_next_open > 0:
+            next_open = raw_next_open
+            episode["entry_next_open"] = round(next_open, 4)
+            episode["overnight_gap_pct"] = _return_pct(next_open, entry)
+
     _update_path_outcome(episode, forward)
     for horizon in HORIZONS:
         if len(forward) < horizon:
@@ -185,6 +215,10 @@ def update_episode(
         episode[f"return_{key}"] = result_return
         episode[f"mfe_{key}_pct"] = round((max(row["high"] for row in window) / entry - 1) * 100, 2)
         episode[f"mae_{key}_pct"] = round((min(row["low"] for row in window) / entry - 1) * 100, 2)
+        if next_open is not None and next_open > 0:
+            episode[f"return_open_{key}"] = _return_pct(target_row["close"], next_open)
+        if risk_pct is not None and risk_pct > 0:
+            episode[f"r_multiple_{key}"] = round(result_return / risk_pct, 2)
         if benchmark_return is not None:
             episode[f"benchmark_return_{key}"] = benchmark_return
             episode[f"excess_return_{key}"] = round(result_return - benchmark_return, 2)
@@ -219,14 +253,18 @@ def _new_episode(
     structure = metrics.get("market_structure") if isinstance(metrics.get("market_structure"), Mapping) else {}
     breakout = structure.get("breakout") if isinstance(structure.get("breakout"), Mapping) else {}
     trade = metrics.get("trade") if isinstance(metrics.get("trade"), Mapping) else {}
+    systemic = metrics.get("systemic_regime") if isinstance(metrics.get("systemic_regime"), Mapping) else {}
     signal_date = latest["date"]
     score = int(metrics.get("advanced_score", getattr(result, "win_score", 0)) or 0)
     regime = metrics.get("regime") if isinstance(metrics.get("regime"), Mapping) else {}
+    primary_stream = str(metrics.get("primary_stream") or getattr(result, "primary_stream", "unclassified") or "unclassified")
     return {
         "episode_id": f"{symbol}:{signal_date}",
         "tracker_version": SCHEMA_VERSION,
         "eligible_for_metrics": True,
         "symbol": symbol,
+        "sector": str(getattr(result, "sector", "") or ""),
+        "primary_stream": primary_stream,
         "date_signal": signal_date,
         "mode": mode,
         "episode_status": "ACTIVE",
@@ -241,6 +279,7 @@ def _new_episode(
         "price_unit": str(getattr(result, "price_unit", "unknown")),
         "setup": str(getattr(result, "setup", "")),
         "regime": str(regime.get("regime", "UNKNOWN")),
+        "systemic_state": str(systemic.get("state") or "UNKNOWN"),
         "market_state": str(structure.get("overall_state") or getattr(result, "market_state", "NO_DATA")),
         "daily_phase": str(getattr(result, "daily_phase", "NO_DATA")),
         "weekly_phase": str(getattr(result, "weekly_phase", "NO_DATA")),
@@ -250,6 +289,101 @@ def _new_episode(
         "stop_loss": _safe_float(trade.get("stop_loss")),
         "take_profit": _safe_float(trade.get("take_profit")),
         "risk_reward": _safe_float(trade.get("risk_reward")),
+    }
+
+
+def _bucket_stats(episodes: Iterable[Mapping[str, Any]], horizon_key: str = "t10") -> dict[str, Any]:
+    ret_field = f"return_{horizon_key}"
+    exc_field = f"excess_return_{horizon_key}"
+    r_field = f"r_multiple_{horizon_key}"
+    valid = [item for item in episodes if _safe_float(item.get(ret_field)) is not None]
+    if not valid:
+        return {"count": 0, "win_rate_pct": 0.0, "avg_return": 0.0, "median_return": 0.0, "avg_excess": None, "avg_r": None}
+    returns = [float(item[ret_field]) for item in valid]
+    excess = [float(item[exc_field]) for item in valid if _safe_float(item.get(exc_field)) is not None]
+    r_mults = [float(item[r_field]) for item in valid if _safe_float(item.get(r_field)) is not None]
+    wins = sum(value > 3.0 for value in returns)
+    return {
+        "count": len(valid),
+        "win_rate_pct": round(wins / len(returns) * 100.0, 1),
+        "avg_return": round(statistics.fmean(returns), 2),
+        "median_return": round(statistics.median(returns), 2),
+        "avg_excess": round(statistics.fmean(excess), 2) if excess else None,
+        "avg_r": round(statistics.fmean(r_mults), 2) if r_mults else None,
+    }
+
+
+def summarize_tracker_analytics(tracker: Mapping[str, Any]) -> dict[str, Any]:
+    """Build multi-dimensional performance, calibration, and path-outcome analytics."""
+    raw_episodes = [
+        item
+        for item in tracker.get("episodes", [])
+        if isinstance(item, Mapping) and item.get("eligible_for_metrics")
+    ]
+    completed_t10 = [item for item in raw_episodes if _safe_float(item.get("return_t10")) is not None]
+
+    # 1. Score Calibration buckets (<78, 78-84, 85+)
+    buckets: dict[str, list[Mapping[str, Any]]] = {"score_lt_78": [], "score_78_84": [], "score_85_plus": []}
+    for item in completed_t10:
+        score = int(_safe_float(item.get("advanced_score")) or _safe_float(item.get("score_at_signal")) or 0)
+        if score >= 85:
+            buckets["score_85_plus"].append(item)
+        elif score >= 78:
+            buckets["score_78_84"].append(item)
+        else:
+            buckets["score_lt_78"].append(item)
+    calibration = {name: _bucket_stats(rows, "t10") for name, rows in buckets.items()}
+    low_avg = calibration["score_lt_78"]["avg_return"] if calibration["score_lt_78"]["count"] > 0 else None
+    high_avg = calibration["score_85_plus"]["avg_return"] if calibration["score_85_plus"]["count"] > 0 else None
+    calibration_monotonic = (
+        bool(high_avg >= low_avg) if (low_avg is not None and high_avg is not None) else None
+    )
+
+    # 2. Group by setup, primary_stream, regime
+    def group_breakdown(field: str, default_key: str) -> dict[str, dict[str, Any]]:
+        grouped: dict[str, list[Mapping[str, Any]]] = {}
+        for item in completed_t10:
+            key = str(item.get(field) or default_key).strip() or default_key
+            grouped.setdefault(key, []).append(item)
+        return {
+            key: _bucket_stats(rows, "t10")
+            for key, rows in sorted(grouped.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        }
+
+    by_setup = group_breakdown("setup", "UNKNOWN")
+    by_stream = group_breakdown("primary_stream", "unclassified")
+    by_regime = group_breakdown("regime", "UNKNOWN")
+
+    # 3. Path outcomes & realistic entry slippage
+    target_hits = sum(1 for item in raw_episodes if item.get("path_outcome") == "TARGET_HIT")
+    stopped = sum(1 for item in raw_episodes if item.get("path_outcome") == "STOPPED")
+    open_outcomes = sum(1 for item in raw_episodes if item.get("path_outcome") not in {"TARGET_HIT", "STOPPED"})
+    open_returns_t10 = [
+        float(item["return_open_t10"])
+        for item in completed_t10
+        if _safe_float(item.get("return_open_t10")) is not None
+    ]
+    r_multiples_t10 = [
+        float(item["r_multiple_t10"])
+        for item in completed_t10
+        if _safe_float(item.get("r_multiple_t10")) is not None
+    ]
+    return {
+        "total_eligible_episodes": len(raw_episodes),
+        "completed_t10_count": len(completed_t10),
+        "horizons": {f"t{h}": _bucket_stats(raw_episodes, f"t{h}") for h in HORIZONS},
+        "calibration": calibration,
+        "calibration_monotonic": calibration_monotonic,
+        "by_setup": by_setup,
+        "by_stream": by_stream,
+        "by_regime": by_regime,
+        "path_outcomes": {
+            "target_hit": target_hits,
+            "stopped": stopped,
+            "open": open_outcomes,
+            "avg_r_multiple_t10": round(statistics.fmean(r_multiples_t10), 2) if r_multiples_t10 else None,
+            "avg_return_open_t10": round(statistics.fmean(open_returns_t10), 2) if open_returns_t10 else None,
+        },
     }
 
 
@@ -302,11 +436,13 @@ def update_tracker(
     tracker["episodes"] = completed + active
     tracker["updated_at"] = datetime.now(VN_TZ).isoformat(timespec="seconds")
     tracker["measurement"] = {
-        "horizons": ["T+5", "T+10", "T+20"],
+        "horizons": [f"T+{h}" for h in HORIZONS],
         "clock": "trading_sessions",
         "benchmark": "VNINDEX",
         "same_bar_stop_target": "STOP_FIRST_CONSERVATIVE",
+        "next_open_slippage_tracked": True,
     }
+    tracker["analytics"] = summarize_tracker_analytics(tracker)
     if persist and mode != "test":
         _save_tracker(path, tracker)
     return added
@@ -337,5 +473,32 @@ def build_performance_report(path: Path) -> str:
         )
     if mfe and mae:
         lines.append(f"MFE/MAE T+10 trung vị: {statistics.median(mfe):+.1f}% / {statistics.median(mae):+.1f}%")
+
+    analytics = summarize_tracker_analytics(tracker)
+    path_outcomes = analytics.get("path_outcomes", {})
+    avg_r = path_outcomes.get("avg_r_multiple_t10")
+    avg_open_ret = path_outcomes.get("avg_return_open_t10")
+    outcome_bits = [
+        f"TP {int(path_outcomes.get('target_hit') or 0)}",
+        f"SL {int(path_outcomes.get('stopped') or 0)}",
+        f"Open {int(path_outcomes.get('open') or 0)}",
+    ]
+    if avg_r is not None:
+        outcome_bits.append(f"R-mult TB {float(avg_r):+.2f}R")
+    if avg_open_ret is not None:
+        outcome_bits.append(f"Entry Open T+1: {float(avg_open_ret):+.1f}%")
+    lines.append("Path 20P: " + " | ".join(outcome_bits))
+
+    cal = analytics.get("calibration", {})
+    cal_bits = []
+    for label, key in (("<78", "score_lt_78"), ("78-84", "score_78_84"), ("85+", "score_85_plus")):
+        bucket = cal.get(key, {})
+        if int(bucket.get("count") or 0) > 0:
+            cal_bits.append(
+                f"{label}: {float(bucket['avg_return']):+.1f}% ({float(bucket['win_rate_pct']):.0f}%W, n={bucket['count']})"
+            )
+    if cal_bits:
+        lines.append("Calibration T+10: " + " | ".join(cal_bits))
+
     lines.append("Chỉ tính tracker v2; dữ liệu v1 bị loại vì trùng tín hiệu và sai đồng hồ đo.")
     return "\n".join(lines)

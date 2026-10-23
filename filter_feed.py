@@ -42,6 +42,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
     early_accumulation = intel.get("early_accumulation") if isinstance(intel.get("early_accumulation"), Mapping) else {}
     systemic = intel.get("systemic_regime") if isinstance(intel.get("systemic_regime"), Mapping) else {}
     sector_rotation = intel.get("sector_rotation") if isinstance(intel.get("sector_rotation"), Mapping) else {}
+    quality_detail = intel.get("data_quality_detail") if isinstance(intel.get("data_quality_detail"), Mapping) else {}
     as_of = raw.get("as_of") or raw.get("date") or raw.get("as_of_date")
     data_source = raw.get("data_source")
     cache_status = str(raw.get("cache_status") or "unknown")
@@ -126,6 +127,12 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
             "support": _float(trade.get("support")),
             "resistance": _float(trade.get("resistance")),
             "risk_reward": _float(trade.get("risk_reward")),
+            "atr_14": _float(trade.get("atr_14")),
+            "atr_pct": _float(trade.get("atr_pct")),
+            "chandelier_stop": _float(trade.get("chandelier_stop")),
+            "ema20": _float(trade.get("ema20")),
+            "trailing_state": trade.get("trailing_state"),
+            "suggested_weight_pct": _float(trade.get("suggested_weight_pct")),
         },
         "gate": {
             "allowed": gate.get("allowed"),
@@ -147,6 +154,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
             "failed_break_excluded": bool(raw.get("failed_break")),
             "unit_scale_applied": _float(raw.get("unit_scale_applied")),
             "unit_repaired_from_cache": bool(raw.get("unit_repaired_from_cache")),
+            "quality_score": quality_detail.get("quality_score"),
+            "anomalies": list(quality_detail.get("anomalies", [])),
         },
     }
 
@@ -198,6 +207,9 @@ def build_filter_feed(
             ),
             "stale_facts": sum(
                 1 for item in facts if item["data_quality"]["status"] == "stale"
+            ),
+            "anomaly_facts": sum(
+                1 for item in facts if item["data_quality"].get("anomalies")
             ),
             "warning": "Facts and advisory gates only; not a return forecast.",
         },

@@ -9,6 +9,7 @@
     "updated_at": {"type": "string"},
     "legacy_summary": {"type": "object"},
     "measurement": {"type": "object"},
+    "analytics": {"type": "object"},
     "episodes": {
       "type": "array",
       "items": {
@@ -17,10 +18,17 @@
         "properties": {
           "episode_id": {"type": "string"},
           "symbol": {"type": "string", "pattern": "^[A-Z0-9^.-]+$"},
+          "sector": {"type": "string"},
+          "primary_stream": {"type": "string"},
           "date_signal": {"type": "string", "format": "date"},
           "episode_status": {"enum": ["ACTIVE", "COMPLETED_T20"]},
           "price_unit": {"type": "string"},
-          "eligible_for_metrics": {"type": "boolean"}
+          "eligible_for_metrics": {"type": "boolean"},
+          "entry_next_open": {"type": ["number", "null"]},
+          "overnight_gap_pct": {"type": ["number", "null"]},
+          "initial_risk_pct": {"type": ["number", "null"]},
+          "r_multiple_t10": {"type": ["number", "null"]},
+          "realized_r": {"type": ["number", "null"]}
         },
         "additionalProperties": true
       }

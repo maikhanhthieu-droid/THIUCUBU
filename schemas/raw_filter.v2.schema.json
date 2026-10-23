@@ -16,6 +16,7 @@
     "systemic_regime": {"type": "object"},
     "sector_rotation": {"type": "object"},
     "five_streams": {"type": "object"},
+    "portfolio_risk": {"type": "object"},
     "quality": {"type": "object"},
     "facts": {
       "type": "array",
