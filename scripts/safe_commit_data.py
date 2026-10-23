@@ -23,14 +23,30 @@ def run(cmd: list[str], check: bool = False) -> subprocess.CompletedProcess[str]
     return completed
 
 
+def contains_potential_secret(text: str) -> bool:
+    """Detect accidental inclusion of API keys or trading private keys before git commit."""
+    forbidden_markers = (
+        "-----BEGIN PRIVATE KEY-----",
+        "-----BEGIN RSA PRIVATE KEY-----",
+        "AIzaSy",
+        "SSI_PRIVATE_KEY",
+        "SSI_TRADING_PIN",
+        "TCBS_TRADING_PASSWORD",
+    )
+    return any(marker in text for marker in forbidden_markers)
+
+
 def validate_json_file(path: Path) -> bool:
-    """Ensure JSON data files are non-empty and syntactically valid before committing."""
+    """Ensure JSON data files are non-empty, syntactically valid, and free of secrets before committing."""
     if path.suffix.lower() != ".json":
         return True
     try:
         text = path.read_text(encoding="utf-8").strip()
         if not text:
             print(f"::warning::Skipping empty JSON file {path.as_posix()}", flush=True)
+            return False
+        if contains_potential_secret(text):
+            print(f"::warning::Blocked {path.as_posix()} because it contains a potential secret/private key!", flush=True)
             return False
         parsed = json.loads(text)
         if parsed is None:

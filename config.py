@@ -79,6 +79,9 @@ if BaseSettings is not None:
         fiinquant_username: SecretStr = Field("", validation_alias="FIINQUANT_USERNAME")
         fiinquant_password: SecretStr = Field("", validation_alias="FIINQUANT_PASSWORD")
         vimo_api_key: SecretStr = Field("", validation_alias="VIMO_API_KEY")
+        gemini_api_key: SecretStr = Field("", validation_alias="GEMINI_API_KEY")
+        ssi_mcp_api_key: SecretStr = Field("", validation_alias="SSI_MCP_API_KEY")
+        tcbs_mcp_api_key: SecretStr = Field("", validation_alias="TCBS_MCP_API_KEY")
         dry_run: bool = Field(False, validation_alias="DRY_RUN")
         scan_source_usage_ratio: float = Field(0.70, validation_alias="SCAN_SOURCE_USAGE_RATIO")
         scan_source_requests_per_minute: int = Field(15, validation_alias="SCAN_SOURCE_REQUESTS_PER_MINUTE")
@@ -101,6 +104,9 @@ else:
             self.fiinquant_username = os.getenv("FIINQUANT_USERNAME", "").strip()
             self.fiinquant_password = os.getenv("FIINQUANT_PASSWORD", "").strip()
             self.vimo_api_key = os.getenv("VIMO_API_KEY", "").strip()
+            self.gemini_api_key = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", "")).strip()
+            self.ssi_mcp_api_key = os.getenv("SSI_MCP_API_KEY", "").strip()
+            self.tcbs_mcp_api_key = os.getenv("TCBS_MCP_API_KEY", "").strip()
             self.dry_run = env_bool("DRY_RUN", False)
             self.scan_source_usage_ratio = env_float("SCAN_SOURCE_USAGE_RATIO", 0.70, min_value=0.05, max_value=1.0)
             self.scan_source_requests_per_minute = env_int("SCAN_SOURCE_REQUESTS_PER_MINUTE", 15, min_value=1)
@@ -111,46 +117,49 @@ else:
             return bool(self.dry_run or not (self.telegram_token and self.telegram_chat_id))
 
 
+def _secret_str(value: Any) -> str:
+    if hasattr(value, "get_secret_value"):
+        return str(value.get_secret_value() or "").strip()
+    return str(value or "").strip()
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     settings = Settings()
     if getattr(settings, "vnstock_api_key", ""):
         os.environ.setdefault("VNSTOCK_API_KEY", settings.vnstock_api_key)
         os.environ.setdefault("VNDATA_API_KEY", settings.vnstock_api_key)
-    username = getattr(settings, "fiinquant_username", "")
-    password = getattr(settings, "fiinquant_password", "")
-    if hasattr(username, "get_secret_value"):
-        username = username.get_secret_value()
-    if hasattr(password, "get_secret_value"):
-        password = password.get_secret_value()
+    username = _secret_str(getattr(settings, "fiinquant_username", ""))
+    password = _secret_str(getattr(settings, "fiinquant_password", ""))
     if username and password:
-        os.environ.setdefault("FIINQUANT_USERNAME", str(username))
-        os.environ.setdefault("FIINQUANT_PASSWORD", str(password))
-    vimo_key = getattr(settings, "vimo_api_key", "")
-    if hasattr(vimo_key, "get_secret_value"):
-        vimo_key = vimo_key.get_secret_value()
+        os.environ.setdefault("FIINQUANT_USERNAME", username)
+        os.environ.setdefault("FIINQUANT_PASSWORD", password)
+    vimo_key = _secret_str(getattr(settings, "vimo_api_key", ""))
     if vimo_key:
-        os.environ.setdefault("VIMO_API_KEY", str(vimo_key))
+        os.environ.setdefault("VIMO_API_KEY", vimo_key)
+    gemini_key = _secret_str(getattr(settings, "gemini_api_key", "")) or os.getenv("GOOGLE_API_KEY", "").strip()
+    if gemini_key:
+        os.environ.setdefault("GEMINI_API_KEY", gemini_key)
     return settings
 
 
 def settings_summary(settings: Settings | None = None) -> dict[str, Any]:
     item = settings or get_settings()
-    username = getattr(item, "fiinquant_username", "")
-    password = getattr(item, "fiinquant_password", "")
-    if hasattr(username, "get_secret_value"):
-        username = username.get_secret_value()
-    if hasattr(password, "get_secret_value"):
-        password = password.get_secret_value()
-    vimo_key = getattr(item, "vimo_api_key", "")
-    if hasattr(vimo_key, "get_secret_value"):
-        vimo_key = vimo_key.get_secret_value()
+    username = _secret_str(getattr(item, "fiinquant_username", ""))
+    password = _secret_str(getattr(item, "fiinquant_password", ""))
+    vimo_key = _secret_str(getattr(item, "vimo_api_key", ""))
+    gemini_key = _secret_str(getattr(item, "gemini_api_key", "")) or os.getenv("GOOGLE_API_KEY", "").strip()
+    ssi_key = _secret_str(getattr(item, "ssi_mcp_api_key", ""))
+    tcbs_key = _secret_str(getattr(item, "tcbs_mcp_api_key", ""))
     return {
         "telegram_configured": bool(item.telegram_token and item.telegram_chat_id),
         "dry_run": item.effective_dry_run,
         "vnstock_api_key": bool(item.vnstock_api_key),
         "fiinquant_configured": bool(username and password),
         "vimo_configured": bool(vimo_key),
+        "gemini_configured": bool(gemini_key),
+        "ssi_mcp_configured": bool(ssi_key or os.getenv("SSI_MCP_ENDPOINT", "").strip()),
+        "tcbs_mcp_configured": bool(tcbs_key or os.getenv("TCBS_MCP_ENDPOINT", "").strip()),
         "scan_source_usage_ratio": float(item.scan_source_usage_ratio),
         "scan_source_requests_per_minute": int(item.scan_source_requests_per_minute),
         "data_dir": str(item.data_dir),

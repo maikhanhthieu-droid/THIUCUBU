@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any
 
 import filter_feed
+import macro_catalyst
 import market_breadth
 import market_intel as intel
 import market_probe
@@ -268,6 +269,11 @@ def build_session_report(
         *five_stream_summary(streams, metrics, watch_items),
         "",
         *intel.format_strict_acceleration_section(results, metrics, limit=8),
+        "",
+        *macro_catalyst.format_macro_catalyst_section(
+            _STATE.get("macro_shocks"),
+            include_quick_reference=(mode in {"eod", "test"}),
+        ),
     ]
     if mode == "eod":
         lines += [
@@ -434,6 +440,11 @@ def save_session_outputs(
         history_store,
     )
     strict_picks = intel.select_strict_acceleration_picks(results, metrics, limit=12)
+    macro_shocks = macro_catalyst.evaluate_all_major_shocks(
+        results=results,
+        metrics=metrics,
+        regime=str(regime.get("regime", "SIDEWAYS")),
+    )
     transitions = [] if mode == "test" else state_transition.update_transitions(
         path=sess.DATA_DIR / "market_state_history.json",
         results=results,
@@ -455,6 +466,7 @@ def save_session_outputs(
             "streams": streams,
             "portfolio_risk": portfolio_risk,
             "strict_picks": strict_picks,
+            "macro_shocks": macro_shocks,
         }
     )
     failed_breaks = _old_save_session_outputs(
@@ -501,6 +513,7 @@ def save_session_outputs(
         "portfolio_symbols": list(watch_items.keys()),
         "portfolio_risk": portfolio_risk,
         "strict_acceleration_picks": strict_picks,
+        "macro_shocks": macro_shocks,
         "market": asdict(results["VNINDEX"]) if "VNINDEX" in results else None,
         "market_day": asdict(market_day) if market_day else None,
         "market_activity": asdict(activity_probe) if activity_probe else None,
@@ -535,6 +548,7 @@ def save_session_outputs(
     feed["five_streams"] = stream_payload
     feed["portfolio_risk"] = portfolio_risk
     feed["strict_acceleration_picks"] = strict_picks
+    feed["macro_shocks"] = macro_shocks
     feed["market_breadth"] = breadth
     feed["systemic_regime"] = systemic
     feed["sector_rotation"] = sector_states

@@ -18,6 +18,7 @@
     "five_streams": {"type": "object"},
     "portfolio_risk": {"type": "object"},
     "strict_acceleration_picks": {"type": "array"},
+    "macro_shocks": {"type": "object"},
     "quality": {"type": "object"},
     "facts": {
       "type": "array",
