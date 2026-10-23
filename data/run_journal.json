@@ -953,18 +953,18 @@
       "updated_at": "2026-09-24T19:43:32+07:00"
     },
     {
-      "run_id": "20261023185024-d982e0a2",
+      "run_id": "20261023191556-54b80c9c",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-10-23T18:50:24+07:00",
-      "updated_at": "2026-10-23T18:50:24+07:00"
+      "started_at": "2026-10-23T19:15:56+07:00",
+      "updated_at": "2026-10-23T19:15:56+07:00"
     },
     {
-      "run_id": "20261023185024-d982e0a2",
+      "run_id": "20261023191556-54b80c9c",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-10-23T19:12:09+07:00",
+      "finished_at": "2026-10-23T19:37:59+07:00",
       "success_count": 208,
       "failed_count": 4,
       "failed_symbols": [
@@ -973,15 +973,15 @@
         "SPD",
         "SPH"
       ],
-      "elapsed_sec": 1303.0,
+      "elapsed_sec": 1321.3,
       "telegram_sent": true,
       "stage_timings": {
-        "scan_sec": 1273.8,
-        "metrics_sec": 15.35,
-        "save_sec": 0.53
+        "scan_sec": 1297.76,
+        "metrics_sec": 9.84,
+        "save_sec": 0.45
       },
-      "updated_at": "2026-10-23T19:12:09+07:00"
+      "updated_at": "2026-10-23T19:37:59+07:00"
     }
   ],
-  "last_updated": "2026-10-23T19:12:09+07:00"
+  "last_updated": "2026-10-23T19:37:59+07:00"
 }

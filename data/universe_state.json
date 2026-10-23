@@ -1,6 +1,6 @@
 {
   "schema_version": "thieucubu.universe.v1",
-  "updated_at": "2026-10-23T18:50:54+07:00",
+  "updated_at": "2026-10-23T19:16:08+07:00",
   "cursor": 929,
   "symbols": [
     "AAA",
@@ -1439,5 +1439,5 @@
     "SRB",
     "SRC"
   ],
-  "last_batch_at": "2026-10-23T18:50:54+07:00"
+  "last_batch_at": "2026-10-23T19:16:08+07:00"
 }
