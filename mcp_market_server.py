@@ -33,6 +33,19 @@ MCP_TOOLS: list[dict[str, Any]] = [
         },
     },
     {
+        "name": "check_live_connections",
+        "description": (
+            "Kiểm tra trạng thái kết nối thực tế (Live Connection Status) tới SSI iBoard Public API, "
+            "TCBS/MCP, Dữ liệu Hàng hóa/Vĩ mô Quốc tế (Heo, Dầu, Vàng, FED/DXY, Sắt thép), và Google AI Studio (Gemini)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "symbol": {"type": "string", "default": "FPT"},
+            },
+        },
+    },
+    {
         "name": "get_ssi_tcbs_quote",
         "description": "Lấy dữ liệu báo giá và dòng tiền khối ngoại Read-Only từ SSI / TCBS cho một mã cổ phiếu.",
         "inputSchema": {
@@ -112,6 +125,10 @@ def handle_tool_call(name: str, arguments: Mapping[str, Any] | None = None) -> d
     args = dict(arguments or {})
     if name == "check_account_security":
         return macro_catalyst.verify_account_safety()
+
+    if name == "check_live_connections":
+        symbol = str(args.get("symbol") or "FPT").strip().upper()
+        return macro_catalyst.check_live_connections(symbol=symbol)
 
     if name == "get_ssi_tcbs_quote":
         symbol = str(args.get("symbol") or "VNINDEX").strip().upper()
@@ -240,10 +257,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="THIUCUBU Read-Only Market & Macro Catalyst MCP Server")
     parser.add_argument("--query", help="Phân tích nhanh kịch bản vĩ mô/hàng hóa bằng Tiếng Việt")
     parser.add_argument("--check-security", action="store_true", help="Kiểm tra an toàn tài khoản giao dịch SSI/TCBS")
+    parser.add_argument(
+        "--check-connections",
+        action="store_true",
+        help="Kiểm tra trạng thái kết nối trực tiếp SSI, TCBS, Vĩ mô Quốc tế và Google AI Studio",
+    )
     args = parser.parse_args()
 
     if args.check_security:
         print(json.dumps(macro_catalyst.verify_account_safety(), ensure_ascii=False, indent=2))
+        return
+    if args.check_connections:
+        print(json.dumps(macro_catalyst.check_live_connections(), ensure_ascii=False, indent=2))
         return
     if args.query:
         res = handle_tool_call("analyze_scenario_impact", {"query": args.query})

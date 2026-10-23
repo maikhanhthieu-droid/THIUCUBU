@@ -216,7 +216,6 @@ MACRO_PLAYBOOK: dict[str, dict[str, Any]] = {
         "major_monthly_pct": 3.0,
         "keywords": ("fed", "lãi suất", "dxy", "tỷ giá", "usd/vnd", "us10y", "fomc", "cắt giảm lãi suất", "tăng lãi suất"),
         "up": {
-            # UP means DXY / Yields / Fed Hawkishness spikes UP -> Risk-Off / FX pressure
             "headline": "FED DIỀU HÂU / DXY & TỶ GIÁ TĂNG CĂNG — PHÒNG THỦ TIỀN MẶT & XUẤT KHẨU USD",
             "primary_tickers": ["FPT", "DGC", "VHC", "ANV", "GMD", "HAH"],
             "watch_tickers": ["NT2", "REE", "QNS", "PTB"],
@@ -231,7 +230,6 @@ MACRO_PLAYBOOK: dict[str, dict[str, Any]] = {
             ],
         },
         "down": {
-            # DOWN means FED cuts rates / Dovish / DXY & US10Y drop -> Strong Risk-On for VN-Index
             "headline": "FED HẠ LÃI SUẤT / DXY SUY YẾU MẠNH — SÓNG LỚN NGÂN HÀNG, CHỨNG KHOÁN, BĐS",
             "primary_tickers": ["SSI", "VCI", "HCM", "TCB", "MBB", "ACB", "KDH", "NLG", "IDC"],
             "watch_tickers": ["VND", "CTG", "BID", "KBC", "HPG", "MWG"],
@@ -653,8 +651,75 @@ def evaluate_all_major_shocks(
     }
 
 
-def load_macro_observations(path: Path | None = None) -> list[dict[str, Any]]:
-    """Load macro/commodity shock observations from JSON env or data/macro_shocks.json."""
+LIVE_BENCHMARK_TICKERS: dict[str, tuple[str, str]] = {
+    "PORK_HOGS": ("HE=F", "CME Lean Hogs Futures"),
+    "CRUDE_OIL": ("BZ=F", "Brent Crude Oil"),
+    "GOLD_XAU": ("GC=F", "COMEX Gold Futures"),
+    "FED_DXY_RATES": ("DX-Y.NYB", "US Dollar Index (DXY)"),
+    "STEEL_HRC": ("SLX", "VanEck Steel ETF"),
+}
+
+
+def fetch_live_macro_observations(*, ttl_seconds: int = 7200, force_refresh: bool = False) -> list[dict[str, Any]]:
+    """Fetch live 1-week (5d) and 1-month (20d) changes for Pork, Crude Oil, Gold, DXY/FED, and Steel."""
+    cache_path = CACHE_DIR / "live_macro_observations.json"
+    if not force_refresh and cache_path.exists():
+        try:
+            if time.time() - cache_path.stat().st_mtime <= ttl_seconds:
+                cached = json.loads(cache_path.read_text(encoding="utf-8"))
+                if isinstance(cached, list) and cached:
+                    return cached
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    observations: list[dict[str, Any]] = []
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+    with httpx.Client(timeout=httpx.Timeout(10.0, connect=5.0), headers=headers) as client:
+        for factor_key, (ticker, label) in LIVE_BENCHMARK_TICKERS.items():
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=1mo&interval=1d"
+            try:
+                resp = client.get(url)
+                resp.raise_for_status()
+                payload = resp.json()
+                result = ((payload.get("chart") or {}).get("result") or [None])[0] or {}
+                quote = (((result.get("indicators") or {}).get("quote") or [None])[0]) or {}
+                closes = [
+                    float(c)
+                    for c in (quote.get("close") or [])
+                    if c is not None and math.isfinite(float(c)) and float(c) > 0
+                ]
+                if len(closes) < 2:
+                    continue
+                last_close = closes[-1]
+                prev_5d = closes[max(0, len(closes) - 6)]
+                prev_20d = closes[0]
+                weekly_pct = (last_close / prev_5d - 1.0) * 100.0 if prev_5d > 0 else 0.0
+                monthly_pct = (last_close / prev_20d - 1.0) * 100.0 if prev_20d > 0 else 0.0
+                observations.append(
+                    {
+                        "factor": factor_key,
+                        "benchmark_ticker": ticker,
+                        "benchmark_name": label,
+                        "last_price": round(last_close, 2),
+                        "weekly_change_pct": round(weekly_pct, 2),
+                        "monthly_change_pct": round(monthly_pct, 2),
+                        "source": "YAHOO_MACRO_LIVE",
+                    }
+                )
+            except Exception as exc:
+                logger.debug("Live macro fetch skipped for %s (%s): %s", factor_key, ticker, type(exc).__name__)
+
+    if observations:
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(observations, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError:
+            pass
+    return observations
+
+
+def load_macro_observations(path: Path | None = None, *, allow_live_fetch: bool | None = None) -> list[dict[str, Any]]:
+    """Load macro/commodity shock observations from JSON env, local file, or live global feed."""
     raw_env = os.getenv("MACRO_SHOCKS_JSON", "").strip()
     if raw_env:
         try:
@@ -674,6 +739,11 @@ def load_macro_observations(path: Path | None = None) -> list[dict[str, Any]]:
                 return [item for item in parsed["observations"] if isinstance(item, Mapping)]
         except (OSError, json.JSONDecodeError):
             pass
+
+    if allow_live_fetch is None:
+        allow_live_fetch = os.getenv("MACRO_LIVE_FETCH_ENABLED", "0").strip() in {"1", "true", "yes", "on"}
+    if allow_live_fetch:
+        return fetch_live_macro_observations()
     return []
 
 
@@ -699,10 +769,8 @@ def parse_natural_scenario(
             matched_factors.append(factor_key)
 
     if not matched_factors:
-        # Default fallback if query is generic macro
         matched_factors = ["PORK_HOGS", "CRUDE_OIL", "GOLD_XAU", "FED_DXY_RATES", "STEEL_HRC"]
 
-    # Detect direction & percentage from text if mentioned
     pct_match = re.search(r"([+-]?\d+(?:[.,]\d+)?)\s*%", text)
     parsed_pct = float(pct_match.group(1).replace(",", ".")) if pct_match else None
 
@@ -716,7 +784,6 @@ def parse_natural_scenario(
         rule = MACRO_PLAYBOOK[factor_key]
         major_w = float(rule["major_weekly_pct"])
 
-        # Determine direction
         if factor_key == "FED_DXY_RATES" and any(w in text for w in ("hạ lãi suất", "cắt lãi suất", "dovish", "dxy giảm")):
             direction_sign = -1.0
         elif any(w in text for w in down_words) and not any(w in text for w in up_words):
@@ -814,7 +881,7 @@ def call_broker_mcp(
 
 
 def fetch_ssi_tcbs_snapshot(symbol: str, *, prefer: str = "SSI") -> dict[str, Any]:
-    """Fetch read-only market quote/foreign-flow snapshot from SSI/TCBS MCP or public iBoard/TCBS APIs.
+    """Fetch read-only market quote/OHLCV snapshot from SSI/TCBS MCP or public iBoard/DNSE APIs.
 
     Never touches personal trading accounts or order-execution APIs.
     """
@@ -837,34 +904,44 @@ def fetch_ssi_tcbs_snapshot(symbol: str, *, prefer: str = "SSI") -> dict[str, An
             except Exception as exc:
                 logger.warning("[%s_MCP] quote fallback for %s: %s", broker, sym, type(exc).__name__)
 
-    # 2. Try public Read-Only SSI iBoard / TCBS stock insight endpoints
+    # 2. Try public Read-Only SSI iBoard Charts API (verified 200 OK zero-auth) & TCBS / DNSE fallback
+    now_ts = int(time.time())
+    from_ts = now_ts - 40 * 86400
     for broker in order:
         try:
             if broker == "SSI":
-                url = f"https://iboard-query.ssi.com.vn/stock/{sym}"
+                url = "https://iboard-api.ssi.com.vn/statistics/charts/history"
+                params = {"resolution": "1D", "symbol": sym, "from": str(from_ts), "to": str(now_ts)}
                 headers = {
                     "Accept": "application/json",
                     "User-Agent": "Mozilla/5.0",
                     "Referer": "https://iboard.ssi.com.vn/",
                 }
                 with httpx.Client(timeout=HTTP_TIMEOUT) as client:
-                    resp = client.get(url, headers=headers)
+                    resp = client.get(url, params=params, headers=headers)
                     resp.raise_for_status()
                     raw = resp.json()
                 data = raw.get("data") if isinstance(raw, Mapping) else {}
-                if isinstance(data, Mapping) and data:
-                    price = _safe_float(data.get("matchedPrice") or data.get("closePrice") or data.get("priorClosePrice"))
+                closes = data.get("c") if isinstance(data, Mapping) else []
+                vols = data.get("v") if isinstance(data, Mapping) else []
+                if isinstance(closes, list) and len(closes) >= 2:
+                    price = _safe_float(closes[-1])
+                    prev_price = _safe_float(closes[-2], price)
+                    prev_5d = _safe_float(closes[max(0, len(closes) - 6)], price)
                     if sym != "VNINDEX" and price >= 1000:
                         price = round(price / 1000.0, 2)
+                        prev_price = prev_price / 1000.0
+                        prev_5d = prev_5d / 1000.0
+                    change_pct = (price / prev_price - 1.0) * 100.0 if prev_price > 0 else 0.0
+                    change_5d_pct = (price / prev_5d - 1.0) * 100.0 if prev_5d > 0 else 0.0
                     return {
                         "symbol": sym,
-                        "source": "SSI_IBOARD_PUBLIC",
+                        "source": "SSI_IBOARD_PUBLIC_LIVE",
                         "read_only": True,
-                        "price": price,
-                        "change_pct": _safe_float(data.get("priceChangePercent")),
-                        "volume": _safe_float(data.get("totalVolume") or data.get("nmTotalTradedQty")),
-                        "foreign_buy_vol": _safe_float(data.get("buyForeignQtty")),
-                        "foreign_sell_vol": _safe_float(data.get("sellForeignQtty")),
+                        "price": round(price, 2),
+                        "change_pct": round(change_pct, 2),
+                        "change_5d_pct": round(change_5d_pct, 2),
+                        "volume": int(_safe_float(vols[-1])) if isinstance(vols, list) and vols else 0,
                     }
             else:
                 url = f"https://apipubaws.tcbs.com.vn/tcanalysis/v1/ticker/{sym}/overview"
@@ -876,7 +953,7 @@ def fetch_ssi_tcbs_snapshot(symbol: str, *, prefer: str = "SSI") -> dict[str, An
                 if isinstance(data, Mapping) and data:
                     return {
                         "symbol": sym,
-                        "source": "TCBS_PUBLIC",
+                        "source": "TCBS_PUBLIC_LIVE",
                         "read_only": True,
                         "industry": data.get("industry"),
                         "exchange": data.get("exchange"),
@@ -893,6 +970,47 @@ def fetch_ssi_tcbs_snapshot(symbol: str, *, prefer: str = "SSI") -> dict[str, An
         "read_only": True,
         "price": None,
         "note": "Không lấy được snapshot trực tuyến từ SSI/TCBS, dùng dữ liệu OHLCV nội bộ.",
+    }
+
+
+def check_live_connections(test_symbol: str = "FPT") -> dict[str, Any]:
+    """Verify live connectivity to SSI iBoard, TCBS/MCP, Yahoo Global Macro Feed, and Gemini AI Studio."""
+    ssi_quote = fetch_ssi_tcbs_snapshot(test_symbol, prefer="SSI")
+    macro_obs = fetch_live_macro_observations(force_refresh=True)
+    gemini_ready = is_gemini_configured()
+    ssi_mcp_ready = bool(os.getenv("SSI_MCP_ENDPOINT", "").strip())
+    tcbs_mcp_ready = bool(os.getenv("TCBS_MCP_ENDPOINT", "").strip())
+
+    return {
+        "checked_at": datetime.now(VN_TZ).isoformat(timespec="seconds"),
+        "account_safety": verify_account_safety(),
+        "ssi_iboard_public_api": {
+            "connected": ssi_quote.get("source") == "SSI_IBOARD_PUBLIC_LIVE",
+            "source": ssi_quote.get("source"),
+            "sample_quote": ssi_quote,
+        },
+        "ssi_mcp_custom": {
+            "configured": ssi_mcp_ready,
+            "note": "Đã kết nối trực tiếp SSI iBoard Public API (Read-Only) nên không bắt buộc cấu hình SSI_MCP_ENDPOINT.",
+        },
+        "tcbs_mcp_custom": {
+            "configured": tcbs_mcp_ready,
+            "note": "Có thể gắn thêm TCBS_MCP_ENDPOINT nếu dùng MCP riêng; mặc định tự động fallback sang SSI iBoard Public.",
+        },
+        "global_macro_commodities_live": {
+            "connected": len(macro_obs) > 0,
+            "count": len(macro_obs),
+            "observations": macro_obs,
+        },
+        "gemini_ai_studio": {
+            "configured": gemini_ready,
+            "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            "how_to_enable": (
+                "Đã nạp GEMINI_API_KEY."
+                if gemini_ready
+                else "Lấy key miễn phí tại https://aistudio.google.com/app/apikey và thêm vào GitHub Secrets (GEMINI_API_KEY) hoặc file .env."
+            ),
+        },
     }
 
 
@@ -949,7 +1067,6 @@ def ask_gemini_macro_advisor(
     model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-    # Build compact context from deterministic scenarios
     scenario_summaries = []
     for sc in deterministic.get("scenarios", []):
         top_picks = [
@@ -972,14 +1089,12 @@ def ask_gemini_macro_advisor(
     )
 
     payload: dict[str, Any] = {
-        "contents": [{" parts": [{"text": prompt}]}],
+        "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.2,
             "maxOutputTokens": 700,
         },
     }
-    # Fix standard Gemini REST payload key ("parts")
-    payload["contents"] = [{"parts": [{"text": prompt}]}]
     if enable_search_grounding and os.getenv("GEMINI_ENABLE_SEARCH_GROUNDING", "1").strip() != "0":
         payload["tools"] = [{"google_search": {}}]
 
@@ -1008,7 +1123,6 @@ def ask_gemini_macro_advisor(
             "ai_synthesis": ai_text or None,
         }
     except Exception as exc:
-        # Never leak api_key in logs or errors
         safe_msg = type(exc).__name__
         logger.warning("Gemini AI Studio fallback to deterministic playbook (%s)", safe_msg)
         return {

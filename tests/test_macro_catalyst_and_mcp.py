@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 import macro_catalyst as mc
@@ -20,6 +17,7 @@ def clean_macro_env(monkeypatch):
     monkeypatch.delenv("SSI_MCP_ENDPOINT", raising=False)
     monkeypatch.delenv("TCBS_MCP_ENDPOINT", raising=False)
     monkeypatch.delenv("MACRO_SHOCKS_JSON", raising=False)
+    monkeypatch.setenv("MACRO_LIVE_FETCH_ENABLED", "0")
 
 
 def test_account_security_guard_blocks_live_trading_credentials(monkeypatch, tmp_path):
@@ -211,6 +209,7 @@ def test_gemini_advisor_and_mcp_server_jsonrpc(monkeypatch):
     tool_names = {t["name"] for t in list_resp["result"]["tools"]}
     assert {
         "check_account_security",
+        "check_live_connections",
         "get_ssi_tcbs_quote",
         "scan_major_macro_shocks",
         "analyze_scenario_impact",
@@ -232,3 +231,85 @@ def test_gemini_advisor_and_mcp_server_jsonrpc(monkeypatch):
     structured = call_resp["result"]["structuredContent"]
     assert structured["account_safety"]["safe"] is True
     assert len(structured["scenarios"]) >= 3
+
+
+def test_live_ssi_iboard_and_macro_benchmark_fetchers(monkeypatch, tmp_path):
+    monkeypatch.setattr(mc, "CACHE_DIR", tmp_path)
+
+    class FakeResp:
+        def __init__(self, status_code: int, payload: dict):
+            self.status_code = status_code
+            self._payload = payload
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(f"HTTP {self.status_code}")
+
+        def json(self):
+            return self._payload
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def get(self, url, **kwargs):
+            if "iboard-api.ssi.com.vn" in url:
+                return FakeResp(
+                    200,
+                    {
+                        "code": "SUCCESS",
+                        "data": {
+                            "c": [100.0, 102.0, 105.0],
+                            "o": [99.0, 100.5, 102.5],
+                            "h": [101.0, 103.0, 106.0],
+                            "l": [98.5, 100.0, 102.0],
+                            "v": [1_000_000, 1_200_000, 1_500_000],
+                            "t": [1700000000, 1700086400, 1700172800],
+                        },
+                    },
+                )
+            if "finance.yahoo.com" in url:
+                return FakeResp(
+                    200,
+                    {
+                        "chart": {
+                            "result": [
+                                {
+                                    "indicators": {
+                                        "quote": [
+                                            {
+                                                "close": [100.0] * 15 + [101.0, 102.0, 103.0, 104.0, 108.5],
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                )
+            return FakeResp(403, {})
+
+    monkeypatch.setattr(mc.httpx, "Client", FakeClient)
+
+    ssi_snap = mc.fetch_ssi_tcbs_snapshot("FPT", prefer="SSI")
+    assert ssi_snap["source"] == "SSI_IBOARD_PUBLIC_LIVE"
+    assert ssi_snap["read_only"] is True
+    assert ssi_snap["price"] == 105.0
+    assert ssi_snap["change_pct"] > 0
+
+    live_obs = mc.fetch_live_macro_observations(force_refresh=True)
+    assert len(live_obs) == len(mc.LIVE_BENCHMARK_TICKERS)
+    pork_obs = next(item for item in live_obs if item["factor"] == "PORK_HOGS")
+    assert pork_obs["weekly_change_pct"] > 5.0
+    assert pork_obs["source"] == "YAHOO_MACRO_LIVE"
+
+    conn_report = mc.check_live_connections("FPT")
+    assert conn_report["ssi_iboard_public_api"]["connected"] is True
+    assert conn_report["global_macro_commodities_live"]["connected"] is True
+    assert conn_report["account_safety"]["safe"] is True

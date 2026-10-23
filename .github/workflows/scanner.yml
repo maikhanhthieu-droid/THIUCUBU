@@ -203,6 +203,12 @@ jobs:
           VNSTOCK_API_KEY: ${{ secrets.VNSTOCK_API_KEY }}
           FIINQUANT_USERNAME: ${{ secrets.FIINQUANT_USERNAME }}
           FIINQUANT_PASSWORD: ${{ secrets.FIINQUANT_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SSI_MCP_ENDPOINT: ${{ secrets.SSI_MCP_ENDPOINT }}
+          SSI_MCP_API_KEY: ${{ secrets.SSI_MCP_API_KEY }}
+          TCBS_MCP_ENDPOINT: ${{ secrets.TCBS_MCP_ENDPOINT }}
+          TCBS_MCP_API_KEY: ${{ secrets.TCBS_MCP_API_KEY }}
+          MACRO_LIVE_FETCH_ENABLED: "1"
           SCAN_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'auto' }}
           SCAN_EVENT_NAME: ${{ github.event_name }}
           SCAN_SCHEDULE: ${{ github.event.schedule }}
