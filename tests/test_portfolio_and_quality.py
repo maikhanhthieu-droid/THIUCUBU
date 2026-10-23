@@ -134,3 +134,130 @@ def test_analyze_portfolio_risk_detects_concentration_correlation_and_trailing()
     assert len(summary_lines) >= 3
     assert any("Tập trung ngành cao" in line for line in summary_lines)
     assert any("Tương quan 60P cao" in line for line in summary_lines)
+
+
+
+def test_analyze_breakout_acceleration_detects_squeeze_ignition_and_pocket_pivot():
+    import technical_features as tf
+
+    periods = 130
+    dates = pd.date_range("2026-01-01", periods=periods, freq="B")
+    closes = []
+    opens = []
+    highs = []
+    lows = []
+    volumes = []
+
+    price = 20.0
+    for i in range(periods):
+        if i < 105:
+            # Steady uptrend to build SEPA trend alignment
+            price += 0.08
+            o = price - 0.06
+            c = price
+            h = price + 0.12
+            l = price - 0.18
+            v = 1_000_000
+        elif i < 128:
+            # Tight volatility coil (narrow range, light down-volume)
+            delta = 0.03 if i % 2 == 0 else -0.02
+            price += delta
+            o = price - 0.02
+            c = price
+            h = price + 0.05
+            l = price - 0.05
+            v = 700_000 if delta < 0 else 950_000
+        else:
+            # Explosive Pocket Pivot & Squeeze breakout bars at the end
+            price += 0.55
+            o = price - 0.48
+            c = price
+            h = price + 0.05
+            l = price - 0.52
+            v = 2_400_000
+        opens.append(o)
+        closes.append(c)
+        highs.append(h)
+        lows.append(l)
+        volumes.append(v)
+
+    df = pd.DataFrame(
+        {
+            "time": dates,
+            "open": opens,
+            "high": highs,
+            "low": lows,
+            "close": closes,
+            "volume": volumes,
+        }
+    )
+    index_df = pd.DataFrame(
+        {
+            "time": dates,
+            "open": [1200.0 + i * 0.3 for i in range(periods)],
+            "high": [1202.0 + i * 0.3 for i in range(periods)],
+            "low": [1198.0 + i * 0.3 for i in range(periods)],
+            "close": [1200.0 + i * 0.3 for i in range(periods)],
+            "volume": [500_000_000 for _ in range(periods)],
+        }
+    )
+
+    res = scan.ScanResult(
+        symbol="FPT",
+        sector="Cong nghe vien thong",
+        close=closes[-1],
+        win_score=86,
+        setup="VCP_BREAK",
+        discount_pct=12.0,
+        target_discount_pct=15.0,
+        discount_group="G1",
+        trend_score=32,
+        base_score=22,
+        flow_score=20,
+        break_score=12,
+        risk_score=0,
+        rsi=65.0,
+        mfi=68.0,
+        vol_ratio=2.4,
+        obv_up=True,
+        near_break=True,
+        failed_break=False,
+        warning="",
+        reason="Squeeze breakout",
+    )
+
+    acc = tf.analyze_breakout_acceleration(df, res, index_df)
+    assert acc["strict_conviction"] is True
+    assert acc["strict_gates_passed"] >= 5
+    assert acc["acceleration_score"] >= 78
+    assert acc["pocket_pivot"] is True
+    assert acc["cmf_strong"] is True
+    assert acc["rs_line_new_high_60d"] is True
+    assert acc["sepa_trend_aligned"] is True
+    assert acc["tier"] in {"SQUEEZE_IGNITION", "POCKET_PIVOT_CONVICTION", "MOMENTUM_SURGE"}
+
+    # Verify market_intel strict pick selector and formatter
+    metrics = {
+        "FPT": {
+            "quality": {"quality_score": 100, "anomalies": []},
+            "trade": {
+                "entry_zone": "29.00-29.50",
+                "stop_loss": 27.8,
+                "chandelier_stop": 28.1,
+                "target_1": 32.5,
+                "rr_t1": 2.4,
+                "suggested_weight_pct": 12.0,
+            },
+            "advanced": {
+                "signal_score": 88,
+                "confidence": 85,
+                "breakout_acceleration": acc,
+            },
+        }
+    }
+    picks = intel.select_strict_acceleration_picks({"FPT": res}, metrics)
+    assert len(picks) == 1
+    assert picks[0]["symbol"] == "FPT"
+    section_text = "\n".join(intel.format_strict_acceleration_section(picks))
+    assert "LỌC GẮT 6 CỔNG" in section_text
+    assert "`FPT`" in section_text

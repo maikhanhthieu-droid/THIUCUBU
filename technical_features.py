@@ -1361,3 +1361,453 @@ def apply_market_context(
 
     early_out["missing"] = list(early_out.get("missing") or [])[:5]
     return early_out, technical_out
+
+
+
+def _cmf(frame: pd.DataFrame, period: int = 20) -> pd.Series:
+    """Chaikin Money Flow (CMF) measuring institutional buying/selling pressure."""
+    hl_range = (frame["high"] - frame["low"]).replace(0, np.nan)
+    mfm = (((frame["close"] - frame["low"]) - (frame["high"] - frame["close"])) / hl_range).fillna(0.0).clip(-1.0, 1.0)
+    mfv = mfm * frame["volume"]
+    vol_sum = frame["volume"].rolling(period).sum().replace(0, np.nan)
+    return (mfv.rolling(period).sum() / vol_sum).fillna(0.0).clip(-1.0, 1.0)
+
+
+def _adx_dmi(frame: pd.DataFrame, period: int = 14) -> tuple[pd.Series, pd.Series, pd.Series]:
+    """Wilder's ADX(14), +DI(14), and -DI(14) for trend strength and directional acceleration."""
+    up_move = frame["high"].diff()
+    down_move = -frame["low"].diff()
+    plus_dm = pd.Series(
+        np.where((up_move > down_move) & (up_move > 0), up_move, 0.0),
+        index=frame.index,
+    )
+    minus_dm = pd.Series(
+        np.where((down_move > up_move) & (down_move > 0), down_move, 0.0),
+        index=frame.index,
+    )
+    atr = _atr(frame, period).replace(0, np.nan)
+    plus_di = (100.0 * plus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr).fillna(0.0).clip(0.0, 100.0)
+    minus_di = (100.0 * minus_dm.ewm(alpha=1 / period, adjust=False).mean() / atr).fillna(0.0).clip(0.0, 100.0)
+    dx = (100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan)).fillna(0.0)
+    adx = dx.ewm(alpha=1 / period, adjust=False).mean().fillna(0.0).clip(0.0, 100.0)
+    return adx, plus_di, minus_di
+
+
+def _ttm_squeeze(
+    frame: pd.DataFrame,
+    period: int = 20,
+    bb_mult: float = 2.0,
+    kc_mult: float = 1.5,
+) -> dict[str, Any]:
+    """Detect TTM Volatility Squeeze (Bollinger Bands inside Keltner Channels) and bullish release."""
+    close = frame["close"]
+    mid = close.rolling(period).mean()
+    std = close.rolling(period).std(ddof=0)
+    bb_up = mid + bb_mult * std
+    bb_low = mid - bb_mult * std
+    bb_width = ((bb_up - bb_low) / mid.replace(0, np.nan)).fillna(0.0)
+
+    atr20 = _atr(frame, period)
+    kc_mid = close.ewm(span=period, adjust=False).mean()
+    kc_up = kc_mid + kc_mult * atr20
+    kc_low = kc_mid - kc_mult * atr20
+
+    sqz_series = ((bb_up <= kc_up) & (bb_low >= kc_low)).fillna(False)
+    sqz_list = [bool(x) for x in sqz_series.tail(15).tolist()]
+    squeeze_on = bool(sqz_list[-1]) if sqz_list else False
+
+    squeeze_bars = 0
+    for val in reversed(sqz_list):
+        if val:
+            squeeze_bars += 1
+        else:
+            break
+
+    prior_window = sqz_list[:-1] if len(sqz_list) > 1 else []
+    recent_sqz_count = sum(1 for x in sqz_list[-10:] if x)
+
+    highest20 = frame["high"].rolling(period).max()
+    lowest20 = frame["low"].rolling(period).min()
+    donchian_mid = (highest20 + lowest20) / 2.0
+    osc = (close - (donchian_mid + mid) / 2.0).ewm(span=5, adjust=False).mean().fillna(0.0)
+    osc_positive_rising = bool(
+        len(osc) >= 3 and _safe(osc.iloc[-1]) > 0 and _safe(osc.iloc[-1]) > _safe(osc.iloc[-2])
+    )
+    width_expanding = bool(
+        len(bb_width) >= 4 and _safe(bb_width.iloc[-1]) > _safe(bb_width.iloc[-2]) * 1.03
+    )
+    had_recent_coil = sum(1 for x in prior_window[-8:] if x) >= 2
+    squeeze_fired = bool(
+        had_recent_coil
+        and (not squeeze_on or width_expanding)
+        and osc_positive_rising
+        and _safe(close.iloc[-1]) > _safe(mid.iloc[-1])
+    )
+
+    bb_tail = bb_width.tail(120).dropna()
+    width_now = _safe(bb_width.iloc[-1], 0.15)
+    if len(bb_tail) >= 20:
+        percentile = float((bb_tail <= width_now).mean() * 100.0)
+    else:
+        percentile = 50.0
+
+    return {
+        "squeeze_on": squeeze_on,
+        "squeeze_bars": squeeze_bars,
+        "recent_squeeze_count_10d": recent_sqz_count,
+        "squeeze_fired": squeeze_fired,
+        "bb_width_pct": round(width_now * 100.0, 2),
+        "bb_width_percentile_120d": round(percentile, 1),
+        "momentum_osc": round(_safe(osc.iloc[-1]), 3),
+        "momentum_positive_rising": osc_positive_rising,
+    }
+
+
+def _pocket_pivot(frame: pd.DataFrame, lookback: int = 10) -> dict[str, Any]:
+    """Detect Gil Morales / O'Neil Pocket Pivot volume signature inside or emerging from a base."""
+    if len(frame) < lookback + 5:
+        return {"pocket_pivot": False, "recent_pocket_pivot_3d": False, "pocket_pivot_ratio": 0.0}
+
+    close = frame["close"]
+    open_p = frame["open"]
+    high = frame["high"]
+    low = frame["low"]
+    vol = frame["volume"]
+    ema20 = close.ewm(span=20, adjust=False).mean()
+    prev_close = close.shift(1)
+
+    def check_bar(idx: int) -> tuple[bool, float]:
+        if idx < lookback + 1:
+            return False, 0.0
+        c_now = _safe(close.iloc[idx])
+        c_prev = _safe(prev_close.iloc[idx], c_now)
+        o_now = _safe(open_p.iloc[idx], c_now)
+        h_now = _safe(high.iloc[idx], c_now)
+        l_now = _safe(low.iloc[idx], c_now)
+        v_now = _safe(vol.iloc[idx])
+        e20 = _safe(ema20.iloc[idx], c_now)
+
+        candle_range = max(h_now - l_now, 1e-9)
+        close_pos = (c_now - l_now) / candle_range
+        up_day = c_now > c_prev and c_now >= o_now and close_pos >= 0.55 and c_now >= e20 * 0.99
+        if not up_day or v_now <= 0:
+            return False, 0.0
+
+        window_slice = slice(idx - lookback, idx)
+        w_close = close.iloc[window_slice]
+        w_prev = prev_close.iloc[window_slice]
+        w_vol = vol.iloc[window_slice]
+        down_vols = w_vol[w_close < w_prev]
+        if down_vols.empty:
+            avg_v = max(_safe(w_vol.mean()), 1.0)
+            ratio = v_now / avg_v
+            return bool(ratio >= 1.25), round(ratio, 2)
+        max_down_vol = max(_safe(down_vols.max()), 1.0)
+        ratio = v_now / max_down_vol
+        return bool(v_now > max_down_vol), round(ratio, 2)
+
+    last_idx = len(frame) - 1
+    is_pp_now, ratio_now = check_bar(last_idx)
+    recent_pp = is_pp_now
+    best_ratio = ratio_now
+    for back in (1, 2):
+        ok_b, r_b = check_bar(last_idx - back)
+        if ok_b and _safe(close.iloc[last_idx]) >= _safe(ema20.iloc[last_idx]) * 0.99:
+            recent_pp = True
+            best_ratio = max(best_ratio, r_b)
+
+    return {
+        "pocket_pivot": is_pp_now,
+        "recent_pocket_pivot_3d": recent_pp,
+        "pocket_pivot_ratio": round(best_ratio, 2),
+    }
+
+
+def analyze_breakout_acceleration(
+    df: pd.DataFrame | None,
+    result: Any | None = None,
+    df_index: pd.DataFrame | None = None,
+) -> dict[str, Any]:
+    """Strict multi-factor filter for high-conviction opportunities and explosive breakout phases.
+
+    Combines 6 orthogonal institutional gates:
+      1. Volatility Coil / TTM Squeeze (Bollinger inside Keltner or tight 15d range)
+      2. Pocket Pivot / Volume Thrust (volume > max 10-day down-volume)
+      3. ADX / DMI Trend Acceleration (+DI > -DI with rising ADX)
+      4. Chaikin Money Flow CMF(20) accumulation pressure
+      5. RS Line 60d New High & SEPA Trend Template alignment
+      6. Clean Action Bar (low upper wick, no failed-break, non-exhausted RSI)
+    """
+    empty: dict[str, Any] = {
+        "strict_conviction": False,
+        "tier": "NONE",
+        "tier_label": "CHƯA ĐẠT LỌC GẮT",
+        "acceleration_score": 0,
+        "strict_gates_passed": 0,
+        "strict_gates_total": 6,
+        "ttm_squeeze_on": False,
+        "ttm_squeeze_bars": 0,
+        "ttm_squeeze_fired": False,
+        "bb_width_percentile_120d": None,
+        "pocket_pivot": False,
+        "recent_pocket_pivot_3d": False,
+        "pocket_pivot_ratio": 0.0,
+        "adx_14": None,
+        "plus_di": None,
+        "minus_di": None,
+        "adx_accelerating": False,
+        "cmf_20": None,
+        "cmf_strong": False,
+        "rs_line_new_high_60d": False,
+        "sepa_trend_aligned": False,
+        "atr_breakout_multiple": 0.0,
+        "signals": [],
+        "gates": {},
+    }
+    frame = _prepare(df)
+    if frame is None or len(frame) < 60:
+        return empty
+
+    close = frame["close"]
+    high = frame["high"]
+    low = frame["low"]
+    volume = frame["volume"]
+    close_now = max(_safe(close.iloc[-1]), 1e-9)
+    prev_close = max(_safe(close.iloc[-2], close_now), 1e-9)
+
+    # 1. TTM Squeeze & Volatility Coil
+    sqz = _ttm_squeeze(frame)
+    range15 = (_safe(high.tail(15).max()) - _safe(low.tail(15).min())) / close_now
+    gate_volatility_coil = bool(
+        sqz["squeeze_on"]
+        or sqz["squeeze_fired"]
+        or sqz["recent_squeeze_count_10d"] >= 2
+        or sqz["bb_width_percentile_120d"] <= 35.0
+        or range15 <= 0.11
+    )
+
+    # 2. Pocket Pivot & Volume Thrust
+    pp = _pocket_pivot(frame, lookback=10)
+    vol_avg20 = max(_safe(volume.tail(20).mean()), 1.0)
+    vol_ratio = _safe(volume.iloc[-1]) / vol_avg20
+    candle_range = max(_safe(high.iloc[-1]) - _safe(low.iloc[-1]), 1e-9)
+    close_pos = (close_now - _safe(low.iloc[-1])) / candle_range
+    upper_wick_ratio = (_safe(high.iloc[-1]) - max(_safe(frame["open"].iloc[-1]), close_now)) / candle_range
+    vol_thrust = bool(vol_ratio >= 1.35 and close_now > prev_close and close_pos >= 0.62)
+    gate_institutional_volume = bool(pp["pocket_pivot"] or pp["recent_pocket_pivot_3d"] or vol_thrust)
+
+    # 3. ADX / DMI Trend Acceleration
+    adx_s, plus_di_s, minus_di_s = _adx_dmi(frame, 14)
+    adx_now = round(_safe(adx_s.iloc[-1]), 1)
+    plus_di_now = round(_safe(plus_di_s.iloc[-1]), 1)
+    minus_di_now = round(_safe(minus_di_s.iloc[-1]), 1)
+    adx_rising = bool(
+        len(adx_s) >= 3
+        and _safe(adx_s.iloc[-1]) > _safe(adx_s.iloc[-2])
+        and (
+            _safe(adx_s.iloc[-1]) >= _safe(adx_s.iloc[-3]) + 0.5
+            or _safe(plus_di_s.iloc[-1]) >= _safe(plus_di_s.iloc[-2]) + 2.5
+        )
+    )
+    dmi_bull = bool(plus_di_now > minus_di_now + 4.0 and plus_di_now >= 20.0)
+    adx_accelerating = bool(dmi_bull and adx_rising and 12.0 <= adx_now <= 55.0)
+    gate_adx_dmi = bool(dmi_bull and (adx_accelerating or adx_now >= 18.0))
+
+    # 4. Chaikin Money Flow CMF(20)
+    cmf_s = _cmf(frame, 20)
+    cmf_now = round(_safe(cmf_s.iloc[-1]), 3)
+    cmf_prev5 = _safe(cmf_s.iloc[-6], cmf_now) if len(cmf_s) >= 6 else cmf_now
+    cmf_rising = bool(cmf_now > cmf_prev5 + 0.02)
+    cmf_strong = bool(cmf_now >= 0.10 or (cmf_now >= 0.05 and cmf_rising))
+    gate_cmf_flow = cmf_strong
+
+    # 5. SEPA Trend Template & RS Line 60d New High
+    ema20 = _safe(close.ewm(span=20, adjust=False).mean().iloc[-1], close_now)
+    ema50 = _safe(close.ewm(span=50, adjust=False).mean().iloc[-1], close_now)
+    ema150 = _safe(close.ewm(span=150, adjust=False).mean().iloc[-1], close_now)
+    high60 = max(_safe(high.tail(60).max(), close_now), 1e-9)
+    low120 = max(_safe(low.tail(120).min(), close_now), 1e-9)
+    near_60d_high = bool(close_now >= high60 * 0.94)
+    sepa_aligned = bool(
+        close_now >= ema20 * 0.995
+        and ema20 >= ema50 * 0.99
+        and close_now >= ema150 * 0.98
+        and close_now >= low120 * 1.12
+    )
+    rs_line_new_high_60d = False
+    if df_index is not None and not df_index.empty and "close" in df_index.columns:
+        idx_close = pd.to_numeric(df_index["close"], errors="coerce").dropna()
+        n_common = min(len(close), len(idx_close), 65)
+        if n_common >= 30:
+            s_tail = close.tail(n_common).to_numpy(dtype=float)
+            i_tail = np.maximum(idx_close.tail(n_common).to_numpy(dtype=float), 1e-9)
+            rs_ratio = s_tail / i_tail
+            rs_line_new_high_60d = bool(rs_ratio[-1] >= float(np.max(rs_ratio[:-1])) * 0.995)
+    else:
+        ret20 = close_now / max(_safe(close.iloc[-20], close_now), 1e-9) - 1.0 if len(close) >= 20 else 0.0
+        rs_line_new_high_60d = bool(near_60d_high and ret20 >= 0.05)
+
+    gate_rs_sepa = bool(sepa_aligned and (rs_line_new_high_60d or near_60d_high))
+
+    # 6. Clean Bar & ATR Breakout Multiple
+    atr_s = _atr(frame, 14)
+    atr_now = max(_safe(atr_s.iloc[-1], close_now * 0.015), 1e-9)
+    atr_breakout_mult = round((close_now - prev_close) / atr_now, 2)
+    rsi_now = _safe(_rsi(close, 14).iloc[-1], 50.0)
+    failed_break = bool(getattr(result, "failed_break", False)) if result is not None else False
+    extension_ema20_pct = (close_now / max(ema20, 1e-9) - 1.0) * 100.0
+    not_overextended = bool(
+        rsi_now >= 46.0
+        and (rsi_now <= 80.0 or extension_ema20_pct <= 9.5)
+        and extension_ema20_pct <= 14.0
+    )
+    gate_clean_bar = bool(
+        not failed_break
+        and upper_wick_ratio <= 0.36
+        and not_overextended
+        and close_pos >= 0.50
+    )
+
+    gates = {
+        "volatility_coil": gate_volatility_coil,
+        "institutional_volume": gate_institutional_volume,
+        "adx_dmi_accel": gate_adx_dmi,
+        "cmf_institutional_flow": gate_cmf_flow,
+        "rs_sepa_leadership": gate_rs_sepa,
+        "clean_bar_structure": gate_clean_bar,
+    }
+    gates_passed = sum(1 for v in gates.values() if v)
+
+    # Compute bounded acceleration score (0..97)
+    raw_score = 0.0
+    if sqz["squeeze_fired"]:
+        raw_score += 22.0
+    elif sqz["squeeze_on"] or sqz["recent_squeeze_count_10d"] >= 2:
+        raw_score += 16.0
+    elif gate_volatility_coil:
+        raw_score += 12.0
+
+    if pp["pocket_pivot"]:
+        raw_score += 20.0
+    elif pp["recent_pocket_pivot_3d"] or vol_thrust:
+        raw_score += 15.0
+
+    if adx_accelerating:
+        raw_score += 18.0
+    elif gate_adx_dmi:
+        raw_score += 12.0
+
+    if cmf_now >= 0.16:
+        raw_score += 16.0
+    elif gate_cmf_flow:
+        raw_score += 12.0
+    elif cmf_now < -0.08:
+        raw_score -= 12.0
+
+    if rs_line_new_high_60d and sepa_aligned:
+        raw_score += 16.0
+    elif gate_rs_sepa:
+        raw_score += 11.0
+
+    if gate_clean_bar:
+        raw_score += 8.0
+        if atr_breakout_mult >= 1.1:
+            raw_score += 5.0
+    else:
+        raw_score -= 18.0
+
+    if failed_break:
+        raw_score = min(raw_score, 32.0)
+
+    accel_score = int(round(_clamp(raw_score, 0.0, float(MAX_SIGNAL_SCORE))))
+
+    if (
+        gate_clean_bar
+        and gates_passed >= 5
+        and accel_score >= 78
+        and (sqz["squeeze_fired"] or pp["pocket_pivot"] or atr_breakout_mult >= 1.0)
+    ):
+        tier = "SQUEEZE_IGNITION"
+        tier_label = "SIÊU ĐIỂM NỔ SQUEEZE / BỨT TỐC"
+    elif (
+        gate_clean_bar
+        and gates_passed >= 4
+        and accel_score >= 72
+        and (pp["pocket_pivot"] or pp["recent_pocket_pivot_3d"])
+        and gate_cmf_flow
+    ):
+        tier = "POCKET_PIVOT_CONVICTION"
+        tier_label = "POCKET PIVOT — DÒNG TIỀN LỚN GOM NỀN"
+    elif (
+        gate_clean_bar
+        and gates_passed >= 4
+        and accel_score >= 72
+        and gate_adx_dmi
+        and gate_rs_sepa
+    ):
+        tier = "MOMENTUM_SURGE"
+        tier_label = "XUNG LỰC BỨT TỐC XU HƯỚNG"
+    elif gate_clean_bar and gates_passed >= 3 and accel_score >= 58:
+        tier = "WATCH_BUILDING"
+        tier_label = "ĐANG NÉN TÍCH LŨY CHỜ NỔ"
+    else:
+        tier = "NONE"
+        tier_label = "CHƯA ĐẠT LỌC GẮT"
+
+    strict_conviction = tier in {"SQUEEZE_IGNITION", "POCKET_PIVOT_CONVICTION", "MOMENTUM_SURGE"}
+
+    signals: list[str] = []
+    if sqz["squeeze_fired"]:
+        signals.append(f"TTM Squeeze bung nổ ({sqz['recent_squeeze_count_10d']}P nén)")
+    elif sqz["squeeze_on"]:
+        signals.append(f"TTM Squeeze đang nén chặt ({sqz['squeeze_bars']}P)")
+    elif sqz["bb_width_percentile_120d"] <= 30.0:
+        signals.append(f"BBWidth nén top {sqz['bb_width_percentile_120d']:.0f}% 120P")
+
+    if pp["pocket_pivot"]:
+        signals.append(f"Pocket Pivot ({pp['pocket_pivot_ratio']:.2f}x MaxVol giảm 10P)")
+    elif pp["recent_pocket_pivot_3d"]:
+        signals.append(f"Pocket Pivot 3P gần nhất ({pp['pocket_pivot_ratio']:.2f}x)")
+    elif vol_thrust:
+        signals.append(f"Xung lực Vol {vol_ratio:.2f}x đóng cửa cao")
+
+    if adx_accelerating:
+        signals.append(f"ADX {adx_now:.0f} dốc lên (+DI {plus_di_now:.0f} > -DI {minus_di_now:.0f})")
+    elif gate_adx_dmi:
+        signals.append(f"DMI thuận (+DI {plus_di_now:.0f} > -DI {minus_di_now:.0f}, ADX {adx_now:.0f})")
+
+    if gate_cmf_flow:
+        signals.append(f"CMF(20) {cmf_now:+.2f} gom ròng")
+    if rs_line_new_high_60d:
+        signals.append("RS Line vượt đỉnh 60P")
+    elif gate_rs_sepa:
+        signals.append("Chuẩn xu hướng SEPA")
+    if atr_breakout_mult >= 1.1 and gate_clean_bar:
+        signals.append(f"Biên độ bứt tốc {atr_breakout_mult:.1f}x ATR")
+
+    return {
+        "strict_conviction": strict_conviction,
+        "tier": tier,
+        "tier_label": tier_label,
+        "acceleration_score": accel_score,
+        "strict_gates_passed": gates_passed,
+        "strict_gates_total": 6,
+        "ttm_squeeze_on": sqz["squeeze_on"],
+        "ttm_squeeze_bars": sqz["squeeze_bars"],
+        "ttm_squeeze_fired": sqz["squeeze_fired"],
+        "bb_width_percentile_120d": sqz["bb_width_percentile_120d"],
+        "pocket_pivot": pp["pocket_pivot"],
+        "recent_pocket_pivot_3d": pp["recent_pocket_pivot_3d"],
+        "pocket_pivot_ratio": pp["pocket_pivot_ratio"],
+        "adx_14": adx_now,
+        "plus_di": plus_di_now,
+        "minus_di": minus_di_now,
+        "adx_accelerating": adx_accelerating,
+        "cmf_20": cmf_now,
+        "cmf_strong": cmf_strong,
+        "rs_line_new_high_60d": rs_line_new_high_60d,
+        "sepa_trend_aligned": sepa_aligned,
+        "atr_breakout_multiple": atr_breakout_mult,
+        "signals": signals[:6],
+        "gates": gates,
+    }

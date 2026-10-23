@@ -20,18 +20,41 @@ import fiinquant_provider
 logger = logging.getLogger("thieucutoo.fetcher")
 VN_TZ = timezone(timedelta(hours=7))
 
-try:  # vnstock has moved public import paths across releases.
-    from vnstock.api.quote import Quote as VnQuote
-except ImportError:  # pragma: no cover - depends on installed vnstock build
-    try:
-        from vnstock import Quote as VnQuote
-    except ImportError:  # pragma: no cover
-        VnQuote = None
+_UNSET = object()
+VnQuote: Any = _UNSET
+Vietfin: Any = _UNSET
 
-try:
-    from vietfin import vf as Vietfin
-except ImportError:  # pragma: no cover - optional adapter
-    Vietfin = None
+
+def _resolve_vnquote() -> Any:
+    global VnQuote
+    if VnQuote is not _UNSET:
+        return VnQuote
+    try:  # vnstock has moved public import paths across releases.
+        from vnstock.api.quote import Quote as _Quote
+
+        VnQuote = _Quote
+    except ImportError:  # pragma: no cover - depends on installed vnstock build
+        try:
+            from vnstock import Quote as _Quote
+
+            VnQuote = _Quote
+        except ImportError:  # pragma: no cover
+            VnQuote = None
+    return VnQuote
+
+
+def _resolve_vietfin() -> Any:
+    global Vietfin
+    if Vietfin is not _UNSET:
+        return Vietfin
+    try:
+        from vietfin import vf as _Vietfin
+
+        Vietfin = _Vietfin
+    except ImportError:  # pragma: no cover - optional adapter
+        Vietfin = None
+    return Vietfin
+
 
 SUPPORTED_SOURCES = {"FIINQUANT", "VCI", "KBS", "DNSE"}
 DEFAULT_SOURCES = ["FIINQUANT", "VCI", "KBS", "DNSE"]
@@ -311,9 +334,10 @@ def fetch_fiinquant(symbol: str, start: str, end: str) -> pd.DataFrame:
 
 
 def fetch_vietfin_dnse(symbol: str, start: str, end: str) -> pd.DataFrame:
-    if Vietfin is None:
+    vf_client = _resolve_vietfin()
+    if vf_client is None:
         raise RuntimeError("vietfin is not installed")
-    packet = Vietfin.equity.price.historical(
+    packet = vf_client.equity.price.historical(
         symbol=symbol.lower(),
         provider="dnse",
         start_date=start,
@@ -330,9 +354,10 @@ def fetch_vietfin_dnse(symbol: str, start: str, end: str) -> pd.DataFrame:
 
 
 def fetch_vnstock_quote(source: str, symbol: str, start: str, end: str) -> pd.DataFrame:
-    if VnQuote is None:
+    quote_cls = _resolve_vnquote()
+    if quote_cls is None:
         raise RuntimeError("vnstock Quote is not available")
-    q = VnQuote(symbol=symbol, source=source.lower())
+    q = quote_cls(symbol=symbol, source=source.lower())
     df = normalize_ohlcv(q.history(start=start, end=end, interval="1D"))
     if df is None or df.empty:
         raise ValueError(f"vnstock {source} returned no OHLCV for {symbol}")

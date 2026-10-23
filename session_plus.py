@@ -37,6 +37,7 @@ _STATE: dict[str, Any] = {
     "sector_rotation": {},
     "rotation": [],
     "portfolio_risk": {},
+    "strict_picks": [],
     "stage_timings": {},
 }
 _old_save_session_outputs = sess.save_session_outputs
@@ -265,6 +266,8 @@ def build_session_report(
         market_breadth.format_systemic(systemic),
         "",
         *five_stream_summary(streams, metrics, watch_items),
+        "",
+        *intel.format_strict_acceleration_section(results, metrics, limit=8),
     ]
     if mode == "eod":
         lines += [
@@ -430,6 +433,7 @@ def save_session_outputs(
         metrics,
         history_store,
     )
+    strict_picks = intel.select_strict_acceleration_picks(results, metrics, limit=12)
     transitions = [] if mode == "test" else state_transition.update_transitions(
         path=sess.DATA_DIR / "market_state_history.json",
         results=results,
@@ -450,6 +454,7 @@ def save_session_outputs(
             "transitions": transitions,
             "streams": streams,
             "portfolio_risk": portfolio_risk,
+            "strict_picks": strict_picks,
         }
     )
     failed_breaks = _old_save_session_outputs(
@@ -495,6 +500,7 @@ def save_session_outputs(
         "focus_symbols": focus_symbols,
         "portfolio_symbols": list(watch_items.keys()),
         "portfolio_risk": portfolio_risk,
+        "strict_acceleration_picks": strict_picks,
         "market": asdict(results["VNINDEX"]) if "VNINDEX" in results else None,
         "market_day": asdict(market_day) if market_day else None,
         "market_activity": asdict(activity_probe) if activity_probe else None,
@@ -528,6 +534,7 @@ def save_session_outputs(
     )
     feed["five_streams"] = stream_payload
     feed["portfolio_risk"] = portfolio_risk
+    feed["strict_acceleration_picks"] = strict_picks
     feed["market_breadth"] = breadth
     feed["systemic_regime"] = systemic
     feed["sector_rotation"] = sector_states

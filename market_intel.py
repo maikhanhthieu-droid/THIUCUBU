@@ -64,16 +64,23 @@ def is_cache_fresh_today(path: Path, ttl_minutes: int) -> bool:
     return (time.time() - mtime) <= ttl_minutes * 60
 
 
+_FRAME_CACHE: dict[tuple[int, int, str, float], pd.DataFrame] = {}
+
+
 def validate_ohlcv(df: pd.DataFrame | None) -> pd.DataFrame | None:
     if df is None or df.empty:
         return None
+    if df.attrs.get("_ohlcv_validated") is True and df.attrs.get("_ohlcv_len") == len(df):
+        return df
     required = {"time", "open", "high", "low", "close", "volume"}
     if not required.issubset(df.columns):
         return None
     out = df.copy()
-    out["time"] = pd.to_datetime(out["time"], errors="coerce")
+    if not pd.api.types.is_datetime64_any_dtype(out["time"]):
+        out["time"] = pd.to_datetime(out["time"], errors="coerce")
     for col in ["open", "high", "low", "close", "volume"]:
-        out[col] = pd.to_numeric(out[col], errors="coerce")
+        if not pd.api.types.is_numeric_dtype(out[col]):
+            out[col] = pd.to_numeric(out[col], errors="coerce")
     out = out.dropna(subset=["time", "open", "high", "low", "close", "volume"])
     out = out[(out[["open", "high", "low", "close"]] > 0).all(axis=1)]
     out = out[out["volume"] > 0]
@@ -84,7 +91,12 @@ def validate_ohlcv(df: pd.DataFrame | None) -> pd.DataFrame | None:
         return None
     daily_return = out["close"].pct_change().abs()
     out = out[daily_return.isna() | (daily_return < 0.50)].copy()
-    return out.reset_index(drop=True) if not out.empty else None
+    if out.empty:
+        return None
+    out = out.reset_index(drop=True)
+    out.attrs["_ohlcv_validated"] = True
+    out.attrs["_ohlcv_len"] = len(out)
+    return out
 
 
 def assess_ohlcv_quality(df: pd.DataFrame | None, symbol: str = "") -> dict[str, Any]:
@@ -231,7 +243,22 @@ def frame_from_history(history_store: dict[str, Any], symbol: str) -> pd.DataFra
     if not rows:
         return None
     try:
-        return validate_ohlcv(pd.DataFrame(rows))
+        last_row = rows[-1] if isinstance(rows, list) else None
+        cache_key = (
+            id(rows),
+            len(rows),
+            str(last_row.get("time", "")) if isinstance(last_row, Mapping) else "",
+            safe_float(last_row.get("close")) if isinstance(last_row, Mapping) else 0.0,
+        )
+        cached = _FRAME_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+        validated = validate_ohlcv(pd.DataFrame(rows))
+        if validated is not None:
+            if len(_FRAME_CACHE) > 512:
+                _FRAME_CACHE.clear()
+            _FRAME_CACHE[cache_key] = validated
+        return validated
     except Exception:
         return None
 
@@ -239,9 +266,12 @@ def frame_from_history(history_store: dict[str, Any], symbol: str) -> pd.DataFra
 def weekly_trend(df: pd.DataFrame | None) -> dict[str, Any]:
     if df is None or len(df) < 80:
         return {"weekly_uptrend": False, "weekly_above_ema13": False, "weekly_ema13_slope": 0.0}
-    data = df.copy()
-    data["time"] = pd.to_datetime(data["time"], errors="coerce")
-    data = data.dropna(subset=["time"]).sort_values("time")
+    if df.attrs.get("_ohlcv_validated") is True and pd.api.types.is_datetime64_any_dtype(df["time"]):
+        data = df
+    else:
+        data = df.copy()
+        data["time"] = pd.to_datetime(data["time"], errors="coerce")
+        data = data.dropna(subset=["time"]).sort_values("time")
     weekly = data.resample("W-FRI", on="time").agg({"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}).dropna()
     if len(weekly) < 30:
         return {"weekly_uptrend": False, "weekly_above_ema13": False, "weekly_ema13_slope": 0.0}
@@ -469,6 +499,11 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         technical=technical_watch,
         relative_strength=rs,
     )
+    breakout_acceleration = technical_features.analyze_breakout_acceleration(
+        df,
+        result,
+        df_index,
+    )
     rr = trade.get("risk_reward")
     weekly_score = (
         (42 if weekly["weekly_uptrend"] else 12)
@@ -493,6 +528,12 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         regime=name,
         churning=bool(volume["churning"]),
     )
+    if breakout_acceleration.get("strict_conviction"):
+        bonus = 3 if breakout_acceleration.get("tier") == "SQUEEZE_IGNITION" else 2
+        adv = min(scoring.MAX_SCORE, adv + bonus)
+    elif safe_float(breakout_acceleration.get("cmf_20"), 0.0) <= -0.12:
+        adv = max(0, adv - 4)
+
     if result.failed_break:
         adv = min(adv, 38)
     elif structure.breakout.state == "FAILED_BREAK_WATCH":
@@ -517,6 +558,7 @@ def advanced_signal(symbol: str, df: pd.DataFrame | None, result: scan.ScanResul
         "market_structure": structure.to_dict(),
         "technical_watch": technical_watch,
         "early_accumulation": early_accumulation,
+        "breakout_acceleration": breakout_acceleration,
         "data_quality_detail": data_quality_detail,
     }
 
@@ -528,6 +570,109 @@ def build_market_metrics(results: dict[str, scan.ScanResult], history_store: dic
     for symbol, result in results.items():
         metrics[symbol] = advanced_signal(symbol, frame_from_history(history_store, symbol), result, df_index, regime)
     return metrics, regime
+
+
+def select_strict_acceleration_picks(
+    results: Mapping[str, Any],
+    metrics_by_symbol: Mapping[str, Mapping[str, Any]],
+    *,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    """Return top symbols passing the 6-gate strict conviction & breakout acceleration filter."""
+    tier_priority = {
+        "SQUEEZE_IGNITION": 3,
+        "POCKET_PIVOT_CONVICTION": 2,
+        "MOMENTUM_SURGE": 1,
+    }
+    picks: list[dict[str, Any]] = []
+    for symbol, result in results.items():
+        sym = str(symbol).upper()
+        if sym == "VNINDEX" or getattr(result, "failed_break", False):
+            continue
+        metric = metrics_by_symbol.get(sym, {})
+        raw_accel = metric.get("breakout_acceleration")
+        if not isinstance(raw_accel, Mapping):
+            adv_sub = metric.get("advanced") if isinstance(metric.get("advanced"), Mapping) else {}
+            raw_accel = adv_sub.get("breakout_acceleration")
+        accel = raw_accel if isinstance(raw_accel, Mapping) else {}
+        if not accel or not accel.get("strict_conviction"):
+            continue
+        gate = metric.get("gate") if isinstance(metric.get("gate"), Mapping) else {}
+        if gate and gate.get("allowed") is False:
+            continue
+        tier = str(accel.get("tier") or "NONE")
+        adv_score = int(
+            metric.get("advanced_score")
+            or (metric.get("advanced") or {}).get("signal_score")
+            or getattr(result, "win_score", 0)
+            or 0
+        )
+        picks.append(
+            {
+                "symbol": sym,
+                "sector": str(getattr(result, "sector", "") or scan.TICKER_TO_SECTOR.get(sym, "Other")),
+                "close": safe_float(getattr(result, "close", 0.0)),
+                "advanced_score": adv_score,
+                "acceleration_score": int(accel.get("acceleration_score") or 0),
+                "tier": tier,
+                "tier_label": str(accel.get("tier_label") or tier),
+                "strict_gates_passed": int(accel.get("strict_gates_passed") or 0),
+                "strict_gates_total": int(accel.get("strict_gates_total") or 6),
+                "adx_14": accel.get("adx_14"),
+                "plus_di": accel.get("plus_di"),
+                "minus_di": accel.get("minus_di"),
+                "cmf_20": accel.get("cmf_20"),
+                "ttm_squeeze_fired": bool(accel.get("ttm_squeeze_fired")),
+                "ttm_squeeze_on": bool(accel.get("ttm_squeeze_on")),
+                "pocket_pivot": bool(accel.get("pocket_pivot") or accel.get("recent_pocket_pivot_3d")),
+                "rs_line_new_high_60d": bool(accel.get("rs_line_new_high_60d")),
+                "signals": list(accel.get("signals") or []),
+                "_sort_key": (
+                    tier_priority.get(tier, 0),
+                    int(accel.get("strict_gates_passed") or 0),
+                    int(accel.get("acceleration_score") or 0),
+                    adv_score,
+                    sym,
+                ),
+            }
+        )
+    picks.sort(key=lambda item: item["_sort_key"], reverse=True)
+    output: list[dict[str, Any]] = []
+    for item in picks[: max(1, limit)]:
+        cleaned = dict(item)
+        cleaned.pop("_sort_key", None)
+        output.append(cleaned)
+    return output
+
+
+def format_strict_acceleration_section(
+    results: Any,
+    metrics_by_symbol: Mapping[str, Mapping[str, Any]] | None = None,
+    *,
+    limit: int = 8,
+) -> list[str]:
+    if metrics_by_symbol is None and isinstance(results, (list, tuple)):
+        picks = list(results)[: max(1, limit)]
+    else:
+        picks = select_strict_acceleration_picks(results, metrics_by_symbol or {}, limit=limit)
+    header = "*🔥 LỌC GẮT 6 CỔNG — CƠ HỘI NGON & PHA BỨT TỐC LỚN*"
+    if not picks:
+        return [
+            header,
+            "Chưa có mã vượt đủ 4–6 cổng lọc gắt (TTM Squeeze, Pocket Pivot, ADX/DMI, CMF20, RS 60P).",
+        ]
+    lines = [header]
+    for item in picks:
+        sig_text = "; ".join(str(s) for s in item.get("signals", [])[:4]) or "đồng thuận đa chỉ báo"
+        cmf_val = safe_float(item.get("cmf_20"), 0.0)
+        adx_val = safe_float(item.get("adx_14"), 0.0)
+        lines.append(
+            f"⚡ `{item['symbol']}` *{item['tier_label']}* · Accel *{item['acceleration_score']}/97* "
+            f"(Intel {item['advanced_score']}/97 · {item['strict_gates_passed']}/{item['strict_gates_total']} cổng) | "
+            f"Giá {fmt_price(item['close'])} | ADX {adx_val:.0f} | CMF {cmf_val:+.2f}\n"
+            f"   ↳ {sig_text}"
+        )
+    return lines
 
 
 def analyze_portfolio_risk(
@@ -682,6 +827,7 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
     structure = metrics.get("market_structure", {})
     technical_watch = metrics.get("technical_watch", {})
     early_accumulation = metrics.get("early_accumulation", {})
+    accel = metrics.get("breakout_acceleration", {}) if isinstance(metrics.get("breakout_acceleration"), Mapping) else {}
     rr_text = f"{fmt_num(trade.get('risk_reward'))}x" if trade.get("risk_reward") is not None else "n/a"
     adv = int(metrics.get("advanced_score", 0))
     grade = str(metrics.get("grade") or scoring.grade(adv))
@@ -719,6 +865,16 @@ def format_advanced_lines(metrics: dict[str, Any] | None) -> list[str]:
         if breakout.get("event_age_bars") is not None:
             phase_line += f" ({int(breakout['event_age_bars'])} phiên)"
     lines = [line1, phase_line, line2]
+    if accel and accel.get("tier") not in {None, "NONE"}:
+        accel_signals = ", ".join(str(s) for s in accel.get("signals", [])[:3])
+        cmf_text = f"CMF {safe_float(accel.get('cmf_20')):+.2f}" if accel.get("cmf_20") is not None else ""
+        adx_text = f"ADX {safe_float(accel.get('adx_14')):.0f}" if accel.get("adx_14") is not None else ""
+        meta_bits = [b for b in (adx_text, cmf_text, accel_signals) if b]
+        lines.append(
+            f"Lọc gắt [{accel.get('tier')} {int(accel.get('acceleration_score') or 0)}/97 · "
+            f"{int(accel.get('strict_gates_passed') or 0)}/{int(accel.get('strict_gates_total') or 6)} cổng]: "
+            + " | ".join(meta_bits)
+        )
     secondary_labels: list[str] = []
     if early_accumulation.get("eligible"):
         secondary_labels.append(

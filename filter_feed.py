@@ -40,6 +40,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
     structure = intel.get("market_structure") if isinstance(intel.get("market_structure"), Mapping) else {}
     technical_watch = intel.get("technical_watch") if isinstance(intel.get("technical_watch"), Mapping) else {}
     early_accumulation = intel.get("early_accumulation") if isinstance(intel.get("early_accumulation"), Mapping) else {}
+    breakout_acceleration = intel.get("breakout_acceleration") if isinstance(intel.get("breakout_acceleration"), Mapping) else {}
     systemic = intel.get("systemic_regime") if isinstance(intel.get("systemic_regime"), Mapping) else {}
     sector_rotation = intel.get("sector_rotation") if isinstance(intel.get("sector_rotation"), Mapping) else {}
     quality_detail = intel.get("data_quality_detail") if isinstance(intel.get("data_quality_detail"), Mapping) else {}
@@ -67,6 +68,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
             "trade": _float(raw.get("trade_score")),
             "position": _float(raw.get("position_score")),
             "advanced": _float(intel.get("advanced_score")),
+            "acceleration": _float(breakout_acceleration.get("acceleration_score")),
             "grade": intel.get("grade") or raw.get("grade"),
             "confidence": _float(raw.get("confidence")),
             "version": intel.get("score_version") or raw.get("score_version"),
@@ -78,6 +80,8 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
             "market_state_label": structure.get("label"),
             "pre_label": technical_watch.get("pre_label"),
             "risk_label": technical_watch.get("risk_label"),
+            "acceleration_tier": breakout_acceleration.get("tier"),
+            "strict_conviction": bool(breakout_acceleration.get("strict_conviction")),
         },
         "near_break": bool(raw.get("near_break")),
         "failed_break": bool(raw.get("failed_break")),
@@ -96,6 +100,7 @@ def _fact(result: Any, metrics: Mapping[str, Any]) -> dict[str, Any]:
         },
         "technical_watch": dict(technical_watch),
         "early_accumulation": dict(early_accumulation),
+        "breakout_acceleration": dict(breakout_acceleration),
         "market_context": {
             "breadth_state": intel.get("market_breadth_state"),
             "breadth_score": intel.get("market_breadth_score"),
@@ -210,6 +215,9 @@ def build_filter_feed(
             ),
             "anomaly_facts": sum(
                 1 for item in facts if item["data_quality"].get("anomalies")
+            ),
+            "strict_conviction_facts": sum(
+                1 for item in facts if item["classification"].get("strict_conviction")
             ),
             "warning": "Facts and advisory gates only; not a return forecast.",
         },
