@@ -946,18 +946,18 @@
       "updated_at": "2026-10-24T19:14:45+07:00"
     },
     {
-      "run_id": "20261026161054-f8a140cd",
+      "run_id": "20261026164443-1734f4ce",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-10-26T16:10:54+07:00",
-      "updated_at": "2026-10-26T16:10:54+07:00"
+      "started_at": "2026-10-26T16:44:43+07:00",
+      "updated_at": "2026-10-26T16:44:43+07:00"
     },
     {
-      "run_id": "20261026161054-f8a140cd",
+      "run_id": "20261026164443-1734f4ce",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-10-26T16:38:34+07:00",
+      "finished_at": "2026-10-26T17:12:31+07:00",
       "success_count": 203,
       "failed_count": 9,
       "failed_symbols": [
@@ -971,15 +971,15 @@
         "TVS",
         "VIP"
       ],
-      "elapsed_sec": 1657.7,
+      "elapsed_sec": 1666.1,
       "telegram_sent": true,
       "stage_timings": {
-        "scan_sec": 1633.69,
-        "metrics_sec": 9.69,
-        "save_sec": 0.33
+        "scan_sec": 1637.08,
+        "metrics_sec": 14.78,
+        "save_sec": 0.48
       },
-      "updated_at": "2026-10-26T16:38:34+07:00"
+      "updated_at": "2026-10-26T17:12:31+07:00"
     }
   ],
-  "last_updated": "2026-10-26T16:38:34+07:00"
+  "last_updated": "2026-10-26T17:12:31+07:00"
 }
