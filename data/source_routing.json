@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-10-26T17:12:16+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-10-26T17:23:54+07:00",
+  "last_mode": "morning_focus",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -39,8 +39,7 @@
       "reasons": [
         "failed_break",
         "breakout:FAILED_BREAK_CONFIRMED",
-        "portfolio_or_note",
-        "state_transition"
+        "portfolio_or_note"
       ],
       "attention_score": 145,
       "win_score": 6,
@@ -50,7 +49,7 @@
       "last_price": 10.1,
       "as_of": "2026-10-26",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "last_evaluated_at": "2026-10-26T17:23:54+07:00",
       "consecutive_misses": 0
     },
     {
@@ -73,7 +72,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "last_evaluated_at": "2026-10-26T17:23:54+07:00",
       "consecutive_misses": 0
     },
     {
@@ -193,7 +192,7 @@
       "last_price": 10.75,
       "as_of": "2026-10-23",
       "first_promoted_at": "2026-10-23T19:37:44+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "last_evaluated_at": "2026-10-26T16:38:18+07:00",
       "consecutive_misses": 0
     },
     {
@@ -448,8 +447,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 14,
@@ -458,8 +456,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 46.3,
       "as_of": "2026-10-26",
-      "first_promoted_at": "2026-10-26T17:12:16+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "first_promoted_at": "2026-10-26T16:38:18+07:00",
+      "last_evaluated_at": "2026-10-26T17:23:54+07:00",
       "consecutive_misses": 0
     },
     {
@@ -748,8 +746,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 9.5,
       "as_of": "2026-10-26",
-      "first_promoted_at": "2026-10-26T17:12:16+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "first_promoted_at": "2026-10-26T16:38:18+07:00",
+      "last_evaluated_at": "2026-10-26T16:38:18+07:00",
       "consecutive_misses": 0
     },
     {
@@ -773,8 +771,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 94.6,
       "as_of": "2026-07-28",
-      "first_promoted_at": "2026-10-26T17:12:16+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "first_promoted_at": "2026-10-26T16:38:18+07:00",
+      "last_evaluated_at": "2026-10-26T16:38:18+07:00",
       "consecutive_misses": 0
     },
     {
@@ -798,8 +796,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 28.0,
       "as_of": "2026-10-26",
-      "first_promoted_at": "2026-10-26T17:12:16+07:00",
-      "last_evaluated_at": "2026-10-26T17:12:16+07:00",
+      "first_promoted_at": "2026-10-26T16:38:18+07:00",
+      "last_evaluated_at": "2026-10-26T16:38:18+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -1995,7 +1993,7 @@
       "KBS": 387,
       "DNSE": 420
     },
-    "evaluated_symbols": 202,
+    "evaluated_symbols": 70,
     "demote_after_scans": 3
   }
 }
