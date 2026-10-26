@@ -322,5 +322,65 @@
     "date": "2026-10-26",
     "score": 0,
     "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "LAS",
+    "date": "2026-10-26",
+    "score": 26,
+    "reason": "discount 39.9% >= target 35%; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "PVB",
+    "date": "2026-10-26",
+    "score": 22,
+    "reason": "nen chat; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; GẦN ĐIỂM BREAK; ? FAILED_BREAK_CONFIRMED,DISTRIBUTION"
+  },
+  {
+    "symbol": "TRC",
+    "date": "2026-10-26",
+    "score": 11,
+    "reason": "vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "TNP",
+    "date": "2026-10-26",
+    "score": 9,
+    "reason": "vol kiet; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "TJC",
+    "date": "2026-10-26",
+    "score": 8,
+    "reason": "discount 53.7% >= target 35%; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "TNC",
+    "date": "2026-10-26",
+    "score": 8,
+    "reason": "vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "TVS",
+    "date": "2026-10-26",
+    "score": 1,
+    "reason": "vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "TOS",
+    "date": "2026-10-26",
+    "score": 0,
+    "reason": "OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "SZC",
+    "date": "2026-10-26",
+    "score": 0,
+    "reason": "discount 42.3% >= target 30%; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,HOT_RSI"
+  },
+  {
+    "symbol": "VDS",
+    "date": "2026-10-26",
+    "score": 0,
+    "reason": "discount 46.5% >= target 35%; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
   }
 ]
