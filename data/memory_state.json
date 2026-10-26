@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-10-26T20:42:09+07:00",
+  "last_updated": "2026-10-26T21:12:42+07:00",
   "last_mode": "eod",
   "strong_stocks": [
     {
@@ -46,7 +46,7 @@
       "category": "strong",
       "first_detected": "2026-10-23",
       "last_seen": "2026-10-26",
-      "last_updated": "2026-10-26T20:42:09+07:00",
+      "last_updated": "2026-10-26T21:12:42+07:00",
       "last_mode": "eod",
       "score": 74,
       "win_score": 80,
@@ -237,7 +237,7 @@
       "category": "watchlist",
       "first_detected": "2026-09-24",
       "last_seen": "2026-10-26",
-      "last_updated": "2026-10-26T20:42:09+07:00",
+      "last_updated": "2026-10-26T21:12:42+07:00",
       "last_mode": "eod",
       "score": 52,
       "win_score": 58,
@@ -275,7 +275,7 @@
       "category": "watchlist",
       "first_detected": "2026-09-24",
       "last_seen": "2026-10-26",
-      "last_updated": "2026-10-26T20:42:09+07:00",
+      "last_updated": "2026-10-26T21:12:42+07:00",
       "last_mode": "eod",
       "score": 50,
       "win_score": 52,
