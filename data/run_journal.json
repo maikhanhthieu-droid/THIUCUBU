@@ -2,35 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260910155906-70e01e8d",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-09-10T15:59:06+07:00",
-      "updated_at": "2026-09-10T15:59:06+07:00"
-    },
-    {
-      "run_id": "20260910155906-70e01e8d",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-09-10T16:27:06+07:00",
-      "success_count": 204,
-      "failed_count": 8,
-      "failed_symbols": [
-        "UPS",
-        "UTT",
-        "UXC",
-        "VBG",
-        "VBT",
-        "VCE",
-        "VCT",
-        "VDB"
-      ],
-      "elapsed_sec": 1680.4,
-      "telegram_sent": true,
-      "updated_at": "2026-09-10T16:27:06+07:00"
-    },
-    {
       "run_id": "20260910185620-8fa5996e",
       "mode": "auto",
       "trigger": "schedule",
@@ -984,7 +955,36 @@
         "save_sec": 0.52
       },
       "updated_at": "2026-10-26T21:12:56+07:00"
+    },
+    {
+      "run_id": "20261027161145-6f01f3ae",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-10-27T16:11:45+07:00",
+      "updated_at": "2026-10-27T16:11:45+07:00"
+    },
+    {
+      "run_id": "20261027161145-6f01f3ae",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-10-27T16:32:52+07:00",
+      "success_count": 209,
+      "failed_count": 3,
+      "failed_symbols": [
+        "TVG",
+        "TVH",
+        "TVM"
+      ],
+      "elapsed_sec": 1265.5,
+      "telegram_sent": true,
+      "stage_timings": {
+        "scan_sec": 1233.92,
+        "metrics_sec": 18.82,
+        "save_sec": 0.51
+      },
+      "updated_at": "2026-10-27T16:32:52+07:00"
     }
   ],
-  "last_updated": "2026-10-26T21:12:56+07:00"
+  "last_updated": "2026-10-27T16:32:52+07:00"
 }
