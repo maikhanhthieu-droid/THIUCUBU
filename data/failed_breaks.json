@@ -580,5 +580,197 @@
     "date": "2026-10-27",
     "score": 0,
     "reason": "OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,DISTRIBUTION"
+  },
+  {
+    "symbol": "LAS",
+    "date": "2026-10-28",
+    "score": 41,
+    "reason": "discount 39.4% >= target 35%; vol kiet; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN"
+  },
+  {
+    "symbol": "VGC",
+    "date": "2026-10-28",
+    "score": 38,
+    "reason": "nen chat; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "VGR",
+    "date": "2026-10-28",
+    "score": 32,
+    "reason": "vol kiet; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "DPR",
+    "date": "2026-10-28",
+    "score": 27,
+    "reason": "nen chat; vol kiet; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "BFC",
+    "date": "2026-10-28",
+    "score": 19,
+    "reason": "vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "GMD",
+    "date": "2026-10-28",
+    "score": 14,
+    "reason": "MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "DHA",
+    "date": "2026-10-28",
+    "score": 12,
+    "reason": "OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "GVR",
+    "date": "2026-10-28",
+    "score": 8,
+    "reason": "discount 32.3% >= target 30%; nen chat; vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "PET",
+    "date": "2026-10-28",
+    "score": 7,
+    "reason": "OBV up; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "VRE",
+    "date": "2026-10-28",
+    "score": 6,
+    "reason": "discount 33.5% >= target 30%; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "HQC",
+    "date": "2026-10-28",
+    "score": 6,
+    "reason": "discount 44.2% >= target 43%; vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "DPG",
+    "date": "2026-10-28",
+    "score": 4,
+    "reason": "OBV up; MFI tot; gan nen break; MTF TÍCH LŨY; BREAK XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,HOT_RSI"
+  },
+  {
+    "symbol": "PVT",
+    "date": "2026-10-28",
+    "score": 4,
+    "reason": "nen chat; vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "VLB",
+    "date": "2026-10-28",
+    "score": 3,
+    "reason": "OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,HOT_RSI"
+  },
+  {
+    "symbol": "PLC",
+    "date": "2026-10-28",
+    "score": 2,
+    "reason": "discount 46.8% >= target 35%; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,HOT_RSI"
+  },
+  {
+    "symbol": "BSR",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "nen chat; vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "SMC",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "BCC",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "vol kiet; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "BCM",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 42.4% >= target 30%; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "BVH",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "CEO",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 56.3% >= target 43%; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,HOT_RSI"
+  },
+  {
+    "symbol": "DDV",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 48.9% >= target 35%; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE"
+  },
+  {
+    "symbol": "DRI",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "EIB",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 28.5% >= target 25%; OBV up; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "FTS",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 36.8% >= target 35%; MFI tot; gan nen break; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "HDC",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 55.6% >= target 43%; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,HOT_RSI"
+  },
+  {
+    "symbol": "HT1",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,HOT_RSI,DISTRIBUTION"
+  },
+  {
+    "symbol": "LSS",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "vol kiet; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "PAN",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "nen chat; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "PDR",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 50.5% >= target 43%; MFI tot; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "SGP",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "SZC",
+    "date": "2026-10-28",
+    "score": 0,
+    "reason": "discount 42.3% >= target 30%; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,HOT_RSI"
   }
 ]
