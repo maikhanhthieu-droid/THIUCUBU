@@ -2,26 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260914165215-11a49881",
-      "mode": "morning_focus",
-      "status": "success",
-      "finished_at": "2026-09-14T16:56:24+07:00",
-      "success_count": 68,
-      "failed_count": 0,
-      "failed_symbols": [],
-      "elapsed_sec": 249.2,
-      "telegram_sent": true,
-      "updated_at": "2026-09-14T16:56:24+07:00"
-    },
-    {
-      "run_id": "20260914200215-61e6d987",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-09-14T20:02:15+07:00",
-      "updated_at": "2026-09-14T20:02:15+07:00"
-    },
-    {
       "run_id": "20260914200215-61e6d987",
       "mode": "eod",
       "status": "success",
@@ -1030,7 +1010,36 @@
         "save_sec": 0.18
       },
       "updated_at": "2026-10-29T21:19:11+07:00"
+    },
+    {
+      "run_id": "20261029223120-375750e3",
+      "mode": "eod",
+      "trigger": "workflow_dispatch",
+      "status": "started",
+      "started_at": "2026-10-29T22:31:20+07:00",
+      "updated_at": "2026-10-29T22:31:20+07:00"
+    },
+    {
+      "run_id": "20261029223120-375750e3",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-10-29T22:53:11+07:00",
+      "success_count": 209,
+      "failed_count": 3,
+      "failed_symbols": [
+        "BLN",
+        "BMD",
+        "BMG"
+      ],
+      "elapsed_sec": 1309.8,
+      "telegram_sent": true,
+      "stage_timings": {
+        "scan_sec": 1278.77,
+        "metrics_sec": 19.94,
+        "save_sec": 0.54
+      },
+      "updated_at": "2026-10-29T22:53:11+07:00"
     }
   ],
-  "last_updated": "2026-10-29T21:19:11+07:00"
+  "last_updated": "2026-10-29T22:53:11+07:00"
 }
