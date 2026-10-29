@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-10-29T17:33:17+07:00",
+  "last_updated": "2026-10-29T17:54:57+07:00",
   "last_mode": "eod",
   "strong_stocks": [
     {
@@ -124,7 +124,7 @@
       "category": "watchlist",
       "first_detected": "2026-10-23",
       "last_seen": "2026-10-29",
-      "last_updated": "2026-10-29T17:33:17+07:00",
+      "last_updated": "2026-10-29T17:54:57+07:00",
       "last_mode": "eod",
       "score": 68,
       "win_score": 89,
@@ -393,7 +393,7 @@
       "category": "retired",
       "first_detected": "2026-10-28",
       "last_seen": "2026-10-29",
-      "last_updated": "2026-10-29T17:33:17+07:00",
+      "last_updated": "2026-10-29T17:54:57+07:00",
       "last_mode": "eod",
       "score": 43,
       "win_score": 55,
@@ -582,7 +582,7 @@
       "category": "retired",
       "first_detected": "2026-10-27",
       "last_seen": "2026-10-29",
-      "last_updated": "2026-10-29T17:33:17+07:00",
+      "last_updated": "2026-10-29T17:54:57+07:00",
       "last_mode": "eod",
       "score": 35,
       "win_score": 53,
@@ -736,7 +736,7 @@
       "category": "retired",
       "first_detected": "2026-10-28",
       "last_seen": "2026-10-29",
-      "last_updated": "2026-10-29T17:33:17+07:00",
+      "last_updated": "2026-10-29T17:54:57+07:00",
       "last_mode": "eod",
       "score": 0,
       "win_score": 0,
