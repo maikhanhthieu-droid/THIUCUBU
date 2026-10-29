@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-10-29T20:40:20+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-10-29T21:19:00+07:00",
+  "last_mode": "afternoon_focus",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -49,7 +49,7 @@
       "last_price": 9.5,
       "as_of": "2026-10-29",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-10-29T20:40:20+07:00",
+      "last_evaluated_at": "2026-10-29T21:19:00+07:00",
       "consecutive_misses": 0
     },
     {
@@ -72,7 +72,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-10-29T20:40:20+07:00",
+      "last_evaluated_at": "2026-10-29T21:19:00+07:00",
       "consecutive_misses": 0
     },
     {
@@ -195,7 +195,7 @@
       "last_price": 24.15,
       "as_of": "2026-10-29",
       "first_promoted_at": "2026-10-28T17:32:05+07:00",
-      "last_evaluated_at": "2026-10-29T20:40:20+07:00",
+      "last_evaluated_at": "2026-10-29T21:19:00+07:00",
       "consecutive_misses": 0
     },
     {
@@ -607,7 +607,7 @@
       "last_price": 27.8,
       "as_of": "2026-10-29",
       "first_promoted_at": "2026-10-29T17:54:57+07:00",
-      "last_evaluated_at": "2026-10-29T20:40:20+07:00",
+      "last_evaluated_at": "2026-10-29T21:19:00+07:00",
       "consecutive_misses": 0
     },
     {
@@ -2026,7 +2026,7 @@
       "KBS": 401,
       "DNSE": 428
     },
-    "evaluated_symbols": 209,
+    "evaluated_symbols": 68,
     "demote_after_scans": 3
   }
 }
