@@ -1,47 +1,9 @@
 {
   "version": 1,
-  "last_updated": "2026-10-29T22:52:59+07:00",
+  "last_updated": "2026-10-30T17:37:07+07:00",
   "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
-    {
-      "symbol": "ABB",
-      "category": "watchlist",
-      "first_detected": "2026-10-23",
-      "last_seen": "2026-10-29",
-      "last_updated": "2026-10-29T22:52:59+07:00",
-      "last_mode": "eod",
-      "score": 68,
-      "win_score": 89,
-      "close": 17.7,
-      "sector": "Bank",
-      "setup": "VCP_BREAK",
-      "near_break": true,
-      "obv_up": true,
-      "failed_break": false,
-      "market_state": "OPPORTUNITY",
-      "daily_phase": "REACCUMULATION",
-      "weekly_phase": "REACCUMULATION",
-      "monthly_phase": "ACCUMULATION",
-      "breakout_state": "NEAR_BREAK",
-      "breakout_level": 18.1,
-      "reaccumulation": false,
-      "rsi": 62.5,
-      "mfi": 74.8,
-      "vol_ratio": 0.67,
-      "consolidation_days": 5,
-      "last_signal": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF CƠ HỘI; GẦN ĐIỂM BREAK",
-      "flags": [
-        "near_break",
-        "obv_up",
-        "mfi_ok",
-        "market_opportunity",
-        "near_break"
-      ],
-      "note": "",
-      "rs_score": 80,
-      "risk_reward": 8.5
-    },
     {
       "symbol": "ICI",
       "category": "watchlist",
@@ -232,17 +194,19 @@
     }
   ],
   "session_focus": [
-    "ABB",
-    "CMX",
-    "IDC",
-    "MWG",
+    "FRT",
     "NVL",
     "SMC",
+    "VSH",
     "ICI",
     "ARM",
     "TST",
     "AMC",
     "SBG",
+    "ABB",
+    "CMX",
+    "IDC",
+    "MWG",
     "HDP",
     "DSG",
     "SMB",
@@ -264,14 +228,12 @@
     "USD",
     "VJC",
     "DHA",
-    "FRT",
     "MCH",
     "MSN",
     "NTC",
     "PTB",
     "QTP",
-    "VLB",
-    "VGT"
+    "VLB"
   ],
   "retired": [
     {
@@ -781,7 +743,7 @@
     "retired_limit": 50,
     "description": "Bot memory for strong stocks, VCP/VSA watchlist, and priority focus symbols.",
     "strong_count": 0,
-    "watchlist_count": 6,
+    "watchlist_count": 5,
     "session_focus_count": 40,
     "retired_count": 13
   }
