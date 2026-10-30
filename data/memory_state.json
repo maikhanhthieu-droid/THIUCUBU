@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-10-30T18:03:47+07:00",
+  "last_updated": "2026-10-30T20:36:01+07:00",
   "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
@@ -194,6 +194,8 @@
     }
   ],
   "session_focus": [
+    "CLH",
+    "CLM",
     "FRT",
     "NVL",
     "SMC",
@@ -231,9 +233,7 @@
     "MCH",
     "MSN",
     "NTC",
-    "PTB",
-    "QTP",
-    "VLB"
+    "PTB"
   ],
   "retired": [
     {

@@ -1486,5 +1486,17 @@
     "date": "2026-10-30",
     "score": 0,
     "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "CMV",
+    "date": "2026-10-30",
+    "score": 12,
+    "reason": "vol kiet; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "CID",
+    "date": "2026-10-30",
+    "score": 1,
+    "reason": "discount 57.3% >= target 35%; vol kiet; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   }
 ]
