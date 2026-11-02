@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-10-30T21:13:28+07:00",
+  "last_updated": "2026-11-02T18:51:51+07:00",
   "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
@@ -78,6 +78,44 @@
       "note": "",
       "rs_score": 100,
       "risk_reward": 18.09
+    },
+    {
+      "symbol": "CST",
+      "category": "watchlist",
+      "first_detected": "2026-11-02",
+      "last_seen": "2026-11-02",
+      "last_updated": "2026-11-02T18:51:51+07:00",
+      "last_mode": "eod",
+      "score": 63,
+      "win_score": 71,
+      "close": 12.3,
+      "sector": "Other",
+      "setup": "VCP_BREAK",
+      "near_break": true,
+      "obv_up": true,
+      "failed_break": false,
+      "market_state": "ACCUMULATION",
+      "daily_phase": "MARKUP",
+      "weekly_phase": "ACCUMULATION",
+      "monthly_phase": "ACCUMULATION",
+      "breakout_state": "BREAKOUT_CONFIRMED",
+      "breakout_level": 11.1,
+      "reaccumulation": false,
+      "rsi": 66.7,
+      "mfi": 56.9,
+      "vol_ratio": 1.65,
+      "consolidation_days": 1,
+      "last_signal": "vol kiet; OBV up; MFI tot; gan nen break; MTF TÍCH LŨY; BREAK XÁC NHẬN",
+      "flags": [
+        "near_break",
+        "obv_up",
+        "mfi_ok",
+        "market_accumulation",
+        "breakout_confirmed"
+      ],
+      "note": "",
+      "rs_score": 87,
+      "risk_reward": 3.77
     },
     {
       "symbol": "TST",
@@ -194,9 +232,8 @@
     }
   ],
   "session_focus": [
-    "CLH",
-    "CLM",
-    "FRT",
+    "CST",
+    "CVT",
     "NVL",
     "SMC",
     "VSH",
@@ -205,6 +242,9 @@
     "TST",
     "AMC",
     "SBG",
+    "CLH",
+    "CLM",
+    "FRT",
     "ABB",
     "CMX",
     "IDC",
@@ -231,9 +271,7 @@
     "VJC",
     "DHA",
     "MCH",
-    "MSN",
-    "NTC",
-    "PTB"
+    "MSN"
   ],
   "retired": [
     {
@@ -743,7 +781,7 @@
     "retired_limit": 50,
     "description": "Bot memory for strong stocks, VCP/VSA watchlist, and priority focus symbols.",
     "strong_count": 0,
-    "watchlist_count": 5,
+    "watchlist_count": 6,
     "session_focus_count": 40,
     "retired_count": 13
   }
