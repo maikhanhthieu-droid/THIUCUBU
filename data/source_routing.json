@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-11-03T18:55:05+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-11-03T21:45:46+07:00",
+  "last_mode": "afternoon_focus",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -49,7 +49,7 @@
       "last_price": 9.8,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T21:45:46+07:00",
       "consecutive_misses": 0
     },
     {
@@ -72,7 +72,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T21:45:46+07:00",
       "consecutive_misses": 0
     },
     {
@@ -195,7 +195,7 @@
       "last_price": 23.15,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-28T17:32:05+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T21:45:46+07:00",
       "consecutive_misses": 0
     },
     {
@@ -755,7 +755,7 @@
       "last_price": 26.25,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-29T17:54:57+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T21:45:46+07:00",
       "consecutive_misses": 0
     },
     {
@@ -784,7 +784,7 @@
       "consecutive_misses": 0
     },
     {
-      "symbol": "TTL",
+      "symbol": "TTS",
       "tier": "FIINQUANT_PRIORITY",
       "primary_source": "FIINQUANT",
       "fallback_sources": [
@@ -799,13 +799,13 @@
       ],
       "attention_score": 134,
       "win_score": 0,
-      "advanced_score": 10,
-      "market_state": "DISTRIBUTION",
+      "advanced_score": 1,
+      "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 7.9,
-      "as_of": "2026-10-27",
-      "first_promoted_at": "2026-10-27T16:56:26+07:00",
-      "last_evaluated_at": "2026-10-27T16:56:26+07:00",
+      "last_price": 6.3,
+      "as_of": "2026-11-03",
+      "first_promoted_at": "2026-11-03T21:45:46+07:00",
+      "last_evaluated_at": "2026-11-03T21:45:46+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -1538,7 +1538,6 @@
       "TSA",
       "TTE",
       "TTN",
-      "TTS",
       "TTT",
       "TTZ",
       "TVA",
@@ -2019,14 +2018,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 1200,
+    "standard_count": 1199,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
       "VCI": 374,
-      "KBS": 399,
+      "KBS": 398,
       "DNSE": 427
     },
-    "evaluated_symbols": 206,
+    "evaluated_symbols": 69,
     "demote_after_scans": 3
   }
 }
