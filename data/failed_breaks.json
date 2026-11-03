@@ -2236,5 +2236,11 @@
     "date": "2026-11-03",
     "score": 0,
     "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "TTS",
+    "date": "2026-11-03",
+    "score": 0,
+    "reason": "discount 61.6% >= target 35%; nen chat; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
