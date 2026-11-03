@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-11-03T22:09:27+07:00",
-  "last_mode": "afternoon_focus",
+  "last_updated": "2026-11-03T23:51:41+07:00",
+  "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
     {
@@ -195,13 +195,14 @@
     }
   ],
   "session_focus": [
+    "GDT",
+    "NVL",
+    "SMC",
     "ICI",
+    "SBG",
     "AMC",
     "ARM",
     "TST",
-    "SBG",
-    "NVL",
-    "SMC",
     "CST",
     "CVT",
     "VSH",
@@ -233,8 +234,7 @@
     "USD",
     "VJC",
     "DHA",
-    "MCH",
-    "MSN"
+    "MCH"
   ],
   "retired": [
     {

@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-11-03T22:09:27+07:00",
-  "last_mode": "afternoon_focus",
+  "updated_at": "2026-11-03T23:51:41+07:00",
+  "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -49,7 +49,7 @@
       "last_price": 9.8,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-03T22:09:27+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -72,7 +72,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-03T22:09:27+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -121,7 +121,7 @@
       "last_price": 10.2,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-23T19:37:44+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -195,7 +195,7 @@
       "last_price": 23.15,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-28T17:32:05+07:00",
-      "last_evaluated_at": "2026-11-03T22:09:27+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -329,8 +329,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 24,
@@ -340,7 +339,7 @@
       "last_price": 51.4,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-11-03T18:55:05+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -388,7 +387,7 @@
       "last_price": 9.69,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-11-02T19:19:28+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -412,7 +411,7 @@
       "last_price": 13.9,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-11-02T19:19:28+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -426,8 +425,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -437,7 +435,7 @@
       "last_price": 48.05,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-29T17:54:57+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -461,7 +459,7 @@
       "last_price": 11.1,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-30T18:03:47+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -485,7 +483,7 @@
       "last_price": 19.0,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-11-02T19:19:28+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -524,8 +522,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -535,7 +532,7 @@
       "last_price": 40.0,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-26T16:38:18+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -559,7 +556,7 @@
       "last_price": 38.3,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-30T18:03:47+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -573,8 +570,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 7,
@@ -584,7 +580,7 @@
       "last_price": 9.12,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-30T18:03:47+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -633,7 +629,7 @@
       "last_price": 15.2,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-30T18:03:47+07:00",
-      "last_evaluated_at": "2026-11-03T18:55:05+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -755,7 +751,7 @@
       "last_price": 26.25,
       "as_of": "2026-11-03",
       "first_promoted_at": "2026-10-29T17:54:57+07:00",
-      "last_evaluated_at": "2026-11-03T22:09:27+07:00",
+      "last_evaluated_at": "2026-11-03T23:51:41+07:00",
       "consecutive_misses": 0
     },
     {
@@ -2025,7 +2021,7 @@
       "KBS": 398,
       "DNSE": 427
     },
-    "evaluated_symbols": 69,
+    "evaluated_symbols": 207,
     "demote_after_scans": 3
   }
 }
