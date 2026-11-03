@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "last_updated": "2026-11-02T19:31:02+07:00",
-  "last_mode": "morning_focus",
+  "last_updated": "2026-11-03T18:29:12+07:00",
+  "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
     {
@@ -195,15 +195,15 @@
     }
   ],
   "session_focus": [
-    "ICI",
-    "ARM",
-    "CST",
-    "TST",
-    "AMC",
-    "SBG",
-    "CVT",
     "NVL",
     "SMC",
+    "ICI",
+    "AMC",
+    "ARM",
+    "TST",
+    "SBG",
+    "CST",
+    "CVT",
     "VSH",
     "CLH",
     "CLM",

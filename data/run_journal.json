@@ -2,35 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260917162900-6e414390",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-09-17T16:58:03+07:00",
-      "success_count": 204,
-      "failed_count": 8,
-      "failed_symbols": [
-        "EGL",
-        "EME",
-        "EMG",
-        "FBC",
-        "FCC",
-        "FGL",
-        "FHN",
-        "FTI"
-      ],
-      "elapsed_sec": 1743.0,
-      "telegram_sent": true,
-      "updated_at": "2026-09-17T16:58:03+07:00"
-    },
-    {
-      "run_id": "20260917191728-48bf29b3",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-09-17T19:17:28+07:00",
-      "updated_at": "2026-09-17T19:17:28+07:00"
-    },
-    {
       "run_id": "20260917191728-48bf29b3",
       "mode": "eod",
       "status": "success",
@@ -1034,7 +1005,38 @@
       "status": "started",
       "started_at": "2026-11-03T01:48:14+07:00",
       "updated_at": "2026-11-03T01:48:14+07:00"
+    },
+    {
+      "run_id": "20261103180636-e664bd40",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-11-03T18:06:36+07:00",
+      "updated_at": "2026-11-03T18:06:36+07:00"
+    },
+    {
+      "run_id": "20261103180636-e664bd40",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-11-03T18:29:21+07:00",
+      "success_count": 207,
+      "failed_count": 5,
+      "failed_symbols": [
+        "DNN",
+        "DPP",
+        "DSD",
+        "DTH",
+        "DTR"
+      ],
+      "elapsed_sec": 1363.5,
+      "telegram_sent": true,
+      "stage_timings": {
+        "scan_sec": 1337.84,
+        "metrics_sec": 17.04,
+        "save_sec": 0.54
+      },
+      "updated_at": "2026-11-03T18:29:21+07:00"
     }
   ],
-  "last_updated": "2026-11-03T01:48:14+07:00"
+  "last_updated": "2026-11-03T18:29:21+07:00"
 }
