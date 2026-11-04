@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-11-04T19:04:33+07:00",
-  "last_mode": "eod",
+  "updated_at": "2026-11-04T19:14:40+07:00",
+  "last_mode": "morning_focus",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -49,7 +49,7 @@
       "last_price": 9.96,
       "as_of": "2026-11-04",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-04T19:04:33+07:00",
+      "last_evaluated_at": "2026-11-04T19:14:40+07:00",
       "consecutive_misses": 0
     },
     {
@@ -72,7 +72,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-04T19:04:33+07:00",
+      "last_evaluated_at": "2026-11-04T19:14:40+07:00",
       "consecutive_misses": 0
     },
     {
@@ -185,8 +185,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 0,
@@ -196,7 +195,7 @@
       "last_price": 24.2,
       "as_of": "2026-11-04",
       "first_promoted_at": "2026-10-28T17:32:05+07:00",
-      "last_evaluated_at": "2026-11-04T19:04:33+07:00",
+      "last_evaluated_at": "2026-11-04T19:14:40+07:00",
       "consecutive_misses": 0
     },
     {
@@ -792,8 +791,7 @@
       ],
       "reasons": [
         "failed_break",
-        "breakout:FAILED_BREAK_CONFIRMED",
-        "state_transition"
+        "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
       "win_score": 16,
@@ -803,7 +801,7 @@
       "last_price": 21.85,
       "as_of": "2026-11-04",
       "first_promoted_at": "2026-11-04T19:04:33+07:00",
-      "last_evaluated_at": "2026-11-04T19:04:33+07:00",
+      "last_evaluated_at": "2026-11-04T19:14:40+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -2023,7 +2021,7 @@
       "KBS": 398,
       "DNSE": 427
     },
-    "evaluated_symbols": 206,
+    "evaluated_symbols": 67,
     "demote_after_scans": 3
   }
 }
