@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "last_updated": "2026-11-03T23:51:41+07:00",
+  "last_updated": "2026-11-04T18:38:43+07:00",
   "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
@@ -195,14 +195,18 @@
     }
   ],
   "session_focus": [
-    "GDT",
+    "DIG",
+    "HAT",
+    "HDW",
     "NVL",
     "SMC",
+    "VIC",
     "ICI",
     "SBG",
     "AMC",
     "ARM",
     "TST",
+    "GDT",
     "CST",
     "CVT",
     "VSH",
@@ -230,11 +234,7 @@
     "VCB",
     "HDB",
     "TV2",
-    "TTS",
-    "USD",
-    "VJC",
-    "DHA",
-    "MCH"
+    "TTS"
   ],
   "retired": [
     {
