@@ -1028,18 +1028,18 @@
       "updated_at": "2026-11-04T22:28:55+07:00"
     },
     {
-      "run_id": "20261105181518-c3e323bc",
+      "run_id": "20261105183936-600ceebb",
       "mode": "auto",
       "trigger": "schedule",
       "status": "started",
-      "started_at": "2026-11-05T18:15:18+07:00",
-      "updated_at": "2026-11-05T18:15:18+07:00"
+      "started_at": "2026-11-05T18:39:36+07:00",
+      "updated_at": "2026-11-05T18:39:36+07:00"
     },
     {
-      "run_id": "20261105181518-c3e323bc",
+      "run_id": "20261105183936-600ceebb",
       "mode": "eod",
       "status": "success",
-      "finished_at": "2026-11-05T18:36:41+07:00",
+      "finished_at": "2026-11-05T19:01:41+07:00",
       "success_count": 208,
       "failed_count": 4,
       "failed_symbols": [
@@ -1048,15 +1048,15 @@
         "IRC",
         "KAI"
       ],
-      "elapsed_sec": 1281.2,
+      "elapsed_sec": 1323.7,
       "telegram_sent": true,
       "stage_timings": {
-        "scan_sec": 1261.33,
-        "metrics_sec": 9.41,
-        "save_sec": 0.39
+        "scan_sec": 1301.85,
+        "metrics_sec": 11.16,
+        "save_sec": 0.35
       },
-      "updated_at": "2026-11-05T18:36:41+07:00"
+      "updated_at": "2026-11-05T19:01:41+07:00"
     }
   ],
-  "last_updated": "2026-11-05T18:36:41+07:00"
+  "last_updated": "2026-11-05T19:01:41+07:00"
 }
