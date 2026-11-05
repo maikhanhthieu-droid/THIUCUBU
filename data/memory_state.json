@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "last_updated": "2026-11-04T22:28:45+07:00",
-  "last_mode": "afternoon_focus",
+  "last_updated": "2026-11-05T18:36:29+07:00",
+  "last_mode": "eod",
   "strong_stocks": [],
   "watchlist": [
     {
       "symbol": "ICI",
       "category": "watchlist",
       "first_detected": "2026-10-26",
-      "last_seen": "2026-11-04",
-      "last_updated": "2026-11-04T22:28:45+07:00",
-      "last_mode": "afternoon_focus",
-      "score": 67,
+      "last_seen": "2026-11-05",
+      "last_updated": "2026-11-05T18:36:29+07:00",
+      "last_mode": "eod",
+      "score": 66,
       "win_score": 86,
       "close": 10.0,
       "sector": "Other",
@@ -29,7 +29,7 @@
       "rsi": 50.0,
       "mfi": 53.5,
       "vol_ratio": 0.15,
-      "consolidation_days": 6,
+      "consolidation_days": 7,
       "last_signal": "nen chat; vol kiet; OBV up; MFI tot; gan nen break; MTF CƠ HỘI; GẦN ĐIỂM BREAK",
       "flags": [
         "near_break",
@@ -39,7 +39,7 @@
         "near_break"
       ],
       "note": "",
-      "rs_score": 83,
+      "rs_score": 81,
       "risk_reward": 2.2
     },
     {
@@ -196,6 +196,9 @@
   ],
   "session_focus": [
     "ICI",
+    "NTC",
+    "NVL",
+    "SMC",
     "AMC",
     "ARM",
     "TST",
@@ -203,8 +206,6 @@
     "DIG",
     "HAT",
     "HDW",
-    "NVL",
-    "SMC",
     "VIC",
     "GDT",
     "CST",
@@ -233,8 +234,7 @@
     "PVD",
     "VCB",
     "HDB",
-    "TV2",
-    "TTS"
+    "TV2"
   ],
   "retired": [
     {

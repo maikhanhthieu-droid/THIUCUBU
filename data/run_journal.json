@@ -2,33 +2,6 @@
   "version": 1,
   "runs": [
     {
-      "run_id": "20260921163801-07d21118",
-      "mode": "eod",
-      "status": "success",
-      "finished_at": "2026-09-21T16:58:43+07:00",
-      "success_count": 206,
-      "failed_count": 6,
-      "failed_symbols": [
-        "HRB",
-        "HSA",
-        "IBD",
-        "TCH",
-        "TCM",
-        "VGT"
-      ],
-      "elapsed_sec": 1241.9,
-      "telegram_sent": true,
-      "updated_at": "2026-09-21T16:58:43+07:00"
-    },
-    {
-      "run_id": "20260921202732-26d71a82",
-      "mode": "auto",
-      "trigger": "schedule",
-      "status": "started",
-      "started_at": "2026-09-21T20:27:32+07:00",
-      "updated_at": "2026-09-21T20:27:32+07:00"
-    },
-    {
       "run_id": "20260921202732-26d71a82",
       "mode": "eod",
       "status": "success",
@@ -1053,7 +1026,37 @@
         "save_sec": 0.18
       },
       "updated_at": "2026-11-04T22:28:55+07:00"
+    },
+    {
+      "run_id": "20261105181518-c3e323bc",
+      "mode": "auto",
+      "trigger": "schedule",
+      "status": "started",
+      "started_at": "2026-11-05T18:15:18+07:00",
+      "updated_at": "2026-11-05T18:15:18+07:00"
+    },
+    {
+      "run_id": "20261105181518-c3e323bc",
+      "mode": "eod",
+      "status": "success",
+      "finished_at": "2026-11-05T18:36:41+07:00",
+      "success_count": 208,
+      "failed_count": 4,
+      "failed_symbols": [
+        "IME",
+        "INC",
+        "IRC",
+        "KAI"
+      ],
+      "elapsed_sec": 1281.2,
+      "telegram_sent": true,
+      "stage_timings": {
+        "scan_sec": 1261.33,
+        "metrics_sec": 9.41,
+        "save_sec": 0.39
+      },
+      "updated_at": "2026-11-05T18:36:41+07:00"
     }
   ],
-  "last_updated": "2026-11-04T22:28:55+07:00"
+  "last_updated": "2026-11-05T18:36:41+07:00"
 }
