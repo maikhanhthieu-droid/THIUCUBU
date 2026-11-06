@@ -1,6 +1,6 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-11-06T18:34:39+07:00",
+  "updated_at": "2026-11-06T19:06:01+07:00",
   "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
@@ -49,7 +49,7 @@
       "last_price": 9.64,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -72,7 +72,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -121,7 +121,7 @@
       "last_price": 10.3,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-23T19:37:44+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -195,7 +195,7 @@
       "last_price": 23.75,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-28T17:32:05+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -363,7 +363,7 @@
       "last_price": 9.7,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-11-02T19:19:28+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -387,7 +387,7 @@
       "last_price": 49.05,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-29T17:54:57+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -412,7 +412,7 @@
       "last_price": 11.3,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-30T18:03:47+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -436,7 +436,7 @@
       "last_price": 18.7,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-11-02T19:19:28+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -485,7 +485,7 @@
       "last_price": 39.9,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-26T16:38:18+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -509,7 +509,7 @@
       "last_price": 37.9,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-30T18:03:47+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -680,7 +680,7 @@
       "last_price": 27.4,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-29T17:54:57+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -754,7 +754,7 @@
       "last_price": 12.7,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-11-04T19:04:33+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -777,8 +777,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 15.15,
       "as_of": "2026-11-06",
-      "first_promoted_at": "2026-11-06T18:34:39+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "first_promoted_at": "2026-11-06T19:06:01+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     },
     {
@@ -801,8 +801,8 @@
       "breakout_state": "FAILED_BREAK_CONFIRMED",
       "last_price": 21.65,
       "as_of": "2026-11-06",
-      "first_promoted_at": "2026-11-06T18:34:39+07:00",
-      "last_evaluated_at": "2026-11-06T18:34:39+07:00",
+      "first_promoted_at": "2026-11-06T19:06:01+07:00",
+      "last_evaluated_at": "2026-11-06T19:06:01+07:00",
       "consecutive_misses": 0
     }
   ],

@@ -3036,16 +3036,16 @@
     "reason": "discount 44.1% >= target 43%; vol kiet; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
   },
   {
-    "symbol": "CEO",
-    "date": "2026-11-06",
-    "score": 16,
-    "reason": "discount 51.8% >= target 43%; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; LẤY LẠI NỀN; ? FAILED_BREAK_CONFIRMED"
-  },
-  {
     "symbol": "TPB",
     "date": "2026-11-06",
     "score": 16,
     "reason": "MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "CEO",
+    "date": "2026-11-06",
+    "score": 16,
+    "reason": "discount 51.8% >= target 43%; OBV up; MFI tot; gan nen break; MTF CẨN THẬN; LẤY LẠI NỀN; ? FAILED_BREAK_CONFIRMED"
   },
   {
     "symbol": "PTB",
