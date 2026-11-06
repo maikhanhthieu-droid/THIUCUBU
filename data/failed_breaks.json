@@ -3244,5 +3244,17 @@
     "date": "2026-11-06",
     "score": 0,
     "reason": "vol kiet; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "VCX",
+    "date": "2026-11-06",
+    "score": 25,
+    "reason": "discount 35.1% >= target 35%; vol kiet; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "CLM",
+    "date": "2026-11-06",
+    "score": 0,
+    "reason": "OBV up; MFI tot; gan nen break; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,WEAK_CLOSE,DISTRIBUTION"
   }
 ]
