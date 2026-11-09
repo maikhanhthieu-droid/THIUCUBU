@@ -1,7 +1,7 @@
 {
   "schema_version": "thieucubu.source_routing.v1",
-  "updated_at": "2026-11-07T21:29:40+07:00",
-  "last_mode": "weekend",
+  "updated_at": "2026-11-09T19:17:28+07:00",
+  "last_mode": "eod",
   "policy": {
     "priority_limit": 32,
     "demote_after_scans": 3,
@@ -43,13 +43,13 @@
       ],
       "attention_score": 145,
       "win_score": 0,
-      "advanced_score": 0,
+      "advanced_score": 1,
       "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 9.64,
-      "as_of": "2026-11-06",
+      "last_price": 9.65,
+      "as_of": "2026-11-09",
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -62,7 +62,8 @@
         "DNSE"
       ],
       "reasons": [
-        "portfolio_or_note"
+        "portfolio_or_note",
+        "state_transition"
       ],
       "attention_score": 145,
       "win_score": 0,
@@ -72,7 +73,7 @@
       "last_price": null,
       "as_of": null,
       "first_promoted_at": "2026-08-21T19:47:12+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -121,7 +122,7 @@
       "last_price": 10.3,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-10-23T19:37:44+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -192,10 +193,10 @@
       "advanced_score": 0,
       "market_state": "DISTRIBUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 23.75,
-      "as_of": "2026-11-06",
+      "last_price": 23.8,
+      "as_of": "2026-11-09",
       "first_promoted_at": "2026-10-28T17:32:05+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -746,14 +747,14 @@
         "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
-      "win_score": 16,
-      "advanced_score": 18,
+      "win_score": 23,
+      "advanced_score": 22,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 12.7,
-      "as_of": "2026-11-06",
+      "last_price": 12.55,
+      "as_of": "2026-11-09",
       "first_promoted_at": "2026-11-04T19:04:33+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -777,7 +778,7 @@
       "last_price": 15.15,
       "as_of": "2026-11-06",
       "first_promoted_at": "2026-11-06T19:06:01+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     },
     {
@@ -794,14 +795,14 @@
         "breakout:FAILED_BREAK_CONFIRMED"
       ],
       "attention_score": 134,
-      "win_score": 12,
-      "advanced_score": 14,
+      "win_score": 7,
+      "advanced_score": 11,
       "market_state": "CAUTION",
       "breakout_state": "FAILED_BREAK_CONFIRMED",
-      "last_price": 21.65,
-      "as_of": "2026-11-06",
+      "last_price": 21.6,
+      "as_of": "2026-11-09",
       "first_promoted_at": "2026-11-06T19:06:01+07:00",
-      "last_evaluated_at": "2026-11-06T23:36:51+07:00",
+      "last_evaluated_at": "2026-11-09T19:17:28+07:00",
       "consecutive_misses": 0
     }
   ],
@@ -1015,14 +1016,17 @@
       "PLA",
       "PMB",
       "PMJ",
+      "PMP",
       "PND",
       "PNG",
       "PNP",
       "PNT",
       "POW",
+      "PPS",
       "PRE",
       "PRO",
       "PRT",
+      "PSB",
       "PSD",
       "PSH",
       "PTB",
@@ -1866,6 +1870,7 @@
       "PMS",
       "PMT",
       "PMW",
+      "POS",
       "POT",
       "POV",
       "PPE",
@@ -2015,14 +2020,14 @@
   },
   "meta": {
     "priority_count": 32,
-    "standard_count": 1200,
+    "standard_count": 1204,
     "description": "Mã cần chú ý dùng FiinQuant trước. Mã thường được cân tải qua VCI/KBS/DNSE và không tiêu hạn mức 33 mã của FiinQuant.",
     "standard_counts_by_source": {
-      "VCI": 374,
+      "VCI": 377,
       "KBS": 398,
-      "DNSE": 428
+      "DNSE": 429
     },
-    "evaluated_symbols": 0,
+    "evaluated_symbols": 202,
     "demote_after_scans": 3
   }
 }
