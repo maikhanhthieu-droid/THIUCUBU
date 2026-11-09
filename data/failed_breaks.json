@@ -3562,5 +3562,17 @@
     "date": "2026-11-09",
     "score": 0,
     "reason": "OBV up; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
+  },
+  {
+    "symbol": "VCX",
+    "date": "2026-11-09",
+    "score": 25,
+    "reason": "discount 35.1% >= target 35%; vol kiet; OBV up; MFI tot; MTF CẨN THẬN; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED"
+  },
+  {
+    "symbol": "SSI",
+    "date": "2026-11-09",
+    "score": 0,
+    "reason": "gan nen break; MTF PHÂN PHỐI; BREAK XỊT XÁC NHẬN; ? FAILED_BREAK_CONFIRMED,MTF_DISTRIBUTION"
   }
 ]
